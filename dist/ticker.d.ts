@@ -59,11 +59,11 @@ export declare class Ticker implements DestroyableObject {
         activeDuration: number;
         activeFadeDuration: number;
     };
-    readonly staticProps: typeof Ticker.defaultStaticProps;
+    staticProps: typeof Ticker.defaultStaticProps;
     props: typeof Ticker.defaultProps;
     internal: {
         active: boolean;
-        paused: boolean;
+        stopped: boolean;
         caughtErrors: boolean;
         timeScale: number;
         activeLastRequest: number;
@@ -76,7 +76,7 @@ export declare class Ticker implements DestroyableObject {
     destroyed: boolean;
     destroy: () => void;
     requestActivation(): this;
-    setProps(props: Partial<typeof Ticker.defaultProps>): this;
+    set(props: Partial<typeof Ticker.defaultProps>): this;
     onTick(callback: TickCallback): DestroyableObject;
     onTick(options: OnTickOptions, callback: TickCallback): DestroyableObject;
     offTick(callback: TickCallback): boolean;

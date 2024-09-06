@@ -83,7 +83,7 @@ export class Ticker {
     constructor(props = {}) {
         this.internal = {
             active: true,
-            paused: false,
+            stopped: false,
             caughtErrors: false,
             timeScale: 1,
             activeLastRequest: 0,
@@ -97,7 +97,7 @@ export class Ticker {
             if (this.destroyed === false) {
                 this.destroyed = true;
                 const index = tickers.indexOf(this);
-                if (index !== -1) {
+                if (index === -1) {
                     throw new Error('Ticker is already destroyed');
                 }
                 tickers.splice(index, 1);
@@ -119,7 +119,7 @@ export class Ticker {
         this.internal.activeLastRequest = globalTime;
         return this;
     }
-    setProps(props) {
+    set(props) {
         const { order, activeDuration, activeFadeDuration } = props;
         if (activeDuration !== undefined) {
             this.props.activeDuration = activeDuration;
@@ -229,5 +229,6 @@ function updateTicker(ticker) {
     if (currentTick) {
         currentTick.previousTick = null; // Prevent memory leak
     }
+    ticker.internal.updateListeners.call(ticker.tick);
 }
 globalThis.requestAnimationFrame(update);

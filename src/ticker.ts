@@ -132,12 +132,12 @@ export class Ticker implements DestroyableObject {
     activeFadeDuration: 1,
   }
 
-  readonly staticProps: typeof Ticker.defaultStaticProps
+  staticProps: typeof Ticker.defaultStaticProps
   props: typeof Ticker.defaultProps
 
   internal = {
     active: true,
-    paused: false,
+    stopped: false,
     caughtErrors: false,
     timeScale: 1,
     activeLastRequest: 0,
@@ -168,7 +168,7 @@ export class Ticker implements DestroyableObject {
     if (this.destroyed === false) {
       this.destroyed = true
       const index = tickers.indexOf(this)
-      if (index !== -1) {
+      if (index === -1) {
         throw new Error('Ticker is already destroyed')
       }
       tickers.splice(index, 1)
@@ -180,7 +180,7 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  setProps(props: Partial<typeof Ticker.defaultProps>): this {
+  set(props: Partial<typeof Ticker.defaultProps>): this {
     const { order, activeDuration, activeFadeDuration } = props
 
     if (activeDuration !== undefined) {
@@ -318,6 +318,8 @@ function updateTicker(ticker: Ticker) {
   if (currentTick) {
     currentTick.previousTick = null // Prevent memory leak
   }
+
+  ticker.internal.updateListeners.call(ticker.tick)
 }
 
 globalThis.requestAnimationFrame(update)
