@@ -18,6 +18,14 @@ class Tick {
     public readonly activeTime: number = 0,
     public readonly activeDuration: number = Ticker.defaultProps.activeDuration,
   ) { }
+
+  get previousTime() {
+    return this.time - this.deltaTime
+  }
+
+  toString() {
+    return `frame: ${this.frame}, time: ${this.time.toFixed(2)}, deltaTime: ${this.deltaTime.toFixed(4)}`
+  }
 }
 
 type TickCallback = (tick: Tick) => void | 'stop'
@@ -119,6 +127,7 @@ type OnTickOptions = Partial<{
   once: boolean
 }>
 
+let tickerNextId = 0
 export class Ticker implements DestroyableObject {
   // Static props
   static defaultStaticProps = {
@@ -131,6 +140,8 @@ export class Ticker implements DestroyableObject {
     activeDuration: 10,
     activeFadeDuration: 1,
   }
+
+  readonly id = tickerNextId++
 
   staticProps: typeof Ticker.defaultStaticProps
   props: typeof Ticker.defaultProps
@@ -149,6 +160,14 @@ export class Ticker implements DestroyableObject {
 
   tick = new Tick()
 
+  // Accessors:
+  get time() { return this.tick.time }
+  get deltaTime() { return this.tick.deltaTime }
+  get timeScale() { return this.internal.timeScale }
+  set timeScale(value: number) {
+    this.internal.timeScale = value
+  }
+
   constructor(props: Partial<typeof Ticker.defaultStaticProps & typeof Ticker.defaultProps> = {}) {
     this.staticProps = { ...Ticker.defaultStaticProps }
     this.props = { ...Ticker.defaultProps }
@@ -161,6 +180,7 @@ export class Ticker implements DestroyableObject {
     }
 
     tickers.push(this)
+    console.log('Ticker created', this.id)
   }
 
   destroyed = false
@@ -172,31 +192,40 @@ export class Ticker implements DestroyableObject {
         throw new Error('Ticker is already destroyed')
       }
       tickers.splice(index, 1)
+      console.log('Ticker destroyed', this.id)
     }
+  }
+
+  start(): this {
+    this.internal.stopped = false
+    this.requestActivation()
+    return this
+  }
+
+  stop(): this {
+    this.internal.stopped = true
+    return this
   }
 
   requestActivation(): this {
     this.internal.activeLastRequest = globalTime
+    if (this.internal.active === false) {
+      this.internal.active = true
+      this.internal.activationListeners.call(this.tick)
+    }
     return this
   }
 
   set(props: Partial<typeof Ticker.defaultProps>): this {
-    const { order, activeDuration, activeFadeDuration } = props
+    const { order, ...rest } = props
 
-    if (activeDuration !== undefined) {
-      this.props.activeDuration = activeDuration
-      this.requestActivation()
-    }
-
-    if (activeFadeDuration !== undefined) {
-      this.props.activeFadeDuration = activeFadeDuration
-      this.requestActivation()
-    }
-
+    // Order is a special case
     if (order !== undefined) {
       this.props.order = order
       flags.orderChanged = true
     }
+
+    Object.assign(this.props, rest)
 
     return this
   }
@@ -260,6 +289,23 @@ export class Ticker implements DestroyableObject {
   offTick(callback: TickCallback): boolean {
     return this.internal.updateListeners.remove(callback)
   }
+
+  onActivate(callback: TickCallback): DestroyableObject {
+    this.requestActivation()
+    this.internal.activationListeners.add(0, callback)
+    const destroy = () => {
+      this.internal.activationListeners.remove(callback)
+    }
+    return { destroy, value: this }
+  }
+
+  onDeactivate(callback: TickCallback): DestroyableObject {
+    this.internal.deactivationListeners.add(0, callback)
+    const destroy = () => {
+      this.internal.deactivationListeners.remove(callback)
+    }
+    return { destroy, value: this }
+  }
 }
 
 const tickers: Ticker[] = []
@@ -268,26 +314,15 @@ const flags = {
   orderChanged: false,
 }
 
-function update(ms: number) {
-  globalThis.requestAnimationFrame(update)
-  globalDeltaTime = (ms / 1000) - globalTime
-  globalTime += globalDeltaTime
-  globalFrame++
-
-  if (flags.orderChanged) {
-    tickers.sort((A, B) => A.props.order - B.props.order)
-    flags.orderChanged = false
-  }
-
-  for (const ticker of tickers) {
-    updateTicker(ticker)
-  }
-}
-
 function updateTicker(ticker: Ticker) {
+  const { active, activeLastRequest, stopped, timeScale } = ticker.internal
+
+  if (active === false || stopped) {
+    return
+  }
+
   const { tickMaxCount, maxDeltaTime } = ticker.staticProps
   const { activeDuration, activeFadeDuration } = ticker.props
-  const { activeLastRequest, timeScale } = ticker.internal
 
   const { tick: previousTick } = ticker
 
@@ -297,7 +332,7 @@ function updateTicker(ticker: Ticker) {
 
   const frame = previousTick.frame + 1
   const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale
-  const time = previousTick.time + globalDeltaTime
+  const time = previousTick.time + deltaTime
 
   ticker.tick = new Tick(
     previousTick,
@@ -320,6 +355,32 @@ function updateTicker(ticker: Ticker) {
   }
 
   ticker.internal.updateListeners.call(ticker.tick)
+
+  if (activeTimeScale === 0) {
+    ticker.internal.active = false
+    ticker.internal.deactivationListeners.call(ticker.tick)
+  }
 }
 
-globalThis.requestAnimationFrame(update)
+function update(ms: number) {
+  globalDeltaTime = (ms / 1000) - globalTime
+  globalTime += globalDeltaTime
+  globalFrame++
+
+  if (flags.orderChanged) {
+    tickers.sort((A, B) => A.props.order - B.props.order)
+    flags.orderChanged = false
+  }
+
+  for (const ticker of tickers) {
+    updateTicker(ticker)
+  }
+}
+
+if (typeof window !== 'undefined') {
+  function loop() {
+    requestAnimationFrame(loop)
+    update(performance.now())
+  }
+  loop()
+}
