@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "downlevelIteration": true,
-    "target": "ES2017",                     // Target ES6 or higher
+    "target": "ESNext",                     // Target ES6 or higher
     "module": "ESNext",                     // Module format
     "declaration": true,                    // Generates .d.ts files
     "outDir": "./dist",                     // Output directory
