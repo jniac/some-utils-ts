@@ -3,6 +3,14 @@ let globalTime = 0;
 let globalDeltaTime = 0;
 let globalFrame = 0;
 class Tick {
+    previousTick;
+    frame;
+    time;
+    deltaTime;
+    timeScale;
+    activeTimeScale;
+    activeTime;
+    activeDuration;
     constructor(previousTick = null, frame = 0, time = 0, deltaTime = 0, timeScale = 1, activeTimeScale = 1, activeTime = 0, activeDuration = Ticker.defaultProps.activeDuration) {
         this.previousTick = previousTick;
         this.frame = frame;
@@ -13,22 +21,27 @@ class Tick {
         this.activeTime = activeTime;
         this.activeDuration = activeDuration;
     }
+    get previousTime() {
+        return this.time - this.deltaTime;
+    }
+    toString() {
+        return `frame: ${this.frame}, time: ${this.time.toFixed(2)}, deltaTime: ${this.deltaTime.toFixed(4)}`;
+    }
 }
 class Listeners {
-    constructor() {
-        this._sortDirty = true;
-        this._countDirty = true;
-        this._listeners = [];
-        this._loopListeners = [];
-    }
+    static listenerNextId = 0;
+    _sortDirty = true;
+    _countDirty = true;
+    _listeners = [];
+    _loopListeners = [];
     add(order, callback) {
         // NOTE: Optimization: we don't need to sort the listeners if the new listener
         // can be appended at the end of the list.
         // NOTE: If the sortDirty flag is already set, it means that the listeners are
         // already not sorted, so we don't need to check the order.
         // So we have to use the "or assign" operator (||=) here.
-        this._sortDirty || (this._sortDirty = this._listeners.length > 0
-            && order < this._listeners[this._listeners.length - 1].order);
+        this._sortDirty ||= this._listeners.length > 0
+            && order < this._listeners[this._listeners.length - 1].order;
         this._countDirty = true;
         const id = Listeners.listenerNextId++;
         const listener = { id, order, callback };
@@ -78,33 +91,43 @@ class Listeners {
         this._countDirty = true;
     }
 }
-Listeners.listenerNextId = 0;
+let tickerNextId = 0;
 export class Ticker {
+    // Static props
+    static defaultStaticProps = {
+        tickMaxCount: 60,
+        maxDeltaTime: 1 / 10,
+    };
+    // Dynamic props
+    static defaultProps = {
+        order: 0,
+        activeDuration: 10,
+        activeFadeDuration: 1,
+    };
+    id = tickerNextId++;
+    staticProps;
+    props;
+    internal = {
+        active: true,
+        stopped: false,
+        caughtErrors: false,
+        timeScale: 1,
+        activeLastRequest: 0,
+        updateListeners: new Listeners(),
+        deactivationListeners: new Listeners(),
+        activationListeners: new Listeners(),
+    };
+    tick = new Tick();
+    // Accessors:
+    get time() { return this.tick.time; }
+    get deltaTime() { return this.tick.deltaTime; }
+    get timeScale() { return this.internal.timeScale; }
+    set timeScale(value) {
+        this.internal.timeScale = value;
+    }
     constructor(props = {}) {
-        this.internal = {
-            active: true,
-            stopped: false,
-            caughtErrors: false,
-            timeScale: 1,
-            activeLastRequest: 0,
-            updateListeners: new Listeners(),
-            deactivationListeners: new Listeners(),
-            activationListeners: new Listeners(),
-        };
-        this.tick = new Tick();
-        this.destroyed = false;
-        this.destroy = () => {
-            if (this.destroyed === false) {
-                this.destroyed = true;
-                const index = tickers.indexOf(this);
-                if (index === -1) {
-                    throw new Error('Ticker is already destroyed');
-                }
-                tickers.splice(index, 1);
-            }
-        };
-        this.staticProps = Object.assign({}, Ticker.defaultStaticProps);
-        this.props = Object.assign({}, Ticker.defaultProps);
+        this.staticProps = { ...Ticker.defaultStaticProps };
+        this.props = { ...Ticker.defaultProps };
         for (const [key, value] of Object.entries(props)) {
             if (key in this.staticProps) {
                 this.staticProps[key] = value;
@@ -114,25 +137,45 @@ export class Ticker {
             }
         }
         tickers.push(this);
+        console.log('Ticker created', this.id);
+    }
+    destroyed = false;
+    destroy = () => {
+        if (this.destroyed === false) {
+            this.destroyed = true;
+            const index = tickers.indexOf(this);
+            if (index === -1) {
+                throw new Error('Ticker is already destroyed');
+            }
+            tickers.splice(index, 1);
+            console.log('Ticker destroyed', this.id);
+        }
+    };
+    start() {
+        this.internal.stopped = false;
+        this.requestActivation();
+        return this;
+    }
+    stop() {
+        this.internal.stopped = true;
+        return this;
     }
     requestActivation() {
         this.internal.activeLastRequest = globalTime;
+        if (this.internal.active === false) {
+            this.internal.active = true;
+            this.internal.activationListeners.call(this.tick);
+        }
         return this;
     }
     set(props) {
-        const { order, activeDuration, activeFadeDuration } = props;
-        if (activeDuration !== undefined) {
-            this.props.activeDuration = activeDuration;
-            this.requestActivation();
-        }
-        if (activeFadeDuration !== undefined) {
-            this.props.activeFadeDuration = activeFadeDuration;
-            this.requestActivation();
-        }
+        const { order, ...rest } = props;
+        // Order is a special case
         if (order !== undefined) {
             this.props.order = order;
             flags.orderChanged = true;
         }
+        Object.assign(this.props, rest);
         return this;
     }
     onTick(...args) {
@@ -148,7 +191,7 @@ export class Ticker {
         const [options, callback] = solveArgs(args);
         const { order = 0, frameInterval = 0, timeInterval = 0, once = false, } = options;
         if (once) {
-            const listener = this.onTick(Object.assign(Object.assign({}, options), { once: false }), tick => {
+            const listener = this.onTick({ ...options, once: false }, tick => {
                 listener.destroy();
                 callback(tick);
             });
@@ -180,24 +223,56 @@ export class Ticker {
     offTick(callback) {
         return this.internal.updateListeners.remove(callback);
     }
+    onActivate(callback) {
+        this.requestActivation();
+        this.internal.activationListeners.add(0, callback);
+        const destroy = () => {
+            this.internal.activationListeners.remove(callback);
+        };
+        return { destroy, value: this };
+    }
+    onDeactivate(callback) {
+        this.internal.deactivationListeners.add(0, callback);
+        const destroy = () => {
+            this.internal.deactivationListeners.remove(callback);
+        };
+        return { destroy, value: this };
+    }
 }
-// Static props
-Ticker.defaultStaticProps = {
-    tickMaxCount: 60,
-    maxDeltaTime: 1 / 10,
-};
-// Dynamic props
-Ticker.defaultProps = {
-    order: 0,
-    activeDuration: 10,
-    activeFadeDuration: 1,
-};
 const tickers = [];
 const flags = {
     orderChanged: false,
 };
+function updateTicker(ticker) {
+    const { active, activeLastRequest, stopped, timeScale } = ticker.internal;
+    if (active === false || stopped) {
+        return;
+    }
+    const { tickMaxCount, maxDeltaTime } = ticker.staticProps;
+    const { activeDuration, activeFadeDuration } = ticker.props;
+    const { tick: previousTick } = ticker;
+    const activeTime = globalTime - activeLastRequest;
+    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration);
+    const activeTimeScale = 1 - activeExtraTime * activeExtraTime; // ease-out-2
+    const frame = previousTick.frame + 1;
+    const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale;
+    const time = previousTick.time + deltaTime;
+    ticker.tick = new Tick(previousTick, frame, time, deltaTime, timeScale, activeTimeScale, activeTime, activeDuration);
+    let currentTick = previousTick;
+    let count = 0;
+    while (currentTick && ++count < tickMaxCount) {
+        currentTick = currentTick.previousTick;
+    }
+    if (currentTick) {
+        currentTick.previousTick = null; // Prevent memory leak
+    }
+    ticker.internal.updateListeners.call(ticker.tick);
+    if (activeTimeScale === 0) {
+        ticker.internal.active = false;
+        ticker.internal.deactivationListeners.call(ticker.tick);
+    }
+}
 function update(ms) {
-    globalThis.requestAnimationFrame(update);
     globalDeltaTime = (ms / 1000) - globalTime;
     globalTime += globalDeltaTime;
     globalFrame++;
@@ -209,26 +284,10 @@ function update(ms) {
         updateTicker(ticker);
     }
 }
-function updateTicker(ticker) {
-    const { tickMaxCount, maxDeltaTime } = ticker.staticProps;
-    const { activeDuration, activeFadeDuration } = ticker.props;
-    const { activeLastRequest, timeScale } = ticker.internal;
-    const { tick: previousTick } = ticker;
-    const activeTime = globalTime - activeLastRequest;
-    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration);
-    const activeTimeScale = 1 - activeExtraTime * activeExtraTime; // ease-out-2
-    const frame = previousTick.frame + 1;
-    const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale;
-    const time = previousTick.time + globalDeltaTime;
-    ticker.tick = new Tick(previousTick, frame, time, deltaTime, timeScale, activeTimeScale, activeTime, activeDuration);
-    let currentTick = previousTick;
-    let count = 0;
-    while (currentTick && ++count < tickMaxCount) {
-        currentTick = currentTick.previousTick;
+if (typeof window !== 'undefined') {
+    function loop() {
+        requestAnimationFrame(loop);
+        update(performance.now());
     }
-    if (currentTick) {
-        currentTick.previousTick = null; // Prevent memory leak
-    }
-    ticker.internal.updateListeners.call(ticker.tick);
+    loop();
 }
-globalThis.requestAnimationFrame(update);

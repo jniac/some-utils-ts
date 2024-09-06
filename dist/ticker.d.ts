@@ -9,6 +9,8 @@ declare class Tick {
     readonly activeTime: number;
     readonly activeDuration: number;
     constructor(previousTick?: Tick | null, frame?: number, time?: number, deltaTime?: number, timeScale?: number, activeTimeScale?: number, activeTime?: number, activeDuration?: number);
+    get previousTime(): number;
+    toString(): string;
 }
 type TickCallback = (tick: Tick) => void | 'stop';
 type Listener = Readonly<{
@@ -59,6 +61,7 @@ export declare class Ticker implements DestroyableObject {
         activeDuration: number;
         activeFadeDuration: number;
     };
+    readonly id: number;
     staticProps: typeof Ticker.defaultStaticProps;
     props: typeof Ticker.defaultProps;
     internal: {
@@ -72,13 +75,21 @@ export declare class Ticker implements DestroyableObject {
         activationListeners: Listeners;
     };
     tick: Tick;
+    get time(): number;
+    get deltaTime(): number;
+    get timeScale(): number;
+    set timeScale(value: number);
     constructor(props?: Partial<typeof Ticker.defaultStaticProps & typeof Ticker.defaultProps>);
     destroyed: boolean;
     destroy: () => void;
+    start(): this;
+    stop(): this;
     requestActivation(): this;
     set(props: Partial<typeof Ticker.defaultProps>): this;
     onTick(callback: TickCallback): DestroyableObject;
     onTick(options: OnTickOptions, callback: TickCallback): DestroyableObject;
     offTick(callback: TickCallback): boolean;
+    onActivate(callback: TickCallback): DestroyableObject;
+    onDeactivate(callback: TickCallback): DestroyableObject;
 }
 export {};
