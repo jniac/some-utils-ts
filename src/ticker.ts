@@ -129,11 +129,25 @@ type OnTickOptions = Partial<{
 
 let tickerNextId = 0
 export class Ticker implements DestroyableObject {
+  /**
+   * Returns the current ticker (the first one). If there is no ticker, a new 
+   * ticker will be created.
+   */
+  static current() {
+    const ticker = tickers.length === 0
+      ? new Ticker()
+      : tickers[tickers.length - 1]
+    ticker.requestActivation()
+    return ticker
+  }
+
   // Static props
   static defaultStaticProps = {
+    name: null as string | null,
     tickMaxCount: 60,
     maxDeltaTime: 1 / 10,
   }
+
   // Dynamic props
   static defaultProps = {
     order: 0,
@@ -142,6 +156,7 @@ export class Ticker implements DestroyableObject {
   }
 
   readonly id = tickerNextId++
+  readonly name: string
 
   staticProps: typeof Ticker.defaultStaticProps
   props: typeof Ticker.defaultProps
@@ -173,14 +188,14 @@ export class Ticker implements DestroyableObject {
     this.props = { ...Ticker.defaultProps }
     for (const [key, value] of Object.entries(props)) {
       if (key in this.staticProps) {
-        this.staticProps[key as keyof typeof Ticker.defaultStaticProps] = value
+        (this.staticProps as any)[key] = value
       } else {
-        this.props[key as keyof typeof Ticker.defaultProps] = value
+        (this.props as any)[key] = value
       }
     }
 
+    this.name = this.staticProps.name ?? `Ticker#${this.id}`
     tickers.push(this)
-    console.log('Ticker created', this.id)
   }
 
   destroyed = false
@@ -192,7 +207,6 @@ export class Ticker implements DestroyableObject {
         throw new Error('Ticker is already destroyed')
       }
       tickers.splice(index, 1)
-      console.log('Ticker destroyed', this.id)
     }
   }
 
@@ -308,6 +322,36 @@ export class Ticker implements DestroyableObject {
       this.internal.deactivationListeners.remove(callback)
     }
     return { destroy, value: this }
+  }
+
+
+  /**
+   * Mock of window.requestAnimationFrame, with an order option.
+   *
+   * It's intended to be used in the same way as window.requestAnimationFrame,
+   * and helps to use the Ticker instead of window.requestAnimationFrame.
+   *
+   * Since an order option is available, it's possible to insert the callback
+   * to a specific position among the other callbacks.
+   */
+  requestAnimationFrame = (callback: (ms: number) => void, { order = 0 } = {}): number => {
+    this.requestActivation() // Request activation to ensure the callback is called.
+    const { updateListeners } = this.internal
+    const listener = updateListeners.add(order, tick => {
+      updateListeners.removeById(listener.id)
+      callback(tick.time * 1e3)
+    })
+    return listener.id
+  }
+
+  /**
+   * Mock of window.cancelAnimationFrame that works with the Ticker.
+   *
+   * See {@link Ticker.requestAnimationFrame}
+   */
+  cancelAnimationFrame(id: number): boolean {
+    const { updateListeners } = this.internal
+    return updateListeners.removeById(id)
   }
 }
 
