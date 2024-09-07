@@ -207,7 +207,10 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  requestActivation(): this {
+  /**
+   * `requestActivation()` is binded to the ticker and can be used as a pure callback.
+   */
+  requestActivation = () => {
     this.internal.activeLastRequest = globalTime
     if (this.internal.active === false) {
       this.internal.active = true
