@@ -380,10 +380,10 @@ function update(ms: number) {
   }
 }
 
+function windowLoop() {
+  window.requestAnimationFrame(windowLoop)
+  update(performance.now())
+}
 if (typeof window !== 'undefined') {
-  function loop() {
-    requestAnimationFrame(loop)
-    update(performance.now())
-  }
-  loop()
+  windowLoop()
 }
