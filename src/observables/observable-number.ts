@@ -1,4 +1,3 @@
-import { calculateExponentialGrowth } from '../math/misc/exponential-growth'
 import { DestroyableObject } from '../types'
 import { Memorization } from './memorization'
 import { Callback, ConstructorOptions, Observable, OnChangeOptions, SetValueOptions } from './observable'
@@ -279,6 +278,8 @@ export class ObservableNumber extends Observable<number> {
 
   /**
    * Linear interpolation of the inner value between the two given values.
+   * 
+   * Note: This will not change the inner value. For that, use {@link lerpTo}.
    */
   lerp(a: number, b: number, options?: Partial<{ clamped: boolean }>): number {
     let alpha = this._value
@@ -302,9 +303,36 @@ export class ObservableNumber extends Observable<number> {
   }
 
   /**
-   * Grow exponentially towards a target value.
+   * Grow the value exponentially towards the target.
+   * 
+   * If value = 100, target = 200, grow = 0.3, deltaTime = 1, then the new value will be 130.
+   * 
+   * This is useful for smooth transitions, whatever delta time is.
+   * 
+   * @param target The target value.
+   * @param grow 
+   * The amount to grow towards the target per second (e.g. 0.1 for 10%).
+   * 
+   * Grow can be a number (e.g. 0.1) or a tuple [value, deltaTime] (e.g. [0.1, 1]).
+   * If it is a tuple, it means that the value will grow by the given value in the given time.
+   * 
+   * Example:  
+   * If value = 100, target = 200, grow = [0.3, 1], deltaTime = 1, then the new value will be 130 after 0.1 seconds (and 197.17524751 after 1 second).
+   * 
+   * This is useful to express the grow for shorter periods of time than 1 second (in motion design 1 seconds is a very long time).
+   * @param deltaTime The time elapsed since the last call.
+   * @returns 
    */
-  exponentialGrow(target: number, growthRate: number, deltaTime: number): boolean {
-    return this.setValue(calculateExponentialGrowth(this._value, target, growthRate, deltaTime))
+  exponentialGrow(target: number, grow: number | [value: number, deltaTime: number], deltaTime: number): boolean {
+    const computeDecay = (grow: number | [grow: number, deltaTime: number]) => {
+      if (typeof grow === 'number') {
+        return 1 - grow
+      }
+      const [value, deltaTime] = grow
+      return (1 - value) ** (1 / deltaTime)
+    }
+    const decay = computeDecay(grow)
+    const value = target - (target - this._value) * (decay ** deltaTime)
+    return this.setValue(value)
   }
 }
