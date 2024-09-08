@@ -73,6 +73,14 @@ export function signedLimited(x: number, limit: number) {
   return x < 0 ? -limited(-x, limit) : limited(x, limit)
 }
 
+export function cos01(x: number) {
+  return .5 + .5 * Math.cos(x * Math.PI)
+}
+
+export function sin01(x: number) {
+  return .5 + .5 * Math.sin(x * Math.PI)
+}
+
 /**
  * Returns the "positive" modulo of "x".
  * ```
