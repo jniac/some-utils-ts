@@ -135,7 +135,7 @@ export class Ticker implements DestroyableObject {
    */
   static current() {
     const ticker = tickers.length === 0
-      ? new Ticker()
+      ? new Ticker({ name: 'CurrentTicker' })
       : tickers[tickers.length - 1]
     ticker.requestActivation()
     return ticker
@@ -362,9 +362,9 @@ const flags = {
 }
 
 function updateTicker(ticker: Ticker) {
-  const { active, activeLastRequest, stopped, timeScale } = ticker.internal
+  const { active, activeLastRequest, stopped, timeScale, caughtErrors } = ticker.internal
 
-  if (active === false || stopped) {
+  if (caughtErrors || active === false || stopped) {
     return
   }
 
@@ -401,7 +401,14 @@ function updateTicker(ticker: Ticker) {
     currentTick.previousTick = null // Prevent memory leak
   }
 
-  ticker.internal.updateListeners.call(ticker.tick)
+  try {
+    ticker.internal.updateListeners.call(ticker.tick)
+  } catch (error) {
+    console.error(`Error in Ticker "${ticker.name}"`)
+    console.error(ticker.tick.toString())
+    console.error(error)
+    ticker.internal.caughtErrors = true
+  }
 
   if (activeTimeScale === 0) {
     ticker.internal.active = false
