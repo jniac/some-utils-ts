@@ -141,6 +141,27 @@ export class Ticker implements DestroyableObject {
     return ticker
   }
 
+  /**
+   * Returns the ticker with the specified name. If there is no ticker with the
+   * specified name, a new ticker will be created.
+   */
+  static get(name: string, options?: { createIfNotFound: true }): Ticker
+  static get(name: string, options: { createIfNotFound: false }): Ticker | null
+  static get(name: string, { createIfNotFound = true } = {}): any {
+    const ticker = tickers.find(ticker => ticker.name === name)
+    if (ticker) {
+      return ticker
+    } else {
+      if (createIfNotFound) {
+        const ticker = new Ticker({ name })
+        ticker.requestActivation()
+        return ticker
+      } else {
+        return null
+      }
+    }
+  }
+
   // Static props
   static defaultStaticProps = {
     name: null as string | null,
