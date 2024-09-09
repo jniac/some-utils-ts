@@ -110,6 +110,18 @@ class Observable<T = any> implements ObservableCore<T> {
     }
   }
 
+  /**
+   * Handy method to check the inner value in a declarative way:
+   * ```
+   * if (statusObs.is('ready')) {
+   *   doFancyThings()
+   * }
+   * ```
+   */
+  is(value: T): boolean {
+    return this._value === value
+  }
+
   protected _invokeListeners(): void {
     const it = this._listeners[Symbol.iterator]()
     while (true) {
