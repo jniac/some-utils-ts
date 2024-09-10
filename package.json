@@ -14,9 +14,6 @@
     "typescript": "^5.5.4"
   },
   "exports": {
-    "./message": {
-      "default": "./src/message/index.ts"
-    },
     "./*": {
       "default": "./src/*.ts"
     }
