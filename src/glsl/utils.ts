@@ -1,10 +1,8 @@
+import { glsl_basic } from './basic'
 import { generics } from './tools/generics'
 
 export const glsl_utils = /* glsl */`
-
-  float clamp01(float x) {
-    return x < 0.0 ? 0.0 : x > 1.0 ? 1.0 : x;
-  }
+  ${glsl_basic}
 
   float sin01(float x) {
     return 0.5 + 0.5 * sin(x * 6.283185307179586);
