@@ -142,8 +142,9 @@ export class Ticker implements DestroyableObject {
   }
 
   /**
-   * Returns the ticker with the specified name. If there is no ticker with the
-   * specified name, a new ticker will be created.
+   * Returns the ticker with the specified name. 
+   * 
+   * If there is no ticker with the specified name, a new one will be created.
    */
   static get(name: string, options?: { createIfNotFound: true }): Ticker
   static get(name: string, options: { createIfNotFound: false }): Ticker | null
