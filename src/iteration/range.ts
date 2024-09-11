@@ -1,8 +1,12 @@
 
 export function* range(count: number) {
-  const out = { i: 0, count }
-  for (let i = 0; i < count; i++) {
-    out.i = i
+  let i = 0
+  const out = {
+    get i() { return i },
+    get t() { return i / count },
+    get count() { return count },
+  }
+  for (; i < count; i++) {
     yield out
   }
 }
