@@ -1,58 +1,66 @@
-import { easingsNames, glsl_easings } from './easings'
+import { glsl_easings } from './easings'
 import { generics } from './tools/generics'
 
-const body = easingsNames.map(ease => {
-  const Ease = ease[0].toUpperCase() + ease.slice(1)
+const ramp = /* glsl */`
+
+struct FloatRamp {
+  float a;
+  float b;
+  float t;
+};
+
+struct Vec2Ramp {
+  vec2 a;
+  vec2 b;
+  float t;
+};
+
+struct Vec3Ramp {
+  vec3 a;
+  vec3 b;
+  float t;
+};
+
+struct Vec4Ramp {
+  vec4 a;
+  vec4 b;
+  float t;
+};
+
+${generics('vecX', type => {
+  const Type = type[0].toUpperCase() + type.slice(1) + 'Ramp'
   return /* glsl */`
-  ${generics('vecX', /* glsl */`
-    T regularRamp${Ease}(in float x, in T stop1, in T stop2) {
-      return mix(stop1, stop2, x);
-    }
-  `)}
-  
-  ${generics('vecX', /* glsl */`
-    T regularRamp${Ease}(in float x, in T stop1, in T stop2, in T stop3) {
-      T a, b;
-      float t;
-      if (x < 0.5) {
-        a = stop1;
-        b = stop2;
-        t = 2.0 * x;
-      } else {
-        a = stop2;
-        b = stop3;
-        t = 2.0 * x - 1.0;
-      }
-      return mix(a, b, ${ease}(t));
-    }
-  `)}
-  
-  ${generics('vecX', /* glsl */`
-    T regularRamp${Ease}(in float x, in T stop1, in T stop2, in T stop3, in T stop4) {
-      T a, b;
-      float t;
-      if (x < 0.3333333333) {
-        a = stop1;
-        b = stop2;
-        t = 3.0 * x;
-      } else if (x < 0.6666666666) {
-        a = stop2;
-        b = stop3;
-        t = 3.0 * x - 1.0;
-      } else {
-        a = stop3;
-        b = stop4;
-        t = 3.0 * x - 2.0;
-      }
-      return mix(a, b, ${ease}(t));
-    }
-  `)}
-`}).join('\n')
+
+${Type} ramp(float t, T a, T b) {
+  return ${Type}(a, b, t);
+}
+
+${Type} ramp(float t, T a, T b, T c) {
+  if (t < .5) {
+    return ${Type}(a, b, t * 2.0);
+  } else {
+    return ${Type}(b, c, (t - 0.5) * 2.0);
+  }
+}
+
+${Type} ramp(float t, T a, T b, T c, T d) {
+  if (t < .33) {
+    return ${Type}(a, b, t * 3.0);
+  } else if (t < .66) {
+    return ${Type}(b, c, (t - 0.33) * 3.0);
+  } else {
+    return ${Type}(c, d, (t - 0.66) * 3.0);
+  }
+}
+
+`.slice(1, -1)
+}
+)}`
 
 export const glsl_ramp = /* glsl */`
 #ifndef GLSL_RAMP
 #define GLSL_RAMP
 ${glsl_easings}
-${body}
+${ramp}
 #endif
 `
