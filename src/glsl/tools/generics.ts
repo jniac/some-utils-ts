@@ -18,10 +18,10 @@ type TypeArg = Type | keyof typeof options
  * Works with code that only require to change the type (eg: "float" by "vec3") 
  * and nothing else (no overloads).
  */
-export const generics = (typeArg: TypeArg | TypeArg[], template: string) => {
+export const generics = (typeArg: TypeArg | TypeArg[], template: string | ((type: string) => string)) => {
   const chunks = [] as string[]
   const types = Array.isArray(typeArg) ? typeArg : [typeArg]
-      .map(type => {
+    .map(type => {
       if (type in options) {
         return options[type as keyof typeof options]
       } else {
@@ -29,8 +29,16 @@ export const generics = (typeArg: TypeArg | TypeArg[], template: string) => {
       }
     })
     .flat()
-  for (const type of types) {
-    chunks.push(template.replaceAll(/\bT\b/g, type))
+
+  if (typeof template === 'function') {
+    for (const type of types) {
+      chunks.push(template(type).replaceAll(/\bT\b/g, type))
+    }
+  } else {
+    for (const type of types) {
+      chunks.push(template.replaceAll(/\bT\b/g, type))
+    }
   }
+
   return chunks.join('\n')
 }
