@@ -255,8 +255,12 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  set(props: Partial<typeof Ticker.defaultProps>): this {
-    const { order, ...rest } = props
+  set(props: Partial<typeof Ticker.defaultProps & { requestActivation: boolean }>): this {
+    const {
+      requestActivation = true,
+      order,
+      ...rest
+    } = props
 
     // Order is a special case
     if (order !== undefined) {
@@ -265,6 +269,10 @@ export class Ticker implements DestroyableObject {
     }
 
     Object.assign(this.props, rest)
+
+    if (requestActivation) {
+      this.requestActivation()
+    }
 
     return this
   }
