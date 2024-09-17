@@ -2,14 +2,26 @@ import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { Padding, PaddingParams } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 
+export function union<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void {
+  const x = Math.min(a.x, b.x)
+  const y = Math.min(a.y, b.y)
+  const right = Math.max(a.x + a.width, b.x + b.width)
+  const bottom = Math.max(a.y + a.height, b.y + b.height)
+
+  out.x = x
+  out.y = y
+  out.width = right - x
+  out.height = bottom - y
+}
+
 export function innerRectangle<T extends RectangleLike>(
+  out: T,
   outerRect: RectangleLike,
   innerAspect: number,
   sizeMode: "contain" | "cover",
   alignX: number,
   alignY: number,
-  out: T,
-): T {
+): void {
   let innerWidth = 0
   let innerHeight = 0
 
@@ -42,8 +54,6 @@ export function innerRectangle<T extends RectangleLike>(
   out.y = innerY
   out.width = innerWidth
   out.height = innerHeight
-
-  return out
 }
 
 class RectangleCastResult {
@@ -411,6 +421,16 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  union(other: RectangleLike): this {
+    union(this, other, this)
+    return this
+  }
+
+  unionRectangles(a: RectangleLike, b: RectangleLike): this {
+    union(this, a, b)
+    return this
+  }
+
   innerRectangle({
     aspect = 1,
     sizeMode = 'contain',
@@ -425,10 +445,15 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     padding: PaddingParams
   }>,
     out: Rectangle = new Rectangle(),
-  ) {
-    return innerRectangle(
+  ): Rectangle {
+    innerRectangle(
+      out,
       _rect.copy(this).applyPadding(padding),
-      aspect, sizeMode, alignX, alignY, out)
+      aspect,
+      sizeMode,
+      alignX,
+      alignY)
+    return out
   }
 
   /**
