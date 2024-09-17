@@ -5,7 +5,7 @@ let globalTime = 0
 let globalDeltaTime = 0
 let globalFrame = 0
 
-class Tick {
+export class Tick {
   constructor(
     public previousTick: Tick | null = null,
 
@@ -244,7 +244,14 @@ export class Ticker implements DestroyableObject {
   }
 
   /**
-   * `requestActivation()` is binded to the ticker and can be used as a pure callback.
+   * `requestActivation()` is binded to the ticker and can be used as a pure callback:
+   * ```
+   * // This is useless:
+   * // anyDestroyableCollector(() => ticker.requestActivation())
+   * 
+   * // This is preferred:
+   * anyDestroyableCollector(ticker.requestActivation)
+   * ```
    */
   requestActivation = () => {
     this.internal.activeLastRequest = globalTime
