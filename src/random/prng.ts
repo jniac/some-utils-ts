@@ -42,6 +42,14 @@ export class PRNG {
   }
 
   /**
+   * Similar to `PRNG.seed`, but here the seed is set to the default seed.
+   */
+  static reset(): typeof PRNG {
+    state = DEFAULT_SEED
+    return PRNG
+  }
+
+  /**
    * @deprecated Use `PRNG.seed` instead.
    */
   static init = PRNG.seed
