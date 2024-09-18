@@ -28,7 +28,7 @@ export class Tick {
   }
 }
 
-type TickCallback = (tick: Tick) => void | 'stop'
+export type TickCallback = (tick: Tick) => void | 'stop'
 
 type Listener = Readonly<{
   id: number
@@ -105,7 +105,7 @@ class Listeners {
   }
 }
 
-type OnTickOptions = Partial<{
+export type OnTickOptions = Partial<{
   /**
    * Order of the callback. The lower the order, the earlier the callback will be
    * called.
