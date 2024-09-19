@@ -349,6 +349,12 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  getSize<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T): T {
+    out.x = this.width
+    out.y = this.height
+    return out
+  }
+
   setSize(width: number, height: number, align?: { x: number, y: number }): this {
     const alignX = align?.x ?? 0
     const alignY = align?.y ?? 0
@@ -458,6 +464,8 @@ export class Rectangle implements RectangleLike, Iterable<number> {
 
   /**
    * Very useful method to calculate, for example, the uv coordinates of a rectangle.
+   * 
+   * Warning: Mutates self.
    */
   relativeTo(other: RectangleLike): this {
     this.x -= other.x
