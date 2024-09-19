@@ -204,6 +204,15 @@ export class Ticker implements DestroyableObject {
   set timeScale(value: number) {
     this.internal.timeScale = value
   }
+  /**
+   * A convenient way to get the current time in the form of an object always up-to-date (getter).
+   * 
+   * Useful for shader uniforms.
+   */
+  get uTime() {
+    const self = this
+    return { get value() { return self.tick.time } }
+  }
 
   constructor(props: Partial<typeof Ticker.defaultStaticProps & typeof Ticker.defaultProps> = {}) {
     this.staticProps = { ...Ticker.defaultStaticProps }

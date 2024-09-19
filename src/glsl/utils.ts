@@ -88,6 +88,11 @@ export const glsl_utils = /* glsl */`
     return p.x * p.x + p.y * p.y + p.z * p.z;
   }
 
+  float pcurve(float x, float a, float b) {
+    float k = pow(a + b, a + b) / (pow(a, a) * pow(b, b));
+    return k * pow(x, a) * pow(1.0 - x, b);
+  }
+
   ${generics('vecX', /* glsl */`
     T min3(in T a, in T b, in T c) {
       return min(min(a, b), c);
