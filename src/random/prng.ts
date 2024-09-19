@@ -1,6 +1,10 @@
-import { DEFAULT_SEED, MAX, init, map, next } from './algorithm/parkmiller-c-iso'
-
-let state = 123456
+import {
+  DEFAULT_SEED,
+  MAX,
+  init as _init,
+  map as _map,
+  next as _next
+} from './algorithm/parkmiller-c-iso'
 
 const identity = (x: number) => x
 
@@ -25,42 +29,49 @@ const defaultPickOptions = {
 
 type PickOptions = typeof defaultPickOptions
 
-/**
- * Pseudo Random Number Generator
- */
-export class PRNG {
-  static readonly defaultSeed = DEFAULT_SEED
-  static readonly seedMax = MAX
+type Core = ReturnType<typeof create>
 
-  static seed(seed: number | string = DEFAULT_SEED): typeof PRNG {
+function create() {
+  let state = _next(_next(_init(DEFAULT_SEED)))
+
+  function seed(seed: number | string = DEFAULT_SEED): Core {
     if (typeof seed === 'string') {
       seed = seed.split('').reduce((acc, char) => acc * 7 + char.charCodeAt(0), 0)
     }
-    state = init(seed)
-    state = next(next(state)) // warm up
-    return PRNG
+    state = _next(_next(_init(seed))) // warm up
+    return prng
+  }
+
+  function seedMax() {
+    return MAX
   }
 
   /**
-   * Similar to `PRNG.seed`, but here the seed is set to the default seed.
+   * Similar to `seed`, but here the seed is set to the default seed.
    */
-  static reset(): typeof PRNG {
-    PRNG.seed(DEFAULT_SEED)
-    return PRNG
+  function reset(): Core {
+    seed(DEFAULT_SEED)
+    return prng
   }
 
   /**
-   * @deprecated Use `PRNG.seed` instead.
+   * Consumes the next random number in the sequence.
    */
-  static init = PRNG.seed
+  function next(): Core {
+    state = _next(state)
+    return prng
+  }
 
-  static random(): number {
-    state = next(state)
-    return map(state)
+  /**
+   * Returns a random number.
+   */
+  function random(): number {
+    state = _next(state)
+    return _map(state)
   }
 
   // sugar-syntax:
-  private static solveBetweenParameters(parameters: any[]): [number, number, (x: number) => number] {
+  function solveBetweenParameters(parameters: any[]): [number, number, (x: number) => number] {
     switch (parameters.length) {
       default: {
         return [0, 1, identity]
@@ -76,54 +87,58 @@ export class PRNG {
       }
     }
   }
-  static between(): number
-  static between(max: number): number
-  static between(min: number, max: number): number
-  static between(min: number, max: number, distribution: (x: number) => number): number
-  static between(...args: any[]): number {
-    const [min, max, distribution] = PRNG.solveBetweenParameters(args)
-    return min + (max - min) * distribution(PRNG.random())
+  function between(): number
+  function between(max: number): number
+  function between(min: number, max: number): number
+  function between(min: number, max: number, distribution: (x: number) => number): number
+  function between(...args: any[]): number {
+    const [min, max, distribution] = solveBetweenParameters(args)
+    return min + (max - min) * distribution(random())
+  }
+
+  function int(maxExclusive: number): number
+  function int(min: number, maxExclusive: number): number
+  function int(min: number, maxExclusive: number, distribution: (x: number) => number): number
+  function int(...args: any[]): number {
+    const [min, maxExclusive, distribution] = solveBetweenParameters(args)
+    return min + Math.floor(distribution(random()) * (maxExclusive - min))
+  }
+
+  function chance(probability: number): boolean {
+    return random() < probability
   }
 
   /**
-   * @deprecated Use `PRNG.between` instead.
+   * Shuffles the items of an array into a new one.
+   * 
+   * To mutate the original array, use the option `mutate = true`.
+   * 
+   * NOTE: If mutate is set to true, and the source is not an array (but anything
+   * else iterable), it will return a copy instead (only array can be mutated).
    */
-  static range = PRNG.between // backward compatibility
-
-  static int(maxExclusive: number): number
-  static int(min: number, maxExclusive: number): number
-  static int(min: number, maxExclusive: number, distribution: (x: number) => number): number
-  static int(...args: any[]): number {
-    const [min, maxExclusive, distribution] = PRNG.solveBetweenParameters(args)
-    return min + Math.floor(distribution(PRNG.random()) * (maxExclusive - min))
-  }
-
-  static chance(probability: number): boolean {
-    return PRNG.random() < probability
-  }
-
-  static shuffle<T>(array: Iterable<T>, out = [...array]): T[] {
-    const length = out.length
+  function shuffle<T>(array: Iterable<T>, { mutate = false } = {}): T[] {
+    const result = mutate && Array.isArray(array) ? array : [...array]
+    const length = result.length
     for (let i = 0; i < length; i++) {
-      const j = Math.floor(length * PRNG.random())
-      const temp = out[i]
-      out[i] = out[j]
-      out[j] = temp
+      const j = Math.floor(length * random())
+      const temp = result[i]
+      result[i] = result[j]
+      result[j] = temp
     }
-    return out
+    return result
   }
 
-  static pick<T>(
+  function pick<T>(
     items: T[],
     weights?: number[] | null,
     pickOptions?: Partial<PickOptions>,
   ): T
-  static pick<T>(
+  function pick<T>(
     items: Record<string, T>,
     weights?: Record<string, number> | null,
     pickOptions?: Partial<PickOptions>,
   ): T
-  static pick<T>(...args: any[]): T {
+  function pick<T>(...args: any[]): T {
     function solveArgs(args: any[]): [options: T[], weights: null | number[], pickOptions: PickOptions] {
       const [items, weights = null, pickOptionsArg] = args
       const pickOptions = { ...defaultPickOptions, ...pickOptionsArg }
@@ -136,13 +151,13 @@ export class PRNG {
           pickOptions,
         ]
       }
-      throw new Error('PRNG.pick: unsupported options type')
+      throw new Error('pick: unsupported options type')
     }
 
     let [options, weights, { weightsAreNormalized, indexOffset }] = solveArgs(args)
     // If no weights are provided, choose uniformly. Simple.
     if (weights === null) {
-      let index = Math.floor(PRNG.random() * options.length)
+      let index = Math.floor(random() * options.length)
       if (indexOffset) {
         index += indexOffset
         index %= options.length
@@ -160,7 +175,7 @@ export class PRNG {
     }
 
     // Choose among the options.
-    const r = PRNG.random()
+    const r = random()
     let sum = 0
     for (let i = 0; i < options.length; i++) {
       sum += weights[i]
@@ -168,30 +183,25 @@ export class PRNG {
         return options[i]
       }
     }
-    throw new Error('PRNG.among: unreachable')
+    throw new Error('among: unreachable')
   }
-
-  /** 
-   * @deprecated Use `PRNG.pick` instead.
-   */
-  static among = PRNG.pick // backward compatibility
 
   /**
    * Facilitates picking an option from a list of options with associated weights.
    * 
    * e.g.
    * ```
-   * const picker = PRNG.createPicker([
+   * const picker = createPicker([
    *   ['red', 1],
    *   ['green', 2],
    *   ['blue', 3],
    * ])
    * 
-   * PRNG.seed(56789) // optional (seed can be set at any time)
+   * seed(56789) // optional (seed can be set at any time)
    * const color = picker() // 50% chance of blue, 33% chance of green, 17% chance of red
    * ```
    */
-  static createPicker<T>(
+  function createPicker<T>(
     entries: [T, number][],
   ): () => T {
     const options = entries.map(([entry]) => entry)
@@ -200,7 +210,7 @@ export class PRNG {
     for (const [i, weight] of weights.entries()) {
       weights[i] = weight / sum
     }
-    return () => PRNG.pick(options, weights, { weightsAreNormalized: true })
+    return () => pick(options, weights, { weightsAreNormalized: true })
   }
 
   /**
@@ -210,37 +220,101 @@ export class PRNG {
    * 
    * Usage:
    * ```
-   * PRNG.vector([0, 0, 0]) // e.g. [0.123, 0.456, 0.789]
-   * PRNG.vector(new Vector3(), { min: -1, max: 1 }) // e.g. Vector3(-0.123, 0.456, -0.789)
+   * vector([0, 0, 0]) // e.g. [0.123, 0.456, 0.789]
+   * vector(new Vector3(), { min: -1, max: 1 }) // e.g. Vector3(-0.123, 0.456, -0.789)
    * ```
    */
-  static vector<T>(out: T, options?: [min: number, max: number]): T
-  static vector<T>(out: T, options?: { min: number, max: number }): T
-  static vector<T>(out: T, options?: any): T {
+  function vector<T>(out: T, options?: [min: number, max: number]): T
+  function vector<T>(out: T, options?: { min: number, max: number }): T
+  function vector<T>(out: T, options?: any): T {
     const [min = 0, max = 1] =
       Array.isArray(options) ? options : [options?.min, options?.max]
     for (const key of Object.keys(out as any)) {
-      (out as any)[key] = PRNG.between(min, max)
+      (out as any)[key] = between(min, max)
     }
     return out
   }
 
   /**
-   * Same as `PRNG.vector`, but the resulting vector is normalized.
+   * Same as `vector`, but the resulting vector is normalized.
    * 
    * - min, max default to [-1, 1].
    */
-  static unitVector<T>(out: T, options?: [min: number, max: number]): T
-  static unitVector<T>(out: T, options?: { min: number, max: number }): T
-  static unitVector<T>(out: T, options?: any): T {
+  function unitVector<T>(out: T, options?: [min: number, max: number]): T
+  function unitVector<T>(out: T, options?: { min: number, max: number }): T
+  function unitVector<T>(out: T, options?: any): T {
     const [min = -1, max = 1] =
       Array.isArray(options) ? options : [options?.min, options?.max]
     const keys = Object.keys(out as any)
-    const values = keys.map(() => PRNG.between(min, max))
+    const values = keys.map(() => between(min, max))
     const length = Math.sqrt(values.reduce((acc, value) => acc + value * value, 0))
     for (const [index, key] of keys.entries()) {
       (out as any)[key] = values[index] / length
     }
     return out
   }
+
+  /**
+   * https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+   */
+  function boxMuller(mean = 0, stdDev = 1): [number, number] {
+    const u1 = random()
+    const u2 = random()
+    const r = Math.sqrt(-2 * Math.log(u1))
+    const theta = 2 * Math.PI * u2
+    const z0 = mean + stdDev * r * Math.cos(theta)
+    const z1 = mean + stdDev * r * Math.sin(theta)
+    return [z0, z1]
+  }
+
+  const prng = {
+    seed,
+    seedMax,
+    reset,
+    next,
+
+    random,
+    between,
+    int,
+    chance,
+    shuffle,
+    pick,
+    createPicker,
+    vector,
+    unitVector,
+    boxMuller,
+  }
+
+  return prng
 }
+
+type PRNG = Core & (new (seed?: number) => Core)
+
+/**
+ * A pseudo-random number generator based on Park-Miller algorithm.
+ * 
+ * It can be used:
+ * - as a static class, 
+ * - or through instance (for seed encapsulation).
+ * 
+ * ```
+ * // Static usage:
+ * PRNG.seed(123456789)
+ * console.log(PRNG.random()) // 0.114580294689704
+ * console.log(PRNG.shuffle([...'abcd'])) // ['b', 'c', 'a', 'd']
+ * 
+ * // Instance usage:
+ * const r = new PRNG(123456789)
+ * console.log(r.random()) // 0.114580294689704
+ * console.log(r.shuffle([...'abcd'])) // ['b', 'c', 'a', 'd']
+ * ```
+ */
+const _PRNG = class {
+  constructor(seed: number) {
+    Object.assign(this, create().seed(seed))
+  }
+} as PRNG
+
+Object.assign(_PRNG, create())
+
+export { _PRNG as PRNG }
