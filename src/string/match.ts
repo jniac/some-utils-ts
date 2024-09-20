@@ -1,4 +1,4 @@
-import { StringMatcher } from './types'
+import { StringMatcher } from '../types'
 
 export function applyStringMatcher(str: string, matcher: StringMatcher) {
   if (matcher === '*') {
@@ -15,3 +15,4 @@ export function applyStringMatcher(str: string, matcher: StringMatcher) {
   }
   return false
 }
+
