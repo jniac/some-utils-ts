@@ -2,6 +2,54 @@ import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { Padding, PaddingParams } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 
+export type RectangleDeclaration =
+  | [x: number, y: number, width: number, height: number]
+  | [width: number, height: number]
+  | Partial<RectangleLike>
+  | { aspect: number, diagonal: number }
+  | { extent: number | Vector2Like }
+
+export function solveRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
+  if (Array.isArray(declaration)) {
+    if (declaration.length === 2) {
+      const [width, height] = declaration
+      return out.set(width, height)
+    }
+    if (declaration.length === 4) {
+      const [x, y, width, height] = declaration
+      return out.set(x, y, width, height)
+    }
+    throw new Error('Oops. Wrong parameters here.')
+  }
+
+  if ('aspect' in declaration && 'diagonal' in declaration) {
+    const { aspect, diagonal } = declaration
+    return out.setDiagonalAndAspect(diagonal, aspect)
+  }
+
+  if ('extent' in declaration) {
+    const { extent } = declaration
+    if (typeof extent === 'number') {
+      return out.set(-extent, -extent, extent * 2, extent * 2)
+    }
+    if (typeof extent === 'object') {
+      const { x = 0, y = 0 } = extent
+      return out.set(-x, -y, x * 2, y * 2)
+    }
+    throw new Error('Oops. Wrong parameters here.')
+  }
+
+  const {
+    x = 0,
+    y = 0,
+    width = 0,
+    height = 0,
+  } = declaration
+  out.set(x, y, width, height)
+
+  return out
+}
+
 export function union<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void {
   const x = Math.min(a.x, b.x)
   const y = Math.min(a.y, b.y)
@@ -98,32 +146,8 @@ class RectangleCastResult {
  * - contains methods
  */
 export class Rectangle implements RectangleLike, Iterable<number> {
-  static from(other: RectangleLike): Rectangle
-  static from(params: { aspect: number, diagonal: number }): Rectangle
-  static from(params: { extent: number | Vector2Like }): Rectangle
-  static from(arg: any): Rectangle {
-    if (typeof arg === 'object') {
-      if ('aspect' in arg && 'diagonal' in arg) {
-        const { aspect, diagonal } = arg
-        return new Rectangle().setDiagonalAndAspect(diagonal, aspect)
-      }
-
-      if ('extent' in arg) {
-        const { extent } = arg
-        if (typeof extent === 'number') {
-          return new Rectangle(-extent, -extent, extent * 2, extent * 2)
-        }
-        if (typeof extent === 'object') {
-          const { x = 0, y = 0 } = extent
-          return new Rectangle(-x, -y, x * 2, y * 2)
-        }
-      }
-
-      if ('x' in arg && 'y' in arg && 'width' in arg && 'height' in arg) {
-        return new Rectangle().copy(arg)
-      }
-    }
-    throw new Error('Oops. Wrong parameters here.')
+  static from(source: RectangleDeclaration): Rectangle {
+    return solveRectangleDeclaration(source, new Rectangle())
   }
 
   x: number = 0
