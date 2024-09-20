@@ -3,11 +3,6 @@ export type Destroyable = DestroyableObject | (() => void)
 
 export type StringMatcher = '*' | string | RegExp | ((str: string) => boolean)
 
-/**
- * @deprecated Use `StringMatcher` instead.
- */
-export type StringFilter = StringMatcher
-
 export type OneOrMany<T> = T | T[]
 
 /**
