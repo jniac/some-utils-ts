@@ -1,3 +1,4 @@
+import { split } from '../../../iteration/high-order'
 import { Padding } from '../../../math/geom/padding'
 import { Rectangle } from '../../../math/geom/rectangle'
 import { Direction } from './Direction'
@@ -44,14 +45,34 @@ export function computePadding(space: Space) {
 }
 
 const _innerRect = new Rectangle()
+/**
+ * Compute the rect of all children of a space.
+ * 
+ * It assumes that the rect of the space itself has already been computed.
+ */
 export function computeChildrenRect(space: Space) {
-  const { direction, children, alignX, alignY } = space
+  const { direction, alignX, alignY } = space
+  const [enabledChildren, disabledChildren] = split(space.children, child => child.enabled ? 0 : 1)
+
+  if (disabledChildren) {
+    for (const child of disabledChildren) {
+      // Do not forget to reset the rect of all descendants (and not only the child itself).
+      for (const descendant of child.allDescendants({ includeSelf: true })) {
+        descendant.rect.set(0, 0, 0, 0)
+      }
+    }
+  }
+
+  if (enabledChildren === undefined) {
+    return
+  }
+
   const { width, height } = _innerRect
     .copy(space.rect)
     .applyPadding(computePadding(space))
   const gap = space.gap.compute(width, height)
 
-  const [regularChildren, shareChildren, totalShare] = children.reduce((acc, child) => {
+  const [regularChildren, shareChildren, totalShare] = enabledChildren.reduce((acc, child) => {
     const size = direction === Direction.Horizontal
       ? child.sizeX
       : child.sizeY
@@ -88,7 +109,7 @@ export function computeChildrenRect(space: Space) {
   // Share children
   const shareRemaining = (direction === Direction.Horizontal ? width : height)
     - cumulative
-    - Math.max(0, children.length - 1) * gap
+    - Math.max(0, enabledChildren.length - 1) * gap
   const shareSize = shareRemaining > 0
     ? shareRemaining / totalShare : 0
   if (direction === Direction.Horizontal) {
@@ -109,20 +130,20 @@ export function computeChildrenRect(space: Space) {
 
   let finalRemaining = 0
   if (direction === Direction.Horizontal) {
-    finalRemaining = width - Math.max(0, children.length - 1) * gap
-    for (const child of children) {
+    finalRemaining = width - Math.max(0, enabledChildren.length - 1) * gap
+    for (const child of enabledChildren) {
       finalRemaining -= child.rect.width
     }
   } else {
-    finalRemaining = height - Math.max(0, children.length - 1) * gap
-    for (const child of children) {
+    finalRemaining = height - Math.max(0, enabledChildren.length - 1) * gap
+    for (const child of enabledChildren) {
       finalRemaining -= child.rect.height
     }
   }
 
   if (direction === Direction.Horizontal) {
     let cumulative = _innerRect.x + finalRemaining * alignX
-    for (const child of children) {
+    for (const child of enabledChildren) {
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
       const offy = child.offsetY.compute(child.rect.height, child.rect.width)
       child.rect.x = offx + cumulative
@@ -131,7 +152,7 @@ export function computeChildrenRect(space: Space) {
     }
   } else {
     let cumulative = _innerRect.y + finalRemaining * alignY
-    for (const child of children) {
+    for (const child of enabledChildren) {
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
       const offy = child.offsetY.compute(child.rect.height, child.rect.width)
       child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * alignX

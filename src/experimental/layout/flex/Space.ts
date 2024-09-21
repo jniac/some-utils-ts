@@ -97,6 +97,7 @@ function solvePaddingDeclaration(arg: PaddingDeclaration) {
  * ```
  */
 export class Space {
+  enabled: boolean = true
   direction: Direction
 
   root: Space
