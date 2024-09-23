@@ -76,3 +76,10 @@ export type Ray2Like = {
   origin: Vector2Like
   direction: Vector2Like
 }
+
+export type Color4Like = {
+  r: number
+  g: number
+  b: number
+  a: number
+}
