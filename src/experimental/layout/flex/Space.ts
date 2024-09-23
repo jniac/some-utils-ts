@@ -11,7 +11,7 @@ type PaddingDeclaration =
   | [vertical: ScalarDeclaration, horizontal: ScalarDeclaration]
   | [top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration]
 
-function solvePaddingDeclaration(arg: PaddingDeclaration) {
+function fromPaddingDeclaration(arg: PaddingDeclaration) {
   if (Array.isArray(arg) === false) {
     return [arg, arg, arg, arg]
   } else {
@@ -334,7 +334,7 @@ export class Space {
     if (args.length === 1 && Array.isArray(args[0])) {
       args = args[0]
     }
-    const [top, right, bottom, left] = solvePaddingDeclaration(args as any)
+    const [top, right, bottom, left] = fromPaddingDeclaration(args as any)
     this.padding[0].parse(top)
     this.padding[1].parse(right)
     this.padding[2].parse(bottom)

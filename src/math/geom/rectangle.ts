@@ -9,7 +9,7 @@ export type RectangleDeclaration =
   | { aspect: number, diagonal: number }
   | { extent: number | Vector2Like }
 
-export function solveRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
+export function fromRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
   if (Array.isArray(declaration)) {
     if (declaration.length === 2) {
       const [width, height] = declaration
@@ -147,7 +147,7 @@ class RectangleCastResult {
  */
 export class Rectangle implements RectangleLike, Iterable<number> {
   static from(source: RectangleDeclaration): Rectangle {
-    return solveRectangleDeclaration(source, new Rectangle())
+    return fromRectangleDeclaration(source, new Rectangle())
   }
 
   x: number = 0
