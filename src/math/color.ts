@@ -28,7 +28,7 @@ export function webColorToHex(color: string): number {
   const re = new RegExp(`^${color.toLowerCase()}$`, 'i')
   const entry = webColors.find((entry) => entry.name.match(re))
   if (entry) {
-    return entry.hex
+    return Number.parseInt(entry.hex, 16)
   }
   throw new Error('Invalid web color')
 }
