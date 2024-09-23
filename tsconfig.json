@@ -8,7 +8,8 @@
     "strict": true,                         // Enable all strict type-checking options
     "esModuleInterop": true,                // For compatibility with ES6 modules
     "skipLibCheck": true,
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "tests"]
