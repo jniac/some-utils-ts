@@ -26,7 +26,7 @@ export function inverseLerp(a: number, b: number, x: number) {
 }
 
 export function inverseLerpUnclamped(a: number, b: number, x: number) {
-  return (b - x) / (b - a)
+  return (x - a) / (b - a)
 }
 
 export function remap(x: number, inMin: number, inMax: number, outMin: number, outMax: number) {
