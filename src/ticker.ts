@@ -485,3 +485,19 @@ function windowLoop() {
 if (typeof window !== 'undefined') {
   windowLoop()
 }
+
+/**
+ * Shortcut for `Ticker.current().onTick(...)`.
+ */
+export function onTick(tickerName: string, ...args: Parameters<Ticker['onTick']>): DestroyableObject
+export function onTick(...args: Parameters<Ticker['onTick']>): DestroyableObject
+export function onTick(...args: any[]): DestroyableObject {
+  if (typeof args[0] === 'string') {
+    const ticker = Ticker.get(args[0], { createIfNotFound: true })
+    // @ts-ignore
+    return ticker.onTick(...args.slice(1))
+  }
+
+  // @ts-ignore
+  return Ticker.current().onTick(...args)
+}
