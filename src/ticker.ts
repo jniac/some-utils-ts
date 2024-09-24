@@ -127,6 +127,8 @@ export type OnTickOptions = Partial<{
   once: boolean
 }>
 
+export type OnTickParameters = [OnTickOptions, TickCallback] | [TickCallback]
+
 let tickerNextId = 0
 export class Ticker implements DestroyableObject {
   /**
@@ -294,9 +296,7 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  onTick(callback: TickCallback): DestroyableObject
-  onTick(options: OnTickOptions, callback: TickCallback): DestroyableObject
-  onTick(...args: any[]): DestroyableObject {
+  onTick(...args: OnTickParameters): DestroyableObject {
     function solveArgs(args: any[]): [OnTickOptions, TickCallback] {
       if (args.length === 1) {
         return [{}, args[0]]
@@ -489,8 +489,8 @@ if (typeof window !== 'undefined') {
 /**
  * Shortcut for `Ticker.current().onTick(...)`.
  */
-export function onTick(tickerName: string, ...args: Parameters<Ticker['onTick']>): DestroyableObject
-export function onTick(...args: Parameters<Ticker['onTick']>): DestroyableObject
+export function onTick(tickerName: string, ...args: OnTickParameters): DestroyableObject
+export function onTick(...args: OnTickParameters): DestroyableObject
 export function onTick(...args: any[]): DestroyableObject {
   if (typeof args[0] === 'string') {
     const ticker = Ticker.get(args[0], { createIfNotFound: true })
