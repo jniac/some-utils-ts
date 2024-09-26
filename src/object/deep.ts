@@ -9,8 +9,11 @@ const deepCloneMap = new Map<any, (source: any) => any>()
 deepCloneMap.set(Date, (source: Date) => new Date(source.getTime()))
 deepCloneMap.set(RegExp, (source: RegExp) => new RegExp(source.source, source.flags))
 
+// @ts-ignore
 if (typeof window !== 'undefined') {
+  // @ts-ignore
   deepCloneMap.set(DOMPoint, (source: DOMPoint) => new DOMPoint(source.x, source.y, source.z, source.w))
+  // @ts-ignore
   deepCloneMap.set(DOMRect, (source: DOMRect) => new DOMRect(source.x, source.y, source.width, source.height))
 }
 
