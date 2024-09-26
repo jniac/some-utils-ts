@@ -118,6 +118,9 @@ const deepWalkOptions = {
   path: <Path | undefined>undefined,
   ascendants: <any[] | undefined>undefined,
   dateAsValue: true,
+  /**
+   * If true, any object with a constructor that is not Object or Array will be treated as a value.
+   */
   withConstructorAsValue: true,
   onValue: <((value: any, path: Path, ascendants: any[]) => void) | null>null,
   onObject: <((value: any, path: Path, ascendants: any[]) => void) | null>null,
@@ -135,10 +138,13 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
   if (dateAsValue && target instanceof Date) {
     options.onValue?.(target, path, ascendants)
   }
-  if (withConstructorAsValue && target.constructor !== Object && target.constructor !== Array) {
+  else if (isObject(target) === false) {
     options.onValue?.(target, path, ascendants)
   }
-  else if (isObject(target)) {
+  else if (withConstructorAsValue && target.constructor !== Object && target.constructor !== Array) {
+    options.onValue?.(target, path, ascendants)
+  }
+  else {
     options.onObject?.(target, path, ascendants)
     for (const key in target) {
       deepWalk((target as any)[key], {
@@ -147,9 +153,6 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
         ascendants: [...ascendants, target],
       })
     }
-  }
-  else {
-    options.onValue?.(target, path, ascendants)
   }
 }
 
@@ -172,20 +175,20 @@ export function deepGet(target: any, path: Path | string): { value: any, exists:
   return { value, exists: true }
 }
 
-const deepSetOptions = {
+const defaultDeepSetOptions = {
   ascendantsModel: <any[] | object | null>null,
   createAscendants: true,
 }
 /**
  * Deeply sets a value in the target object at the specified path.
  */
-export function deepSet(target: any, path: Path | string, value: any, options: Partial<typeof deepSetOptions> = {}): { success: boolean, createdAscendants: boolean } {
+export function deepSet(target: any, path: Path | string, value: any, options: Partial<typeof defaultDeepSetOptions> = {}): { success: boolean, createdAscendants: boolean } {
   if (typeof path === 'string') {
     path = path.split('.')
   }
   const {
     ascendantsModel,
-    createAscendants = deepSetOptions.createAscendants,
+    createAscendants = defaultDeepSetOptions.createAscendants,
   } = options
   let scope = target
   let createdAscendants = false
@@ -252,14 +255,24 @@ export function deepDiff(objectA: any, objectB: any) {
   return diff
 }
 
+const defaultDeepAssignOptions = {
+  ignoreUndefined: false,
+}
+
 /**
  * Assigns the source object deeply into the target object.
  * 
  * NOTE: Use this very carefully, it has not been tested thoroughly.
  */
-export function deepAssign<T = any>(target: T, source: any): T {
+export function deepAssign<T = any>(target: T, source: any, options?: Partial<typeof defaultDeepAssignOptions>): T {
+  const { ignoreUndefined } = { ...defaultDeepAssignOptions, ...options }
   deepWalk(source, {
     onValue(value, path) {
+      // Skip undefined values.
+      if (ignoreUndefined && value === undefined) {
+        return
+      }
+
       deepSet(target, path, value, { createAscendants: true })
     },
   })
