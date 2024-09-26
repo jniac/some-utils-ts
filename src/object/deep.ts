@@ -4,6 +4,16 @@ function isObject(value: any): value is object {
   return value !== null && typeof value === 'object'
 }
 
+const deepCloneMap = new Map<any, (source: any) => any>()
+
+deepCloneMap.set(Date, (source: Date) => new Date(source.getTime()))
+deepCloneMap.set(RegExp, (source: RegExp) => new RegExp(source.source, source.flags))
+
+if (typeof window !== 'undefined') {
+  deepCloneMap.set(DOMPoint, (source: DOMPoint) => new DOMPoint(source.x, source.y, source.z, source.w))
+  deepCloneMap.set(DOMRect, (source: DOMRect) => new DOMRect(source.x, source.y, source.width, source.height))
+}
+
 /**
  * Clones an object deeply.
  *
@@ -20,9 +30,9 @@ export function deepClone<T>(target: T): T {
   // Objects
   // @ts-ignore
   const constructor = target.constructor
-  if (constructor === RegExp || constructor === Date) {
-    // @ts-ignore
-    return new constructor(target)
+  const cloner = deepCloneMap.get(constructor)
+  if (cloner) {
+    return cloner(target)
   }
 
   // @ts-ignore
@@ -102,8 +112,8 @@ export function deepCopy<T extends object>(
 type Path = (string | number | symbol)[]
 
 const deepWalkOptions = {
-  path: <Path | null>null,
-  ascendants: <any[] | null>null,
+  path: <Path | undefined>undefined,
+  ascendants: <any[] | undefined>undefined,
   dateAsValue: true,
   withConstructorAsValue: true,
   onValue: <((value: any, path: Path, ascendants: any[]) => void) | null>null,
@@ -128,7 +138,7 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
   else if (isObject(target)) {
     options.onObject?.(target, path, ascendants)
     for (const key in target) {
-      deepWalk(target[key], {
+      deepWalk((target as any)[key], {
         ...options,
         path: [...path, key],
         ascendants: [...ascendants, target],
@@ -160,7 +170,7 @@ export function deepGet(target: any, path: Path | string): { value: any, exists:
 }
 
 const deepSetOptions = {
-  ascendantsModel: <any[] | null>null,
+  ascendantsModel: <any[] | object | null>null,
   createAscendants: true,
 }
 /**
@@ -182,7 +192,20 @@ export function deepSet(target: any, path: Path | string, value: any, options: P
       if (createAscendants) {
         const source = scope[key]
         if (source === undefined) {
-          const ascendant = ascendantsModel?.[index] ?? (typeof path[index] === 'number' ? [] : {})
+          let ascendant: any = null
+          if (ascendantsModel === null || ascendantsModel === undefined) {
+            ascendant = Array.isArray(scope) ? [] : {}
+          }
+          // Array:
+          else if (Array.isArray(ascendantsModel)) {
+            ascendant = ascendantsModel[index]
+            ascendant = deepClone(ascendant)
+          }
+          // Object:
+          else {
+            ascendant = deepGet(ascendantsModel, path.slice(0, index)).value
+            ascendant = deepClone(ascendant)
+          }
           scope[key] = ascendant
           scope = ascendant
           createdAscendants = true
@@ -191,6 +214,8 @@ export function deepSet(target: any, path: Path | string, value: any, options: P
       else {
         return { success: false, createdAscendants }
       }
+    } else {
+      scope = scope[key]
     }
   }
   scope[path[path.length - 1]] = value
@@ -222,4 +247,18 @@ export function deepDiff(objectA: any, objectB: any) {
     },
   })
   return diff
+}
+
+/**
+ * Assigns the source object deeply into the target object.
+ * 
+ * NOTE: Use this very carefully, it has not been tested thoroughly.
+ */
+export function deepAssign<T = any>(target: T, source: any): T {
+  deepWalk(source, {
+    onValue(value, path) {
+      deepSet(target, path, value, { createAscendants: true })
+    },
+  })
+  return target
 }
