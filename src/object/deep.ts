@@ -260,21 +260,30 @@ const defaultDeepAssignOptions = {
 }
 
 /**
- * Assigns the source object deeply into the target object.
+ * Similar to `Object.assign`, but performs a deep assignment with some specified options.
  * 
  * NOTE: Use this very carefully, it has not been tested thoroughly.
  */
-export function deepAssign<T = any>(target: T, source: any, options?: Partial<typeof defaultDeepAssignOptions>): T {
+export function deepAssignWithOptions<T = any>(options: Partial<typeof defaultDeepAssignOptions>, target: any, ...sources: any[]): T {
   const { ignoreUndefined } = { ...defaultDeepAssignOptions, ...options }
-  deepWalk(source, {
-    onValue(value, path) {
-      // Skip undefined values.
-      if (ignoreUndefined && value === undefined) {
-        return
-      }
+  for (const source of sources) {
+    deepWalk(source, {
+      onValue(value, path) {
+        // Skip undefined values.
+        if (ignoreUndefined && value === undefined) {
+          return
+        }
 
-      deepSet(target, path, value, { createAscendants: true })
-    },
-  })
+        deepSet(target, path, value, { createAscendants: true })
+      },
+    })
+  }
   return target
+}
+
+/**
+ * Similar to `Object.assign`, but performs a deep assignment.
+ */
+export function deepAssign<T = any>(target: any, ...sources: any[]): T {
+  return deepAssignWithOptions({}, target, ...sources)
 }
