@@ -1,6 +1,6 @@
 import { DeepPartial } from '../types'
 
-function isObject(value: any): value is object {
+function isObject(value: any): value is any {
   return value !== null && typeof value === 'object'
 }
 
@@ -147,7 +147,7 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
   else {
     options.onObject?.(target, path, ascendants)
     for (const key in target) {
-      deepWalk((target as any)[key], {
+      deepWalk(target[key], {
         ...options,
         path: [...path, key],
         ascendants: [...ascendants, target],
@@ -163,78 +163,146 @@ export function deepGet(target: any, path: Path | string): { value: any, exists:
   if (typeof path === 'string') {
     path = path.split('.')
   }
-  let value = target
+  let scope = target
   for (const key of path) {
-    if (key in value) {
-      value = value[key]
+    if (isObject(scope) && key in scope) {
+      scope = scope[key]
     }
     else {
       return { value: undefined, exists: false }
     }
   }
-  return { value, exists: true }
+  return { value: scope, exists: true }
 }
+
+
+
+
 
 const defaultDeepSetOptions = {
   ascendantsModel: <any[] | object | null>null,
+  /**
+   * If true, the function will create the ascendants if they don't exist.
+   */
   createAscendants: true,
+  /**
+   * If true, the function will pierce through null or undefined values to create the ascendants.
+   */
+  pierceNullOrUndefined: true,
 }
+
+type DeepSetOptions = Partial<typeof defaultDeepSetOptions>
+
+enum DeepSetFailureReason {
+  None = 'none',
+  NotAnObject = 'not-an-object',
+  CannotCreateAscendants = 'cannot-create-ascendants',
+  CannotPierceNullOrUndefined = 'cannot-pierce-null-or-undefined',
+}
+
+type DeepSetResult = {
+  success: boolean
+  failureReason: DeepSetFailureReason
+  hasCreatedAscendants: boolean
+}
+
 /**
  * Deeply sets a value in the target object at the specified path.
+ * 
+ * NOTE: This has been partially tested. Quite trustable. See `deep.test.ts`.
  */
-export function deepSet(target: any, path: Path | string, value: any, options: Partial<typeof defaultDeepSetOptions> = {}): { success: boolean, createdAscendants: boolean } {
+export function deepSet(
+  target: any,
+  path: Path | string,
+  value: any,
+  options: DeepSetOptions = {},
+): DeepSetResult {
+  if (isObject(target) === false) {
+    return { success: false, hasCreatedAscendants: false, failureReason: DeepSetFailureReason.NotAnObject }
+  }
+
   if (typeof path === 'string') {
     path = path.split('.')
   }
+
   const {
     ascendantsModel,
-    createAscendants = defaultDeepSetOptions.createAscendants,
-  } = options
+    createAscendants,
+    pierceNullOrUndefined,
+  } = { ...defaultDeepSetOptions, ...options }
+
   let scope = target
-  let createdAscendants = false
-  for (let index = 0, max = path.length - 1; index < max; index++) {
+  let parent = scope
+  let hasCreatedAscendants = false
+
+  const max = path.length - 1
+  for (let index = 0; index < max; index++) {
+    parent = scope
+
     const key = path[index]
-    if (key in scope === false) {
-      if (createAscendants) {
-        const source = scope[key]
-        if (source === undefined) {
-          let ascendant: any = null
-          if (ascendantsModel === null || ascendantsModel === undefined) {
-            ascendant = Array.isArray(scope) ? [] : {}
-          }
-          // Array:
-          else if (Array.isArray(ascendantsModel)) {
-            ascendant = ascendantsModel[index]
-            ascendant = deepClone(ascendant)
-          }
-          // Object:
-          else {
-            ascendant = deepGet(ascendantsModel, path.slice(0, index)).value
-            ascendant = deepClone(ascendant)
-          }
-          scope[key] = ascendant
-          scope = ascendant
-          createdAscendants = true
-        }
-      }
-      else {
-        return { success: false, createdAscendants }
-      }
-    } else {
+
+    if (isObject(scope) === false) {
+      return { success: false, hasCreatedAscendants, failureReason: DeepSetFailureReason.NotAnObject }
+    }
+
+    if (key in scope) {
       scope = scope[key]
     }
+
+    // Create the ascendant if it doesn't exist.
+    else {
+      if (createAscendants === false) {
+        return { success: false, hasCreatedAscendants, failureReason: DeepSetFailureReason.CannotCreateAscendants }
+      }
+
+      let ascendant: any = null
+      if (ascendantsModel === null || ascendantsModel === undefined) {
+        ascendant = typeof key === 'number' ? [] : {}
+      }
+      // Array:
+      else if (Array.isArray(ascendantsModel)) {
+        const value = ascendantsModel[index]
+        ascendant = deepClone(value)
+      }
+      // Object:
+      else {
+        const { value } = deepGet(ascendantsModel, path.slice(0, index))
+        ascendant = deepClone(value)
+      }
+
+      scope[key] = ascendant
+      scope = ascendant
+      hasCreatedAscendants = true
+    }
+
+    if (scope === undefined || scope === null) {
+      if (pierceNullOrUndefined === false) {
+        return { success: false, hasCreatedAscendants, failureReason: DeepSetFailureReason.CannotPierceNullOrUndefined }
+      }
+
+      // Redefine the current scope.
+      scope = typeof path[index + 1] === 'number' ? [] : {}
+      parent[key] = scope
+    }
   }
-  scope[path[path.length - 1]] = value
-  return { success: true, createdAscendants }
+
+  const lastKey = path[path.length - 1]
+  scope[lastKey] = value
+
+  return { success: true, hasCreatedAscendants, failureReason: DeepSetFailureReason.None }
 }
+
+
+
+
 
 /**
  * Compares two objects deeply and returns the differences in a diff object.
  */
-export function deepDiff(objectA: any, objectB: any) {
+export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
   const diff = {
-    a: {},
-    b: {},
+    a: {} as DeepPartial<TypeA>,
+    b: {} as DeepPartial<TypeB>,
   }
   deepWalk(objectA, {
     onValue(value, path) {
@@ -287,3 +355,5 @@ export function deepAssignWithOptions<T = any>(options: Partial<typeof defaultDe
 export function deepAssign<T = any>(target: any, ...sources: any[]): T {
   return deepAssignWithOptions({}, target, ...sources)
 }
+
+// import('./deep.test').then(({ test }) => test())
