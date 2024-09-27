@@ -196,6 +196,7 @@ type DeepSetOptions = Partial<typeof defaultDeepSetOptions>
 enum DeepSetFailureReason {
   None = 'none',
   NotAnObject = 'not-an-object',
+  InvalidIndex = 'invalid-index',
   CannotCreateAscendants = 'cannot-create-ascendants',
   CannotPierceNullOrUndefined = 'cannot-pierce-null-or-undefined',
 }
@@ -249,6 +250,14 @@ export function deepSet(
       scope = scope[key]
     }
 
+    else if (Array.isArray(scope)) {
+      const index = typeof key === 'number' ? key : Number.parseInt(key as string)
+      if (isNaN(index) || index < 0) {
+        return { success: false, hasCreatedAscendants, failureReason: DeepSetFailureReason.InvalidIndex }
+      }
+      scope = scope[index]
+    }
+
     // Create the ascendant if it doesn't exist.
     else {
       if (createAscendants === false) {
@@ -257,7 +266,8 @@ export function deepSet(
 
       let ascendant: any = null
       if (ascendantsModel === null || ascendantsModel === undefined) {
-        ascendant = typeof key === 'number' ? [] : {}
+        // Create an array or an object depending on the next key.
+        ascendant = typeof path[index + 1] === 'number' ? [] : {}
       }
       // Array:
       else if (Array.isArray(ascendantsModel)) {
