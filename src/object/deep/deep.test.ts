@@ -1,4 +1,5 @@
-import { deepDiff, deepSet } from './deep'
+import { deepSet } from './deep'
+import { deepDiff } from './diff'
 
 /**
  * Deep tests.
