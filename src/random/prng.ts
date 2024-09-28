@@ -25,9 +25,17 @@ const defaultPickOptions = {
    * - This will not work if weights are provided.
    */
   indexOffset: 0,
+  /**
+   * If non-empty, the items in this array will be forbidden. 
+   * 
+   * If all items are forbidden, the function will throw an error.
+   */
+  forbiddenItems: [] as any[],
 }
 
-type PickOptions = typeof defaultPickOptions
+type PickOptions<T> = typeof defaultPickOptions & {
+  forbiddenItems: T[]
+}
 
 type Core = ReturnType<typeof create>
 
@@ -131,15 +139,15 @@ function create() {
   function pick<T>(
     items: T[],
     weights?: number[] | null,
-    pickOptions?: Partial<PickOptions>,
+    pickOptions?: Partial<PickOptions<T>>,
   ): T
   function pick<T>(
     items: Record<string, T>,
     weights?: Record<string, number> | null,
-    pickOptions?: Partial<PickOptions>,
+    pickOptions?: Partial<PickOptions<T>>,
   ): T
   function pick<T>(...args: any[]): T {
-    function solveArgs(args: any[]): [options: T[], weights: null | number[], pickOptions: PickOptions] {
+    function solveArgs(args: any[]): [options: T[], weights: null | number[], pickOptions: PickOptions<T>] {
       const [items, weights = null, pickOptionsArg] = args
       const pickOptions = { ...defaultPickOptions, ...pickOptionsArg }
       if (Array.isArray(items)) {
@@ -154,7 +162,25 @@ function create() {
       throw new Error('pick: unsupported options type')
     }
 
-    let [options, weights, { weightsAreNormalized, indexOffset }] = solveArgs(args)
+    let [options, weights, { weightsAreNormalized, indexOffset, forbiddenItems }] = solveArgs(args)
+
+    if (forbiddenItems.length > 0) {
+      const forbiddenIndexes = new Set<number>()
+      for (const item of forbiddenItems) {
+        const index = options.indexOf(item)
+        if (index >= 0) {
+          forbiddenIndexes.add(index)
+        }
+      }
+
+      options = options.filter((_, index) => !forbiddenIndexes.has(index))
+      weights = weights?.filter((_, index) => !forbiddenIndexes.has(index)) ?? null
+
+      if (options.length === 0) {
+        throw new Error('pick: all items are forbidden')
+      }
+    }
+
     // If no weights are provided, choose uniformly. Simple.
     if (weights === null) {
       let index = Math.floor(random() * options.length)
