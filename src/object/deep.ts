@@ -310,27 +310,47 @@ export function deepSet(
  * Compares two objects deeply and returns the differences in a diff object.
  */
 export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
-  const diff = {
+  const info = {
+    differences: 0,
+    aOnly: [] as [Path, value: any][],
+    bOnly: [] as [Path, value: any][],
+    changes: [] as [Path, aValue: any, bValue: any][],
     a: {} as DeepPartial<TypeA>,
     b: {} as DeepPartial<TypeB>,
   }
+
   deepWalk(objectA, {
-    onValue(value, path) {
-      const { value: valueB, exists } = deepGet(objectB, path)
-      if (exists === false || value !== valueB) {
-        deepSet(diff.a, path, value, { createAscendants: true })
+    onValue(aValue, path) {
+      const { value: bValue, exists } = deepGet(objectB, path)
+      if (!exists || aValue !== bValue) {
+        if (!exists) {
+          info.differences++
+          info.aOnly.push([path, aValue])
+        } else {
+          info.differences++
+          info.changes.push([path, aValue, bValue])
+        }
+        deepSet(info.a, path, aValue, { createAscendants: true })
       }
     },
   })
+
   deepWalk(objectB, {
-    onValue(value, path) {
-      const { value: valueA, exists } = deepGet(objectA, path)
-      if (exists === false || value !== valueA) {
-        deepSet(diff.b, path, value, { createAscendants: true })
+    onValue(bValue, path) {
+      const { value: aValue, exists } = deepGet(objectA, path)
+      if (!exists || bValue !== aValue) {
+        if (!exists) {
+          info.differences++
+          info.bOnly.push([path, bValue])
+        } else {
+          // Nothing... (Do not push change paths twice).
+        }
+        deepSet(info.b, path, bValue, { createAscendants: true })
       }
     },
   })
-  return diff
+
+  return info
 }
 
 const defaultDeepAssignOptions = {
