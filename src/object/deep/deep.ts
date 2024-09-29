@@ -14,9 +14,9 @@ deepCloneMap.set(RegExp, (source: RegExp) => new RegExp(source.source, source.fl
 // @ts-ignore
 if (typeof window !== 'undefined') {
   // @ts-ignore
-  deepCloneMap.set(DOMPoint, (source: DOMPoint) => new DOMPoint(source.x, source.y, source.z, source.w))
+  deepCloneMap.set(DOMPoint, (source: DOMPoint) => DOMPoint.fromPoint(source))
   // @ts-ignore
-  deepCloneMap.set(DOMRect, (source: DOMRect) => new DOMRect(source.x, source.y, source.width, source.height))
+  deepCloneMap.set(DOMRect, (source: DOMRect) => DOMRect.fromRect(source))
 }
 
 /**
