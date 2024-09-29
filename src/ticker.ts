@@ -23,6 +23,22 @@ export class Tick {
     return this.time - this.deltaTime
   }
 
+  /**
+   * Convenient method to get the sine of the time.
+   */
+  sinTime({ frequency = 1, phase = 0 } = {}) {
+    return Math.sin((this.time + phase) * 2 * Math.PI * frequency)
+  }
+
+  /**
+   * Convenient method to get the sine of the time, but the value is between 0 and 1.
+   * 
+   * It's useful for animations combined with lerp.
+   */
+  sin01Time(...args: Parameters<Tick['sinTime']>) {
+    return this.sinTime(...args) * 0.5 + 0.5
+  }
+
   toString() {
     return `frame: ${this.frame}, time: ${this.time.toFixed(2)}, deltaTime: ${this.deltaTime.toFixed(4)}`
   }
