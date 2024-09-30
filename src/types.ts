@@ -53,11 +53,6 @@ export type Vector2Like = {
   y: number
 }
 
-/**
- * @deprecated Use `Point2Like` instead.
- */
-export type PointLike = Vector2Like
-
 export type Point2Like = Vector2Like
 
 export type Vector3Like = {

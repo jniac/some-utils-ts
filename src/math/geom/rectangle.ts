@@ -1,4 +1,5 @@
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
+import { isRectangleLike } from '../../types/is'
 import { Padding, PaddingParams } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 
@@ -20,6 +21,10 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
       return out.set(x, y, width, height)
     }
     throw new Error('Oops. Wrong parameters here.')
+  }
+
+  if (isRectangleLike(declaration)) {
+    return out.copy(declaration)
   }
 
   if ('aspect' in declaration && 'diagonal' in declaration) {
@@ -365,7 +370,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  setPosition(x: number, y: number, align?: { x: number, y: number }): this {
+  setPosition(x: number, y: number, align?: Vector2Like): this {
     const alignX = align?.x ?? 0
     const alignY = align?.y ?? 0
     this.x = x - this.width * alignX
@@ -379,7 +384,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return out
   }
 
-  setSize(width: number, height: number, align?: { x: number, y: number }): this {
+  setSize(width: number, height: number, align?: Vector2Like): this {
     const alignX = align?.x ?? 0
     const alignY = align?.y ?? 0
     this.x += (this.width - width) * alignX
@@ -392,28 +397,28 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   /**
    * Resize the rectangle to fit a given area, keeping the aspect ratio.
    */
-  setArea(value: number, align?: { x: number, y: number }): this {
+  setArea(value: number, align?: Vector2Like): this {
     const scalar = Math.sqrt(value / this.area)
     const width = this.width * scalar
     const height = this.height * scalar
     return this.setSize(width, height, align)
   }
 
-  setDiagonal(value: number, align?: { x: number, y: number }): this {
+  setDiagonal(value: number, align?: Vector2Like): this {
     const aspect = this.width / this.height
     const height = Math.sqrt(value ** 2 / (1 + aspect ** 2))
     const width = height * aspect
     return this.setSize(width, height, align)
   }
 
-  setAspect(aspect: number, align?: { x: number, y: number }): this {
+  setAspect(aspect: number, align?: Vector2Like): this {
     const { diagonal } = this
     const height = Math.sqrt(diagonal ** 2 / (1 + aspect ** 2))
     const width = height * aspect
     return this.setSize(width, height, align)
   }
 
-  setDiagonalAndAspect(diagonal: number, aspect: number, align?: { x: number, y: number }): this {
+  setDiagonalAndAspect(diagonal: number, aspect: number, align?: Vector2Like): this {
     const height = Math.sqrt(diagonal ** 2 / (1 + aspect ** 2))
     const width = height * aspect
     return this.setSize(width, height, align)
@@ -520,7 +525,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       && y < this.y + this.height
   }
 
-  containsPoint(point: { x: number, y: number }): boolean {
+  containsPoint(point: Vector2Like): boolean {
     return this.containsXY(point.x, point.y)
   }
 
