@@ -1,5 +1,5 @@
 import { Rectangle } from '../../../math/geom/rectangle'
-import { Point2Like } from '../../../types'
+import { Vector2Like } from '../../../types'
 
 import { Direction, DirectionDeclaration, parseDirection } from './Direction'
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
@@ -215,7 +215,7 @@ export class Space {
     }
   }
 
-  pointCast(point: Point2Like): Space | null
+  pointCast(point: Vector2Like): Space | null
   pointCast(x: number, y: number): Space | null
   pointCast(...args: any[]): Space | null {
     const [x, y] = args.length === 1 ? [args[0].x, args[0].y] : args
