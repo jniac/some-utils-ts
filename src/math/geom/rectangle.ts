@@ -625,6 +625,13 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     this.setCenterY(value)
   }
 
+  get center() {
+    return this.getCenter()
+  }
+  set center(point: Vector2Like) {
+    this.setCenter(point)
+  }
+
   get left() {
     return this.getLeft()
   }
@@ -651,6 +658,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   }
   set bottom(value: number) {
     this.setBottom(value)
+  }
+
+  get size() {
+    return this.getSize()
+  }
+
+  set size(value: Vector2Like) {
+    this.setSize(value.x, value.y)
   }
 
   get area() {
