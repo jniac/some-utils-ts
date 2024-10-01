@@ -384,6 +384,20 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return out
   }
 
+  setWidth(width: number, align?: number): this {
+    const alignX = align ?? 0
+    this.x += (this.width - width) * alignX
+    this.width = width
+    return this
+  }
+
+  setHeight(height: number, align?: number): this {
+    const alignY = align ?? 0
+    this.y += (this.height - height) * alignY
+    this.height = height
+    return this
+  }
+
   setSize(width: number, height: number, align?: Vector2Like): this {
     const alignX = align?.x ?? 0
     const alignY = align?.y ?? 0
