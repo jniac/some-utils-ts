@@ -336,7 +336,7 @@ function during(arg: DuringArg | number): AnimationInstance {
 
 const defaultTweenArg = {
   ...omit(defaultDuringArg, 'target'),
-  ease: <EasingDeclaration>'inOut2',
+  ease: <EasingDeclaration | ((x: number) => number)>'inOut2',
 }
 
 type TweenEntry = {
@@ -423,7 +423,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
   if (from ?? to) {
     instance.add({ target, from, to })
   }
-  const easingFunction = easing(ease)
+  const easingFunction = typeof ease === 'function' ? ease : easing(ease)
   instance
     .onUpdate(({ progress }) => {
       const alpha = easingFunction(progress)
