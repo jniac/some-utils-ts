@@ -210,7 +210,8 @@ const updateInstances = (deltaTime: number) => {
       continue
     }
 
-    if (instance.paused === false && instance.unclampedTime < instance.duration) {
+    const requireTimeUpdate = instance.paused === false && instance.unclampedTime < instance.duration
+    if (requireTimeUpdate) {
       instance.unclampedTime += deltaTime * instance.timeScale
     }
 
@@ -222,7 +223,8 @@ const updateInstances = (deltaTime: number) => {
       : 0 // progress is zero on infinite animation.
 
     const hasChanged = instance.unclampedTime >= 0 && instance.unclampedTime !== instance.unclampedTimeOld
-    if (hasChanged || (instance.frame === 0 && instance.prerun)) {
+    const isPreRunning = instance.frame === 0 && instance.prerun
+    if (hasChanged || isPreRunning) {
       for (const callback of onUpdate.get(instance.id)) {
         callback(instance)
         instance.frame++
@@ -395,6 +397,16 @@ type TweenArg<T> = {
   to: Record<string, any>
 }>
 
+/**
+ * Usage:
+ * ```
+ * Animation.tween({
+ *   target: myVector,
+ *   to: { x: 1 },
+ *   duration: 1,
+ *   ease: 'inOut3',
+ * })
+ */
 function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
   const {
     duration,
@@ -407,19 +419,20 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
     from,
     to,
   } = { ...defaultTweenArg, ...arg }
-  const instance = registerInstance(new TweenInstance(duration, timeScale, delay, target, autoDestroy, prerun))
+  const instance = registerInstance(new TweenInstance(duration, delay, timeScale, target, autoDestroy, prerun))
   if (from ?? to) {
     instance.add({ target, from, to })
   }
   const easingFunction = easing(ease)
-  instance.onUpdate(({ progress }) => {
-    const alpha = easingFunction(progress)
-    const { entries } = instance
-    for (let index = 0, length = entries.length; index < length; index++) {
-      const { target, key, from, to } = entries[index]
-      target[key] = from + (to - from) * alpha
-    }
-  })
+  instance
+    .onUpdate(({ progress }) => {
+      const alpha = easingFunction(progress)
+      const { entries } = instance
+      for (let index = 0, length = entries.length; index < length; index++) {
+        const { target, key, from, to } = entries[index]
+        target[key] = from + (to - from) * alpha
+      }
+    })
   return instance
 }
 
