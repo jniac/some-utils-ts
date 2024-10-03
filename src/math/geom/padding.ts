@@ -1,5 +1,5 @@
 
-export type PaddingParams = {
+export type PaddingDeclaration = {
   all?: number
   vertical?: number
   horizontal?: number
@@ -15,8 +15,11 @@ export type PaddingParams = {
   | number
 
 export class Padding {
-  static ensure(object: PaddingParams) {
-    return (object instanceof Padding ? object : new Padding(object))
+  static from(value: PaddingDeclaration) {
+    return new Padding(value)
+  }
+  static ensure(value: PaddingDeclaration) {
+    return (value instanceof Padding ? value : new Padding(value))
   }
 
   top = 0
@@ -24,7 +27,7 @@ export class Padding {
   bottom = 0
   left = 0
 
-  constructor(params: PaddingParams = {}) {
+  constructor(params: PaddingDeclaration = {}) {
     this.set(params)
   }
 
@@ -43,7 +46,7 @@ export class Padding {
     return this
   }
 
-  set(params: PaddingParams = {}) {
+  set(params: PaddingDeclaration = {}) {
     if (Array.isArray(params)) {
       if (params.length === 1) {
         const [all] = params
