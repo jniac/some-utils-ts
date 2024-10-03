@@ -1,6 +1,6 @@
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
-import { Padding, PaddingParams } from './padding'
+import { Padding, PaddingDeclaration } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 
 export type RectangleDeclaration =
@@ -438,7 +438,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.setSize(width, height, align)
   }
 
-  applyPadding(padding: PaddingParams, mode = <'shrink' | 'grow'>'shrink'): this {
+  applyPadding(padding: PaddingDeclaration, mode = <'shrink' | 'grow'>'shrink'): this {
     const { top, right, bottom, left } = Padding.ensure(padding)
     if (mode === 'shrink') {
       this.x += left
@@ -491,7 +491,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     sizeMode: "contain" | "cover"
     alignX: number
     alignY: number
-    padding: PaddingParams
+    padding: PaddingDeclaration
   }>,
     out: Rectangle = new Rectangle(),
   ): Rectangle {
