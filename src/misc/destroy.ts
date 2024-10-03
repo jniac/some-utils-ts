@@ -29,7 +29,12 @@ export class DestroyableInstance {
     }
   }
 
-  destroy() {
+  /**
+   * Destroy all collected destroyables.
+   * 
+   * NOTE: This method is bound to the instance and can be passed as a callback.
+   */
+  destroy = () => {
     destroy(this.destroyables)
     this.destroyables = []
   }
