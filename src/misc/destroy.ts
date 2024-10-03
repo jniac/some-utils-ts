@@ -17,3 +17,21 @@ export function destroy(...destroyables: Destroyable[] | Destroyable[][]): void 
     }
   }
 }
+
+export class DestroyableInstance {
+  destroyables: Destroyable[] = []
+
+  collect(generator: Generator<Destroyable | null | undefined>) {
+    for (const destroyable of generator) {
+      if (destroyable) {
+        this.destroyables.push(destroyable)
+      }
+    }
+  }
+
+  destroy() {
+    destroy(this.destroyables)
+    this.destroyables = []
+  }
+}
+
