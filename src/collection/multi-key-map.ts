@@ -89,6 +89,39 @@ class MultiKeyWeakMap<K extends object = object, V = any> {
     }
   }
 
+  delete(key: K | K[]): boolean {
+    if (Array.isArray(key)) {
+      const { _multiValueMap, _multiObjectMap } = this
+      for (let index = 0, length = key.length; index < length; index++) {
+        const firstKey = key[index] as any
+        const bundles = isValueType(firstKey) ? _multiValueMap.get(firstKey) : _multiObjectMap.get(firstKey)
+        if (bundles) {
+          for (const bundle of bundles) {
+            const { keyCount, valueKeys, objectKeys } = bundle
+            if (keyCount === length && key.every(item => isValueType(item) ? valueKeys.has(item) : objectKeys.has(item))) {
+              bundles.delete(bundle)
+              if (bundles.size === 0) {
+                if (isValueType(firstKey)) {
+                  _multiValueMap.delete(firstKey)
+                } else {
+                  _multiObjectMap.delete(firstKey)
+                }
+              }
+              return true
+            }
+          }
+        }
+      }
+      return false
+    } else {
+      if (isValueType(key)) {
+        return this._valueMap.delete(key)
+      } else {
+        return this._objectMap.delete(key)
+      }
+    }
+  }
+
   set(key: K | K[], value: V): void {
     if (Array.isArray(key)) {
       if (key.length === 0) {
