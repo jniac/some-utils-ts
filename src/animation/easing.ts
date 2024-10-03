@@ -61,7 +61,8 @@ type EaseDeclaration =
 const cubicBezierCache = new Map<string, (x: number) => number>()
 function cacheCubicBezier(declaration: string) {
   const [x1, y1, x2, y2] = declaration
-    .slice(13, -1)
+    .slice('cubic-bezier('.length, -1)
+    .trim()
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
   const easing = (x: number) => solveCubicEase(x1, y1, x2, y2, x)
@@ -72,7 +73,8 @@ function cacheCubicBezier(declaration: string) {
 const customInOutCache = new Map<string, (x: number) => number>()
 function cacheCustomInOut(declaration: string) {
   const [a, b = .5] = declaration
-    .slice(7, -1)
+    .trim()
+    .slice('inOut('.length, -1)
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
   const easing = (x: number) => easeInOut(x, a, b)
