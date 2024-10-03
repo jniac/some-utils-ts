@@ -6,7 +6,17 @@ import { omit } from '../object/misc'
 import { DestroyableObject } from '../types'
 import { EaseDeclaration, parseEase } from './easing'
 
-type Callback = (animation: AnimationInstance) => void
+
+/**
+ * The safeword, when returned by a callback, stops the animation. 
+ * 
+ * Sometimes it's “red”, sometimes “yellow”, but here it's simply "pause" or "destroy".
+ */
+const safewords = ['pause', 'destroy'] as const
+
+type Safeword = typeof safewords[number]
+
+type Callback = (animation: AnimationInstance) => void | Safeword
 
 class MultiValueMap<K, V> {
   static empty = [][Symbol.iterator]()
@@ -31,7 +41,7 @@ class MultiValueMap<K, V> {
 const onUpdate = new MultiValueMap<number, Callback>()
 const onDestroy = new MultiValueMap<number, Callback>()
 
-const instanceMultiKeyWeakMap = new MultiKeyWeakMap<any, AnimationInstance>()
+const instanceMultiKeyWeakMap = new MultiKeyWeakMap<any, Set<AnimationInstance>>()
 
 let animationInstanceCounter = 0
 class AnimationInstance implements DestroyableObject {
@@ -58,6 +68,7 @@ class AnimationInstance implements DestroyableObject {
   progress: number = 0
 
   // Accessors:
+  get progressOld() { return this.timeOld / this.duration }
   get complete() { return this.progress === 1 }
   get delayed() { return this.unclampedTime < 0 }
   get deltaTime() { return this.time - this.timeOld }
@@ -177,6 +188,42 @@ class AnimationInstance implements DestroyableObject {
     }
     return this.set({ ...props, paused: false })
   }
+
+  /**
+   * By design, to avoid conflicts between "above" and "below" methods: 
+   * - "above" is true when the time/progress is above or equal to the given value.
+   * - "below" is true when the time/progress is strictly below the given value.
+   */
+  didPassAbove(props: Partial<{ time: number, progress: number }>) {
+    const { time, progress } = props
+    if (time !== undefined) {
+      return this.timeOld < time && this.time >= time
+    }
+    if (progress !== undefined) {
+      return this.progressOld < progress && this.progress >= progress
+    }
+    return false
+  }
+
+  /**
+   * By design, to avoid conflicts between "above" and "below" methods: 
+   * - "above" is true when the time/progress is above or equal to the given value.
+   * - "below" is true when the time/progress is strictly below the given value.
+   */
+  didPassBelow(props: Partial<{ time: number, progress: number }>) {
+    const { time, progress } = props
+    if (time !== undefined) {
+      return this.timeOld >= time && this.time < time
+    }
+    if (progress !== undefined) {
+      return this.progressOld >= progress && this.progress < progress
+    }
+    return false
+  }
+
+  didPass(props: Partial<{ time: number, progress: number }>) {
+    return this.didPassAbove(props) || this.didPassBelow(props)
+  }
 }
 
 let instances: AnimationInstance[] = []
@@ -187,15 +234,51 @@ const destroyInstance = (instance: AnimationInstance) => {
   }
   onUpdate.clear(instance.id)
   onDestroy.clear(instance.id)
+  releaseInstanceFromTarget(instance)
 }
 
-const registerInstance = <T extends AnimationInstance>(instance: T): T => {
+const clearExistingInstancesForTarget = (target: any) => {
+  const targetInstances = instanceMultiKeyWeakMap.get(target)
+  if (targetInstances) {
+    for (const instance of targetInstances) {
+      instance.requestDestroy()
+    }
+  }
+}
+
+function releaseInstanceFromTarget(instance: AnimationInstance) {
+  const { target } = instance
+  if (target !== undefined) {
+    const targetInstances = instanceMultiKeyWeakMap.get(target)
+    if (targetInstances) {
+      targetInstances.delete(instance)
+      if (targetInstances.size === 0) {
+        instanceMultiKeyWeakMap.delete(target)
+      }
+    }
+  }
+}
+
+function associateInstanceWithTarget(instance: AnimationInstance) {
+  const { target } = instance
+  if (target !== undefined) {
+    let targetInstances = instanceMultiKeyWeakMap.get(target)
+    if (targetInstances === undefined) {
+      targetInstances = new Set()
+      instanceMultiKeyWeakMap.set(target, targetInstances)
+    }
+    targetInstances.add(instance)
+  }
+}
+
+const registerInstance = <T extends AnimationInstance>(clearExistingInstances: boolean, instance: T): T => {
   ensureAnimationLoop()
   const { target } = instance
   if (target !== undefined) {
-    const existingInstance = instanceMultiKeyWeakMap.get(target)
-    existingInstance?.requestDestroy()
-    instanceMultiKeyWeakMap.set(target, instance)
+    if (clearExistingInstances) {
+      clearExistingInstancesForTarget(target)
+    }
+    associateInstanceWithTarget(instance)
   }
   instances.push(instance)
   return instance
@@ -226,7 +309,15 @@ const updateInstances = (deltaTime: number) => {
     const isPreRunning = instance.frame === 0 && instance.prerun
     if (hasChanged || isPreRunning) {
       for (const callback of onUpdate.get(instance.id)) {
-        callback(instance)
+        const returnedValue = callback(instance)
+        switch (returnedValue) {
+          case 'pause':
+            instance.pause()
+            break
+          case 'destroy':
+            instance.requestDestroy()
+            break
+        }
         instance.frame++
       }
     }
@@ -270,11 +361,27 @@ function stopAnimationLoop() {
   window.cancelAnimationFrame(loopId)
 }
 
+
+
+// The public API:
+
+// --------------[  Get  ]--------------- //
+function existing(...targets: any[]): AnimationInstance[] {
+  const result = []
+  for (const target of targets) {
+    const targetInstances = instanceMultiKeyWeakMap.get(target)
+    if (targetInstances) {
+      result.push(...targetInstances)
+    }
+  }
+  return result
+}
+
 // --------------[ Clear ]--------------- //
 
 function clear(...targets: any[]) {
   for (const target of targets) {
-    instanceMultiKeyWeakMap.get(target)?.requestDestroy()
+    clearExistingInstancesForTarget(target)
   }
 }
 
@@ -302,7 +409,15 @@ const defaultDuringArg = {
    */
   target: <any>undefined,
   /**
+   * If true, any previous instance associated with the target will be destroyed.
+   * 
+   * Defaults to `false`.
+   */
+  clear: false,
+  /**
    * If true, the instance will be destroyed when it completes.
+   * 
+   * If the animation is meant to be played again, set this to `false`.
    * 
    * Defaults to `true`.
    */
@@ -325,8 +440,8 @@ function during(arg: DuringArg | number): AnimationInstance {
   if (typeof arg === 'number') {
     arg = { duration: arg }
   }
-  const { duration, delay, timeScale, target, autoDestroy, prerun } = { ...defaultDuringArg, ...arg }
-  return registerInstance(new AnimationInstance(duration, delay, timeScale, target, autoDestroy, prerun))
+  const { clear, duration, delay, timeScale, target, autoDestroy, prerun } = { ...defaultDuringArg, ...arg }
+  return registerInstance(clear, new AnimationInstance(duration, delay, timeScale, target, autoDestroy, prerun))
 }
 
 
@@ -408,6 +523,7 @@ type TweenArg<T> = {
  */
 function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
   const {
+    clear,
     duration,
     delay,
     timeScale,
@@ -418,7 +534,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
     from,
     to,
   } = { ...defaultTweenArg, ...arg }
-  const instance = registerInstance(new TweenInstance(duration, delay, timeScale, target, autoDestroy, prerun))
+  const instance = registerInstance(clear, new TweenInstance(duration, delay, timeScale, target, autoDestroy, prerun))
   if (from ?? to) {
     instance.add({ target, from, to })
   }
@@ -433,18 +549,6 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
       }
     })
   return instance
-}
-
-type Bundle = {
-  during: typeof during
-  ease: typeof parseEase
-  tween: typeof tween
-  clear: typeof clear
-  core: {
-    updateInstances: typeof updateInstances
-    startAnimationLoop: typeof startAnimationLoop
-    stopAnimationLoop: typeof stopAnimationLoop
-  }
 }
 
 /**
@@ -462,12 +566,16 @@ type Bundle = {
  *   })
  * ```
  */
-const AnimationBundle: Bundle = {
+const AnimationBundle = {
   during,
   ease: parseEase,
   tween,
+  existing,
   clear,
+  safewords,
   core: {
+    instancesCount: () => instances.length,
+    instances: () => [...instances],
     updateInstances,
     startAnimationLoop,
     stopAnimationLoop,
