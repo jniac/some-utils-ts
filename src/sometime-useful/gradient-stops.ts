@@ -1,9 +1,9 @@
 import { Animation } from '../animation'
-import { EasingDeclaration } from '../animation/easing'
+import { EaseDeclaration } from '../animation/easing'
 import { Color4, ColorDeclaration } from '../math/color'
 
 const defaultOptions = {
-  easing: 'out2' as EasingDeclaration,
+  ease: 'out2' as EaseDeclaration,
   subdivisions: 5,
 }
 
@@ -13,8 +13,8 @@ type Options = Partial<typeof defaultOptions>
  * Because linear interpolated gradient are awfull compared to eased ones. 
  */
 export function createGradientStops(color1: ColorDeclaration, color2: ColorDeclaration, options?: Options) {
-  const { easing, subdivisions } = { ...defaultOptions, ...options }
-  const easeFn = Animation.easing(easing)
+  const { ease, subdivisions } = { ...defaultOptions, ...options }
+  const easeFn = Animation.ease(ease)
   const c1 = Color4.from(color1)
   const c2 = Color4.from(color2)
   const stops = Array.from({ length: subdivisions + 2 }, (_, i) => {

@@ -48,7 +48,7 @@ const cubic01SearchT = (
   return lowerT + (upperT - lowerT) * (x - lowerX) / (upperX - lowerX)
 }
 
-const solveCubicEasing = (x1: number, y1: number, x2: number, y2: number, x: number, iterations?: number, precision?: number) => {
+const solveCubicEase = (x1: number, y1: number, x2: number, y2: number, x: number, iterations?: number, precision?: number) => {
   const t = cubic01SearchT(x1, x2, x, iterations, precision)
   const y = cubic01(y1, y2, t)
   return y
@@ -56,5 +56,5 @@ const solveCubicEasing = (x1: number, y1: number, x2: number, y2: number, x: num
 
 export {
   cubic01SearchT,
-  solveCubicEasing
+  solveCubicEase
 }
