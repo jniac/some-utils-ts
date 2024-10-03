@@ -1,5 +1,6 @@
 import { clamp01 } from '../math/basic'
 import {
+  easeInOut,
   easeIn1 as in1,
   easeIn2 as in2,
   easeIn3 as in3,
@@ -16,7 +17,7 @@ import {
   easeOut4 as out4,
   easeOut5 as out5,
 } from '../math/easings'
-import { solveCubicEasing } from '../math/easings/cubic-bezier'
+import { solveCubicEase } from '../math/easings/cubic-bezier'
 
 const simple = {
   linear: clamp01,
@@ -38,39 +39,71 @@ const simple = {
 }
 
 type SimpleEasingDeclaration = keyof typeof simple
-const isSimpleEasingDeclaration = (arg: string): arg is SimpleEasingDeclaration => arg in simple
+function isSimpleEasingDeclaration(arg: string): arg is SimpleEasingDeclaration {
+  return arg in simple
+}
 
 type CubicBezierEasingDeclaration = `cubic-bezier(${number}, ${number}, ${number}, ${number})`
-const isCubicBezierEasingDeclaration = (arg: string): arg is CubicBezierEasingDeclaration => arg.startsWith('cubic-bezier(') && arg.endsWith(')')
+function isCubicBezierEasingDeclaration(arg: string): arg is CubicBezierEasingDeclaration {
+  return arg.startsWith('cubic-bezier(') && arg.endsWith(')')
+}
 
-type EasingDeclaration = SimpleEasingDeclaration | CubicBezierEasingDeclaration
+type CustomInOutEasingDeclaration = `inOut(${number})` | `inOut(${number}, ${number})`
+function isCustomInOutEasingDeclaration(arg: string): arg is CustomInOutEasingDeclaration {
+  return arg.startsWith('inOut(') && arg.endsWith(')')
+}
 
-const parametricEasingMap = new Map<string, (x: number) => number>()
-function cacheParametricEasing(declaration: string) {
+type EaseDeclaration =
+  | SimpleEasingDeclaration
+  | CubicBezierEasingDeclaration
+  | CustomInOutEasingDeclaration
+
+const cubicBezierCache = new Map<string, (x: number) => number>()
+function cacheCubicBezier(declaration: string) {
   const [x1, y1, x2, y2] = declaration
     .slice(13, -1)
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
-  const easing = (x: number) => solveCubicEasing(x1, y1, x2, y2, x)
-  parametricEasingMap.set(declaration, easing)
+  const easing = (x: number) => solveCubicEase(x1, y1, x2, y2, x)
+  cubicBezierCache.set(declaration, easing)
   return easing
 }
 
-function easing(declaration: EasingDeclaration): (value: number) => number {
+const customInOutCache = new Map<string, (x: number) => number>()
+function cacheCustomInOut(declaration: string) {
+  const [a, b = .5] = declaration
+    .slice(7, -1)
+    .split(/\s*,\s*/)
+    .map(s => Number.parseFloat(s))
+  const easing = (x: number) => easeInOut(x, a, b)
+  customInOutCache.set(declaration, easing)
+  return easing
+}
+
+function parseEase(declaration: EaseDeclaration): (value: number) => number {
   if (isSimpleEasingDeclaration(declaration)) {
     return simple[declaration]
   }
   if (isCubicBezierEasingDeclaration(declaration)) {
-    return parametricEasingMap.get(declaration) ?? cacheParametricEasing(declaration)
+    return cubicBezierCache.get(declaration) ?? cacheCubicBezier(declaration)
   }
-  throw new Error(`Invalid argument for Animation.easing(): "${declaration}"`)
+  if (isCustomInOutEasingDeclaration(declaration)) {
+    return customInOutCache.get(declaration) ?? cacheCustomInOut(declaration)
+  }
+  throw new Error(`Invalid argument for Animation.ease(): "${declaration}"`)
 }
 
 export type {
-  EasingDeclaration
+  EaseDeclaration
 }
 
+/**
+ * @deprecated Use `parseEase` instead
+ */
+const easing = parseEase
+
 export {
-  easing
+  easing,
+  parseEase
 }
 

@@ -4,7 +4,7 @@ import { isObject } from '../object/common'
 import { expandObject } from '../object/expand'
 import { omit } from '../object/misc'
 import { DestroyableObject } from '../types'
-import { EasingDeclaration, easing } from './easing'
+import { EaseDeclaration, parseEase } from './easing'
 
 type Callback = (animation: AnimationInstance) => void
 
@@ -123,8 +123,8 @@ class AnimationInstance implements DestroyableObject {
    *   })
    * ```
    */
-  progressLerp = (from: number, to: number, ease: EasingDeclaration = 'linear') => {
-    const alpha = easing(ease)(this.progress)
+  progressLerp = (from: number, to: number, ease: EaseDeclaration = 'linear') => {
+    const alpha = parseEase(ease)(this.progress)
     return from + (to - from) * alpha
   }
 
@@ -272,10 +272,9 @@ function stopAnimationLoop() {
 
 // --------------[ Clear ]--------------- //
 
-function clear(target: any) {
-  const instance = instanceMultiKeyWeakMap.get(target)
-  if (instance) {
-    instance.requestDestroy()
+function clear(...targets: any[]) {
+  for (const target of targets) {
+    instanceMultiKeyWeakMap.get(target)?.requestDestroy()
   }
 }
 
@@ -336,7 +335,7 @@ function during(arg: DuringArg | number): AnimationInstance {
 
 const defaultTweenArg = {
   ...omit(defaultDuringArg, 'target'),
-  ease: <EasingDeclaration | ((x: number) => number)>'inOut2',
+  ease: <EaseDeclaration | ((x: number) => number)>'inOut2',
 }
 
 type TweenEntry = {
@@ -423,7 +422,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
   if (from ?? to) {
     instance.add({ target, from, to })
   }
-  const easingFunction = typeof ease === 'function' ? ease : easing(ease)
+  const easingFunction = typeof ease === 'function' ? ease : parseEase(ease)
   instance
     .onUpdate(({ progress }) => {
       const alpha = easingFunction(progress)
@@ -438,7 +437,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
 
 type Bundle = {
   during: typeof during
-  easing: typeof easing
+  ease: typeof parseEase
   tween: typeof tween
   clear: typeof clear
   core: {
@@ -465,7 +464,7 @@ type Bundle = {
  */
 const AnimationBundle: Bundle = {
   during,
-  easing,
+  ease: parseEase,
   tween,
   clear,
   core: {
