@@ -220,6 +220,24 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  fromRelativePoint<T extends Vector2Like>(alignX: number, alignY: number, out?: T): T
+  fromRelativePoint<T extends Vector2Like>(align: Vector2Like, out?: T): T
+  fromRelativePoint<T extends Vector2Like>(...args: any[]): T {
+    if (typeof args[0] === 'number') {
+      const [alignX, alignY, out = { x: 0, y: 0 }] = args as [number, number, T?]
+      out.x = this.x + this.width * alignX
+      out.y = this.y + this.height * alignY
+      return out as T
+    }
+    if (typeof args[0] === 'object') {
+      const [align, out = { x: 0, y: 0 }] = args as [Vector2Like, T?]
+      out.x = this.x + this.width * align.x
+      out.y = this.y + this.height * align.y
+      return out as T
+    }
+    throw new Error('Oops. Wrong parameters here.')
+  }
+
   getCenterX() {
     return this.x + this.width / 2
   }

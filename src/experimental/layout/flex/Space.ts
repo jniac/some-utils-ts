@@ -303,15 +303,33 @@ export class Space {
     return this
   }
 
-  setOffset(x: ScalarDeclaration, y: ScalarDeclaration): this {
-    this.offsetX.parse(x)
-    this.offsetY.parse(y)
+  setOffset(x: ScalarDeclaration, y?: ScalarDeclaration): this
+  setOffset(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
+  setOffset(...args: any): this {
+    if (args[0] && typeof args[0] === 'object') {
+      const { x, y } = args[0]
+      this.offsetX.parse(x)
+      this.offsetY.parse(y)
+    } else {
+      const [x, y] = args
+      this.offsetX.parse(x)
+      this.offsetY.parse(y ?? x)
+    }
     return this
   }
 
-  setSize(x: ScalarDeclaration, y: ScalarDeclaration = x): this {
-    this.sizeX.parse(x)
-    this.sizeY.parse(y)
+  setSize(x: ScalarDeclaration, y?: ScalarDeclaration): this
+  setSize(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
+  setSize(...args: any): this {
+    if (args[0] && typeof args[0] === 'object') {
+      const { x, y } = args[0]
+      this.sizeX.parse(x)
+      this.sizeY.parse(y)
+    } else {
+      const [x, y] = args
+      this.sizeX.parse(x)
+      this.sizeY.parse(y ?? x)
+    }
     return this
   }
 
