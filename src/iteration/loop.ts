@@ -1,7 +1,8 @@
 import { Vector2Like, Vector3Like } from '../types'
 
-export function loop2(width: number, height: number): Generator<{ i: number, x: number, y: number }>
-export function loop2(size: Vector2Like | [number, number]): Generator<{ i: number, x: number, y: number }>
+type Loop2Yield = { i: number, x: number, y: number, tx: number, ty: number }
+export function loop2(width: number, height: number): Generator<Loop2Yield>
+export function loop2(size: Vector2Like | [number, number]): Generator<Loop2Yield>
 export function* loop2(...args: any[]) {
   let sx = 0, sy = 0
   if (args.length === 2) {
@@ -16,18 +17,20 @@ export function* loop2(...args: any[]) {
       sy = args[0].y
     }
   }
-  const out = {
-    i: 0,
-    x: 0,
-    y: 0,
-  }
   let i = 0
-  for (let y = 0; y < sy; y++) {
-    for (let x = 0; x < sx; x++) {
-      out.i = i++
-      out.x = x
-      out.y = y
+  let x = 0
+  let y = 0
+  const out = {
+    get i() { return i },
+    get x() { return x },
+    get y() { return y },
+    get tx() { return x / (sx - 1) },
+    get ty() { return y / (sy - 1) },
+  }
+  for (y = 0; y < sy; y++) {
+    for (x = 0; x < sx; x++) {
       yield out
+      i++
     }
   }
 }
