@@ -21,10 +21,18 @@ export function destroy(...destroyables: Destroyable[] | Destroyable[][]): void 
 export class DestroyableInstance {
   destroyables: Destroyable[] = []
 
-  collect(generator: Generator<Destroyable | null | undefined>) {
-    for (const destroyable of generator) {
-      if (destroyable) {
-        this.destroyables.push(destroyable)
+  collect(...values: (Destroyable | null | undefined | Iterable<Destroyable | null | undefined>)[]) {
+    for (const value of values) {
+      if (value) {
+        if (Symbol.iterator in value) {
+          for (const destroyable of value) {
+            if (destroyable) {
+              this.destroyables.push(destroyable)
+            }
+          }
+        } else {
+          this.destroyables.push(value)
+        }
       }
     }
   }
