@@ -1,4 +1,6 @@
 
+export type Promisified<T> = T & PromiseLike<T>
+
 /**
  * Turns an object into a promise-like object. 
  * 
@@ -25,7 +27,7 @@
  * 
  * NOTE: Since the object is modified in-place, it is recommended to use this
  */
-export function promisify<T extends object>(value: T): T & PromiseLike<T> & { resolve: () => void, reject: (reason?: any) => void } {
+export function promisify<T extends object>(value: T): Promisified<T> & { resolve: () => void, reject: (reason?: any) => void } {
   let resolve: () => void
   let reject: (reason?: any) => void
   const promise = new Promise<T>((_resolve, _reject) => {
