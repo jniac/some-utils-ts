@@ -44,7 +44,7 @@ export class Tick {
   }
 }
 
-export type TickCallback = (tick: Tick) => void | 'stop'
+export type TickCallback = ((tick: Tick) => void) | ((tick: Tick) => 'stop')
 
 type Listener = Readonly<{
   id: number
