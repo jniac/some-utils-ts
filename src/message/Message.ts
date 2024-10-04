@@ -131,15 +131,39 @@ class Message<P = any> {
     }
   }
 
+  setPayload(payload: P): this {
+    this.payload = payload
+    return this
+  }
+
   /**
    * Assign new payload props to the message. An optional "overwrite" parameter
    * can be used to specify if the new props should overwrite the existing ones.
    */
-  payloadAssign(payload: Partial<P>, { overwrite = true } = {}): this {
+  assignPayload(payload: Partial<P>, { overwrite = true } = {}): this {
     this.payload = (overwrite
       ? { ...this.payload, ...payload }
       : { ...payload, ...this.payload }) as P
     return this
+  }
+
+  /**
+   * @deprecated Use `assignPayload` instead.
+   */
+  payloadAssign(...args: Parameters<Message['assignPayload']>): this {
+    return this.assignPayload(...args)
+  }
+
+  /**
+   * Assert that the message has a payload and return it. This method is. If the 
+   * payload is falsy, an error will be thrown.
+   */
+  assertPayload(): P {
+    if (this.payload) {
+      return this.payload
+    }
+
+    throw new Error(`Message.payloadAssert: assertion failed for message with target "${this.target}"`)
   }
 }
 
