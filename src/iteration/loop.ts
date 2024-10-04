@@ -35,6 +35,8 @@ export function* loop2(...args: any[]) {
   }
 }
 
+type Loop3Yield = { i: number, x: number, y: number, z: number, tx: number, ty: number, tz: number }
+
 /**
  * Allows declarative iteration over a 3D space.
  * 
@@ -45,8 +47,8 @@ export function* loop2(...args: any[]) {
  * }
  * ```
  */
-export function loop3(width: number, height: number, depth: number): Generator<{ i: number, x: number, y: number, z: number }>
-export function loop3(size: Vector3Like | [number, number, number]): Generator<{ i: number, x: number, y: number, z: number }>
+export function loop3(width: number, height: number, depth: number): Generator<Loop3Yield>
+export function loop3(size: Vector3Like | [number, number, number]): Generator<Loop3Yield>
 export function* loop3(...args: any[]) {
   let sx = 0, sy = 0, sz = 0
   if (args.length === 3) {
@@ -64,21 +66,24 @@ export function* loop3(...args: any[]) {
       sz = args[0].z
     }
   }
-  const out = {
-    i: 0,
-    x: 0,
-    y: 0,
-    z: 0,
-  }
   let i = 0
-  for (let z = 0; z < sz; z++) {
-    for (let y = 0; y < sy; y++) {
-      for (let x = 0; x < sx; x++) {
-        out.i = i++
-        out.x = x
-        out.y = y
-        out.z = z
+  let x = 0
+  let y = 0
+  let z = 0
+  const out = {
+    get i() { return i },
+    get x() { return x },
+    get y() { return y },
+    get z() { return z },
+    get tx() { return x / (sx - 1) },
+    get ty() { return y / (sy - 1) },
+    get tz() { return z / (sz - 1) },
+  }
+  for (z = 0; z < sz; z++) {
+    for (y = 0; y < sy; y++) {
+      for (x = 0; x < sx; x++) {
         yield out
+        i++
       }
     }
   }
