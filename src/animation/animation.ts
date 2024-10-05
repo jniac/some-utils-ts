@@ -139,10 +139,12 @@ class AnimationInstance implements DestroyableObject {
     return from + (to - from) * alpha
   }
 
-  set({ paused, time, progress }: Partial<{
+  set({ paused, time, progress, timeScale, delay }: Partial<{
     paused: boolean
     time: number
     progress: number
+    timeScale: number
+    delay: number
   }> = {}) {
     if (progress !== undefined && Number.isFinite(progress)) {
       time = progress * this.duration
@@ -156,6 +158,31 @@ class AnimationInstance implements DestroyableObject {
       this.paused = paused
     }
 
+    if (timeScale !== undefined) {
+      this.timeScale = timeScale
+    }
+
+    // NOTE: Order matters, `delay` must be applied after `timeScale`.
+    if (delay !== undefined) {
+      this.applyDelay(delay)
+    }
+
+    return this
+  }
+
+  /**
+   * Applies a delay to the instance. Quite tricky.
+   * 
+   * Delay is handled by setting the `unclampedTime` value out of the bounds of 
+   * the duration. If the time scale is positive, the time is set to `-delay`,
+   * if the time scale is negative, the time is set to `duration + delay`.
+   */
+  applyDelay(value: number): this {
+    if (this.timeScale > 0) {
+      this.unclampedTime = -value
+    } else {
+      this.unclampedTime = this.duration + value
+    }
     return this
   }
 
@@ -187,6 +214,13 @@ class AnimationInstance implements DestroyableObject {
       props = { time: props }
     }
     return this.set({ ...props, paused: false })
+  }
+
+  reverse(props?: number | Parameters<AnimationInstance['set']>[0]) {
+    if (typeof props === 'number') {
+      props = { time: props }
+    }
+    return this.set({ ...props, timeScale: -this.timeScale })
   }
 
   /**
@@ -293,7 +327,9 @@ const updateInstances = (deltaTime: number) => {
       continue
     }
 
-    const requireTimeUpdate = instance.paused === false && instance.unclampedTime < instance.duration
+    const requireTimeUpdate = instance.paused === false
+      && (instance.timeScale > 0 ? instance.unclampedTime < instance.duration : instance.unclampedTime > 0)
+
     if (requireTimeUpdate) {
       instance.unclampedTime += deltaTime * instance.timeScale
     }
@@ -305,7 +341,12 @@ const updateInstances = (deltaTime: number) => {
       ? clamp01(instance.time / instance.duration)
       : 0 // progress is zero on infinite animation.
 
-    const hasChanged = instance.unclampedTime >= 0 && instance.unclampedTime !== instance.unclampedTimeOld
+    const hasChanged =
+      // Bounds must be checked with the "old" value to ensure the minimum/maximum 
+      // values are reached (finishing with 1.000 and not 0.996 for example).
+      instance.unclampedTimeOld >= 0 && instance.unclampedTimeOld <= instance.duration
+      && instance.unclampedTime !== instance.unclampedTimeOld
+
     const isPreRunning = instance.frame === 0 && instance.prerun
     if (hasChanged || isPreRunning) {
       for (const callback of onUpdate.get(instance.id)) {
