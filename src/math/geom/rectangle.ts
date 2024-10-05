@@ -8,7 +8,8 @@ export type RectangleDeclaration =
   | [width: number, height: number]
   | Partial<RectangleLike>
   | { aspect: number, diagonal: number }
-  | { extent: number | Vector2Like }
+  | { position?: Vector2Like, extent: number | Vector2Like }
+  | { position?: Vector2Like, size: Vector2Like }
 
 export function fromRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
   if (Array.isArray(declaration)) {
@@ -33,15 +34,22 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
   }
 
   if ('extent' in declaration) {
-    const { extent } = declaration
+    const { position: { x: px, y: py } = { x: 0, y: 0 }, extent } = declaration
     if (typeof extent === 'number') {
-      return out.set(-extent, -extent, extent * 2, extent * 2)
+      return out.set(px - extent, py - extent, extent * 2, extent * 2)
     }
     if (typeof extent === 'object') {
       const { x = 0, y = 0 } = extent
-      return out.set(-x, -y, x * 2, y * 2)
+      return out.set(px - x, py - y, x * 2, y * 2)
     }
     throw new Error('Oops. Wrong parameters here.')
+  }
+
+  if ('size' in declaration) {
+    const { position = { x: 0, y: 0 }, size } = declaration
+    return out
+      .setPosition(position.x, position.y)
+      .setSize(size.x, size.y)
   }
 
   const {
