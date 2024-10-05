@@ -1,6 +1,7 @@
 import { clamp01 } from '../math/basic'
 import {
   easeInOut,
+  elasticInPlace,
   easeIn1 as in1,
   easeIn2 as in2,
   easeIn3 as in3,
@@ -15,7 +16,7 @@ import {
   easeOut2 as out2,
   easeOut3 as out3,
   easeOut4 as out4,
-  easeOut5 as out5,
+  easeOut5 as out5
 } from '../math/easings'
 import { solveCubicEase } from '../math/easings/cubic-bezier'
 
@@ -53,33 +54,50 @@ function isCustomInOutEasingDeclaration(arg: string): arg is CustomInOutEasingDe
   return arg.startsWith('inOut(') && arg.endsWith(')')
 }
 
+type ElasticInPlaceEasingDeclaration = `elasticInPlace` | `elasticInPlace(${number})` | `elasticInPlace(${number}, ${number})`
+function isElasticInPlaceEasingDeclaration(arg: string): arg is ElasticInPlaceEasingDeclaration {
+  return arg === 'elasticInPlace' || (arg.startsWith('elasticInPlace(') && arg.endsWith(')'))
+}
+
 type EaseDeclaration =
   | SimpleEasingDeclaration
   | CubicBezierEasingDeclaration
   | CustomInOutEasingDeclaration
+  | ElasticInPlaceEasingDeclaration
 
-const cubicBezierCache = new Map<string, (x: number) => number>()
+const easeCache = new Map<string, (x: number) => number>()
+
 function cacheCubicBezier(declaration: string) {
   const [x1, y1, x2, y2] = declaration
     .slice('cubic-bezier('.length, -1)
     .trim()
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
-  const easing = (x: number) => solveCubicEase(x1, y1, x2, y2, x)
-  cubicBezierCache.set(declaration, easing)
-  return easing
+  const ease = (x: number) => solveCubicEase(x1, y1, x2, y2, x)
+  easeCache.set(declaration, ease)
+  return ease
 }
 
-const customInOutCache = new Map<string, (x: number) => number>()
 function cacheCustomInOut(declaration: string) {
   const [a, b = .5] = declaration
     .trim()
     .slice('inOut('.length, -1)
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
-  const easing = (x: number) => easeInOut(x, a, b)
-  customInOutCache.set(declaration, easing)
-  return easing
+  const ease = (x: number) => easeInOut(x, a, b)
+  easeCache.set(declaration, ease)
+  return ease
+}
+
+function cacheElasticInPlace(declaration: string) {
+  const [f = undefined, p = undefined] = declaration
+    .trim()
+    .slice('elasticInPlace('.length, -1)
+    .split(/\s*,\s*/)
+    .map(s => Number.parseFloat(s))
+  const ease = (x: number) => elasticInPlace(x, f, p)
+  easeCache.set(declaration, ease)
+  return ease
 }
 
 function parseEase(declaration: EaseDeclaration): (value: number) => number {
@@ -87,10 +105,13 @@ function parseEase(declaration: EaseDeclaration): (value: number) => number {
     return simple[declaration]
   }
   if (isCubicBezierEasingDeclaration(declaration)) {
-    return cubicBezierCache.get(declaration) ?? cacheCubicBezier(declaration)
+    return easeCache.get(declaration) ?? cacheCubicBezier(declaration)
   }
   if (isCustomInOutEasingDeclaration(declaration)) {
-    return customInOutCache.get(declaration) ?? cacheCustomInOut(declaration)
+    return easeCache.get(declaration) ?? cacheCustomInOut(declaration)
+  }
+  if (isElasticInPlaceEasingDeclaration(declaration)) {
+    return easeCache.get(declaration) ?? cacheElasticInPlace(declaration)
   }
   throw new Error(`Invalid argument for Animation.ease(): "${declaration}"`)
 }
