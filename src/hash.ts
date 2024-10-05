@@ -1,15 +1,7 @@
 
-const shiftLeft = (x: number) => {
-  return ((x | 0) < 0
-    ? ((x & 0b01111111111111111111111111111111) << 1) | 1
-    : x << 1)
+const circularShiftLeft = (x: number) => {
+  return (x << 1) | (x >>> 31)
 }
-
-// const shiftRight = (x: number) => {
-//   return ((x | 0) < 0
-//     ? ((x & 1) ? 0b10000000000000000000000000000000 : 0) | ((x & 0b01111111111111111111111111111111) >> 1) | 0b01000000000000000000000000000000
-//     : ((x & 1) ? 0b10000000000000000000000000000000 : 0) | (x >> 1))
-// }
 
 /**
  * Hashing numbers through simple bitwise operations using ArrayBuffer.
@@ -72,8 +64,8 @@ export class Hash {
     const { _i32, _f64 } = this
     return value => {
       _f64[1] = value
-      _i32[0] = shiftLeft(_i32[0]) ^ _i32[2]
-      _i32[1] = shiftLeft(_i32[1]) ^ _i32[3]
+      _i32[0] = circularShiftLeft(_i32[0]) ^ _i32[2]
+      _i32[1] = circularShiftLeft(_i32[1]) ^ _i32[3]
       return this
     }
   })()
@@ -84,8 +76,8 @@ export class Hash {
       const max = numbers.length
       for (let i = 0; i < max; i++) {
         _f64[1] = numbers[i]
-        _i32[0] = shiftLeft(_i32[0]) ^ _i32[2]
-        _i32[1] = shiftLeft(_i32[1]) ^ _i32[3]
+        _i32[0] = circularShiftLeft(_i32[0]) ^ _i32[2]
+        _i32[1] = circularShiftLeft(_i32[1]) ^ _i32[3]
       }
       return this
     }
@@ -98,8 +90,8 @@ export class Hash {
       const max = str.length
       for (let i = 0; i < max; i++) {
         _f64[1] = str.charCodeAt(i)
-        _i32[0] = shiftLeft(_i32[0]) ^ _i32[2]
-        _i32[1] = shiftLeft(_i32[1]) ^ _i32[3]
+        _i32[0] = circularShiftLeft(_i32[0]) ^ _i32[2]
+        _i32[1] = circularShiftLeft(_i32[1]) ^ _i32[3]
       }
       return this
     }
