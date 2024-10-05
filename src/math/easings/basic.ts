@@ -131,6 +131,16 @@ export const inThenOutPow = (x: number, p: number) => {
   return 1 - Math.abs(2 * x - 1) ** p
 }
 
+/**
+ * In-place elastic ease-out curve (in place means that the curve starts at 0 and ends at 0).
+ * @param x the current transition value from 0 to 1
+ * @param f the frequency of the sine wave
+ * @param p the power of the ease-out curve
+ */
+export const elasticInPlace = (x: number, f = 2, p = 2) => {
+  return Math.sin(f * 2 * Math.PI * x) * Math.pow(1 - x, p)
+}
+
 export const easing = {
   linear,
 
