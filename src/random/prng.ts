@@ -104,6 +104,16 @@ function create() {
     return min + (max - min) * distribution(random())
   }
 
+  function around(): number
+  function around(extent: number): number
+  function around(extent: number, distribution: (x: number) => number): number
+  function around(...args: any[]): number {
+    const [extent = 1, distribution = identity] = args
+    const value = random() * 2
+    const sign = value > 1 ? 1 : -1
+    return sign * distribution(value > 1 ? value - 1 : value) * extent
+  }
+
   function int(maxExclusive: number): number
   function int(min: number, maxExclusive: number): number
   function int(min: number, maxExclusive: number, distribution: (x: number) => number): number
@@ -301,6 +311,7 @@ function create() {
 
     random,
     between,
+    around,
     int,
     chance,
     shuffle,
