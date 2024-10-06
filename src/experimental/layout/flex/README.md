@@ -51,11 +51,11 @@ root.add(new Space(Direction.Vertical).setSize('.25rel', '1rel').setSpacing(10).
 root.add(new Space(Direction.Vertical).setSize('.25rel', '1rel').setSpacing(10).setUserData({ color: '#f00' }))
 root.add(new Space(Direction.Vertical).setSize('.25rel', '1rel').setSpacing(10).setUserData({ color: '#f00' }))
 
-// Creates 3 spaces into the first vertical space, with 1prt, 2prt and 3prt height
-// where prt is a special unit that means "part" of the remaining space
+// Creates 3 spaces into the first vertical space, with 1fr, 2fr and 3fr height
+// where fr is a special unit that means "fraction" of the remaining space
 for (let i = 0; i < 3; i++) {
   root.getChild(0)!
-    .add(new Space().setSize(`1rel`, `${i + 1}prt`).setSpacing(10))
+    .add(new Space().setSize(`1rel`, `${i + 1}fr`).setSpacing(10))
 }
 
 const ctx = canvas.getContext('2d')
