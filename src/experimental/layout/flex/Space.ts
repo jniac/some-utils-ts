@@ -151,7 +151,7 @@ export class Space {
     return depth
   }
 
-  *allDescendants({ includeSelf = true } = {}): Generator<Space> {
+  *allDescendants({ includeSelf = false } = {}): Generator<Space> {
     if (includeSelf) {
       yield this
     }
@@ -160,12 +160,20 @@ export class Space {
     }
   }
 
-  descendantsCount({ includeSelf = true } = {}): number {
+  descendantsCount({ includeSelf = false } = {}): number {
     let count = 0
     for (const _ of this.allDescendants({ includeSelf })) {
       count++
     }
     return count
+  }
+
+  *allAncestors({ includeSelf = false } = {}): Generator<Space> {
+    let current: Space | null = includeSelf ? this : this.parent
+    while (current) {
+      yield current
+      current = current.parent
+    }
   }
 
   *allLeaves({ includeSelf = true } = {}): Generator<Space> {
@@ -184,9 +192,24 @@ export class Space {
     return count
   }
 
-  get(...indexes: number[]): Space | null {
+  path(): number[] {
+    const path: number[] = []
     let current: Space = this
-    for (let index of indexes) {
+    while (current.parent) {
+      path.push(current.parent.children.indexOf(current))
+      current = current.parent
+    }
+    return path.reverse()
+  }
+
+  /**
+   * Return the space at the given path.
+   * 
+   * Negative indexes are allowed.
+   */
+  get(path: Iterable<number>): Space | null {
+    let current: Space = this
+    for (let index of path) {
       if (index < 0) {
         index = current.children.length + index
       }
@@ -303,6 +326,26 @@ export class Space {
     return this
   }
 
+  /**
+   * Return the size of the space in the direction of the parent space.
+   * 
+   * "tangent" means the direction of the parent space (horizontal -> sizeX, vertical -> sizeY).
+   */
+  tangentSize(): Scalar {
+    const direction = this.parent?.direction ?? this.direction
+    return direction === Direction.Horizontal ? this.sizeX : this.sizeY
+  }
+
+  /**
+   * Return the size of the space in the direction of the children spaces.
+   * 
+   * "normal" means the direction of the children spaces (horizontal -> sizeX, vertical -> sizeY).
+   */
+  normalSize(): Scalar {
+    const direction = this.direction
+    return direction === Direction.Horizontal ? this.sizeX : this.sizeY
+  }
+
   setOffset(x: ScalarDeclaration, y?: ScalarDeclaration): this
   setOffset(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
   setOffset(...args: any): this {
@@ -330,6 +373,18 @@ export class Space {
       this.sizeX.parse(x)
       this.sizeY.parse(y ?? x)
     }
+    return this
+  }
+
+  /**
+   * Set the size of the space as an absolute rectangle. Useful for setting the 
+   * size of the root space.
+   */
+  setOffsetSizeAsAbsoluteRect(rect: Rectangle): this {
+    this.offsetX.set(rect.x, ScalarType.Absolute)
+    this.offsetY.set(rect.y, ScalarType.Absolute)
+    this.sizeX.set(rect.width, ScalarType.Absolute)
+    this.sizeY.set(rect.height, ScalarType.Absolute)
     return this
   }
 
