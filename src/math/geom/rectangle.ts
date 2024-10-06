@@ -231,19 +231,24 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   fromRelativePoint<T extends Vector2Like>(alignX: number, alignY: number, out?: T): T
   fromRelativePoint<T extends Vector2Like>(align: Vector2Like, out?: T): T
   fromRelativePoint<T extends Vector2Like>(...args: any[]): T {
+    if (typeof args[0] === 'object') {
+      const [align, out] = args as [Vector2Like, T?]
+      return this.fromRelativePoint(align.x, align.y, out)
+    }
     if (typeof args[0] === 'number') {
       const [alignX, alignY, out = { x: 0, y: 0 }] = args as [number, number, T?]
       out.x = this.x + this.width * alignX
       out.y = this.y + this.height * alignY
       return out as T
     }
-    if (typeof args[0] === 'object') {
-      const [align, out = { x: 0, y: 0 }] = args as [Vector2Like, T?]
-      out.x = this.x + this.width * align.x
-      out.y = this.y + this.height * align.y
-      return out as T
-    }
     throw new Error('Oops. Wrong parameters here.')
+  }
+
+  toRelativePoint<T extends Vector2Like>(point: Vector2Like, out?: T): T {
+    out ??= { x: 0, y: 0 } as T
+    out.x = (point.x - this.x) / this.width
+    out.y = (point.y - this.y) / this.height
+    return out
   }
 
   getCenterX() {
@@ -276,11 +281,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       .setCenterY(point.y))
   }
 
-  getLeft() {
+  getMinX() {
     return this.x
   }
 
-  setLeft(value: number, mode: 'resize' | 'translate' = 'resize'): this {
+  setMinX(value: number, mode: 'resize' | 'translate' = 'resize'): this {
     switch (mode) {
       case 'resize': {
         if (value > this.left) {
@@ -301,11 +306,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  getRight() {
+  getMaxX() {
     return this.x + this.width
   }
 
-  setRight(value: number, mode: 'resize' | 'translate' = 'resize'): this {
+  setMaxX(value: number, mode: 'resize' | 'translate' = 'resize'): this {
     switch (mode) {
       case 'resize': {
         if (value < this.x) {
@@ -325,11 +330,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  getTop() {
+  getMinY() {
     return this.y
   }
 
-  setTop(value: number, mode: 'resize' | 'translate' = 'resize'): this {
+  setMinY(value: number, mode: 'resize' | 'translate' = 'resize'): this {
     switch (mode) {
       case 'resize': {
         if (value > this.y + this.height) {
@@ -350,11 +355,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  getBottom() {
+  getMaxY() {
     return this.y + this.height
   }
 
-  setBottom(value: number, mode: 'resize' | 'translate' = 'resize'): this {
+  setMaxY(value: number, mode: 'resize' | 'translate' = 'resize'): this {
     switch (mode) {
       case 'resize': {
         if (value < this.y) {
@@ -672,32 +677,76 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     this.setCenter(point)
   }
 
+  get minX() {
+    return this.getMinX()
+  }
+  set minX(value: number) {
+    this.setMinX(value)
+  }
+
+  get maxX() {
+    return this.getMaxX()
+  }
+  set maxX(value: number) {
+    this.setMaxX(value)
+  }
+
+  get minY() {
+    return this.getMinY()
+  }
+  set minY(value: number) {
+    this.setMinY(value)
+  }
+
+  get maxY() {
+    return this.getMaxY()
+  }
+  set maxY(value: number) {
+    this.setMaxY(value)
+  }
+
+  /**
+   * Shorthand for `minX`.
+   */
   get left() {
-    return this.getLeft()
+    return this.getMinX()
   }
   set left(value: number) {
-    this.setLeft(value)
+    this.setMinX(value)
   }
 
+  /**
+   * Shorthand for `maxX`.
+   */
   get right() {
-    return this.getRight()
+    return this.getMaxX()
   }
   set right(value: number) {
-    this.setRight(value)
+    this.setMaxX(value)
   }
 
+  /**
+   * DOM oriented (y-axis is inverted).
+   * 
+   * Shorthand for `minY`.
+   */
   get top() {
-    return this.getTop()
+    return this.getMinY()
   }
   set top(value: number) {
-    this.setTop(value)
+    this.setMinY(value)
   }
 
+  /**
+   * DOM oriented (y-axis is inverted).
+   * 
+   * Shorthand for `maxY`.
+   */
   get bottom() {
-    return this.getBottom()
+    return this.getMaxY()
   }
   set bottom(value: number) {
-    this.setBottom(value)
+    this.setMaxY(value)
   }
 
   get size() {
