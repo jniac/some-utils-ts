@@ -1,6 +1,27 @@
 import { Vector2Like, Vector3Like } from '../types'
 
-type Loop2Yield = { i: number, x: number, y: number, tx: number, ty: number }
+type Loop2Yield = {
+  /**
+   * The current iteration index.
+   */
+  i: number
+  /**
+   * The current x coordinate.
+   */
+  x: number
+  /**
+   * The current y coordinate.
+   */
+  y: number
+  /**
+   * The normalized x coordinate (0 to 1).
+   */
+  tx: number
+  /**
+   * The normalized y coordinate (0 to 1).
+   */
+  ty: number
+}
 export function loop2(width: number, height: number): Generator<Loop2Yield>
 export function loop2(size: Vector2Like | [number, number]): Generator<Loop2Yield>
 export function* loop2(...args: any[]) {

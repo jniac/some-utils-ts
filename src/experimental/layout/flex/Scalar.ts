@@ -11,13 +11,13 @@ const scalarExtensions = {
   'abs': ScalarType.Absolute,
   'rel': ScalarType.Relative,
   'opp': ScalarType.OppositeRelative,
-  'sml': ScalarType.SmallerRelative,
-  'lrg': ScalarType.LargerRelative,
+  'sm': ScalarType.SmallerRelative,
+  'lg': ScalarType.LargerRelative,
   'fr': ScalarType.Fraction,
 }
 
 const scalarExtraExtensions = {
-  'prt': ScalarType.Fraction, // backwards compatibility
+  '%': ScalarType.Relative,
 }
 
 const allScalarExtensions = { ...scalarExtensions, ...scalarExtraExtensions }
