@@ -342,10 +342,16 @@ const updateInstances = (deltaTime: number) => {
       : 0 // progress is zero on infinite animation.
 
     const hasChanged =
-      // Bounds must be checked with the "old" value to ensure the minimum/maximum 
-      // values are reached (finishing with 1.000 and not 0.996 for example).
-      instance.unclampedTimeOld >= 0 && instance.unclampedTimeOld <= instance.duration
-      && instance.unclampedTime !== instance.unclampedTimeOld
+      // Check if the unclamped time has changed is not enough, because the time
+      // can be outside the bounds of the duration (negative or above)...
+      instance.unclampedTime !== instance.unclampedTimeOld && (
+        // ... we must also check if the time is within the bounds of the duration.
+        // The old and the current value must be tested both:
+        // - old: to ensure the instance is updated at least once when the bounds are reached (progress === 0 or 1)
+        // - current: to ensure the instance is updated when "seek" occurs.
+        (instance.unclampedTimeOld >= 0 && instance.unclampedTimeOld <= instance.duration)
+        || (instance.unclampedTime >= 0 && instance.unclampedTime <= instance.duration)
+      )
 
     const isPreRunning = instance.frame === 0 && instance.prerun
     if (hasChanged || isPreRunning) {
