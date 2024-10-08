@@ -6,8 +6,8 @@ const passModeValues = ['above', 'below', 'through'] as const
 type PassMode = (typeof passModeValues)[number]
 
 type ConstructorNumberOptions = ConstructorOptions<number> & Partial<{
-  min: number
-  max: number
+  upperBound: number
+  lowerBound: number
   integer: boolean
 }>
 
@@ -68,8 +68,8 @@ export class ObservableNumber extends Observable<number> {
       [lowerBound, upperBound] = options
       options = {} as ConstructorOptions<number>
     } else {
-      lowerBound = options?.min ?? lowerBound
-      upperBound = options?.max ?? upperBound
+      lowerBound = options?.lowerBound ?? lowerBound
+      upperBound = options?.upperBound ?? upperBound
     }
 
     super(clamp(initialValue, lowerBound, upperBound), options)
