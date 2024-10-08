@@ -4,7 +4,7 @@ import { isObject } from '../object/common'
 import { expandObject } from '../object/expand'
 import { omit } from '../object/misc'
 import { DestroyableObject } from '../types'
-import { EaseDeclaration, parseEase } from './easing'
+import { EaseDeclaration, parseEase, remap } from './easing'
 
 
 /**
@@ -614,12 +614,17 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
  * ```
  */
 const AnimationBundle = {
-  during,
+  // easing:
+  remap,
   ease: parseEase,
+
+  // animation:
+  during,
   tween,
   existing,
   clear,
   safewords,
+
   core: {
     instancesCount: () => instances.length,
     instances: () => [...instances],
@@ -635,7 +640,11 @@ export type {
 }
 
 export {
-  AnimationBundle as Animation
+  AnimationBundle as Animation,
+
+  // re-export easing functions:
+  parseEase,
+  remap
 }
 
 // if (typeof window !== 'undefined') {

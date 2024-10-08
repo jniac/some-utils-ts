@@ -116,6 +116,22 @@ function parseEase(declaration: EaseDeclaration): (value: number) => number {
   throw new Error(`Invalid argument for Animation.ease(): "${declaration}"`)
 }
 
+function remap(
+  x: number,
+  inMin: number,
+  inMax: number,
+  outMin: number,
+  outMax: number,
+  easeArg: ((x: number) => number) | EaseDeclaration = 'inOut2',
+) {
+  const t = (x - inMin) / (inMax - inMin)
+  const tClamped = t < 0 ? 0 : t > 1 ? 1 : t
+  const fn = typeof easeArg === 'function' ? easeArg : parseEase(easeArg)
+  const y = fn(tClamped)
+  return outMin + (outMax - outMin) * y
+}
+
+
 export type {
   EaseDeclaration
 }
@@ -127,6 +143,7 @@ const easing = parseEase
 
 export {
   easing,
-  parseEase
+  parseEase,
+  remap
 }
 
