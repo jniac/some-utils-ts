@@ -1,3 +1,4 @@
+import { calculateExponentialDecay } from '../math/misc/exponential-decay'
 import { DestroyableObject } from '../types'
 import { Memorization } from './memorization'
 import { Callback, ConstructorOptions, Observable, OnChangeOptions, SetValueOptions } from './observable'
@@ -302,7 +303,12 @@ export class ObservableNumber extends Observable<number> {
     return alpha
   }
 
+  exponentialDecay(targetValue: number, decay: number, deltaTime: number): boolean {
+    return this.setValue(calculateExponentialDecay(this._value, targetValue, decay, deltaTime))
+  }
+
   /**
+   * @deprecated Use {@link exponentialDecay} instead.
    * Grow the value exponentially towards the target.
    * 
    * If value = 100, target = 200, grow = 0.3, deltaTime = 1, then the new value will be 130.
