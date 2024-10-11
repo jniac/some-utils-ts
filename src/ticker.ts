@@ -39,6 +39,43 @@ export class Tick {
     return this.sinTime(...args) * 0.5 + 0.5
   }
 
+  static defaultPropagateOptions = {
+    /**
+     * Children accessor function.
+     */
+    childrenAccessor: <(scope: Record<string, any>) => Record<string, any> | string>(scope => scope.children),
+  }
+  /**
+   * Convenient method to propagate the tick to the children of a given root object.
+   * 
+   * Usage:
+   * ```
+   * myTicker.onTick(tick => {
+   *   tick.propagate(myRootObject)
+   * })
+   * ```
+   */
+  propagate(root: object, options?: Partial<typeof Tick.defaultPropagateOptions>): this {
+    const { childrenAccessor: childrenAccessorArg } = { ...Tick.defaultPropagateOptions, ...options }
+    const childrenAccessor = typeof childrenAccessorArg === 'function'
+      ? childrenAccessorArg
+      : (scope: any) => scope[childrenAccessorArg]
+    const queue = [root]
+    while (queue.length > 0) {
+      const object = queue.shift()!
+      if (object && typeof object === 'object') {
+        if ('onTick' in object) {
+          (object as any)['onTick'](this)
+        }
+        const children = childrenAccessor(object)
+        if (Array.isArray(children)) {
+          queue.push(...children)
+        }
+      }
+    }
+    return this
+  }
+
   toString() {
     return `frame: ${this.frame}, time: ${this.time.toFixed(2)}, deltaTime: ${this.deltaTime.toFixed(4)}`
   }
@@ -228,7 +265,7 @@ export class Ticker implements DestroyableObject {
    * 
    * Useful for shader uniforms.
    */
-  uTime = Object.defineProperty({}, 'value', {
+  uTime = Object.defineProperty({}, 'value', { // NOTE: Getters can't be declared using arrow functions.
     enumerable: true,
     get: () => this.tick.time,
   }) as { readonly value: number }
@@ -290,17 +327,26 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  set(props: Partial<typeof Ticker.defaultProps & { requestActivation: boolean }>): this {
+  static defaultSetOptions = {
+    requestActivation: true,
+    minActiveDuration: <number | null>null,
+  }
+  set(props: Partial<typeof Ticker.defaultProps & typeof Ticker.defaultSetOptions>): this {
     const {
-      requestActivation = true,
+      requestActivation,
+      minActiveDuration,
       order,
       ...rest
-    } = props
+    } = { ...Ticker.defaultSetOptions, ...props }
 
     // Order is a special case
     if (order !== undefined) {
       this.props.order = order
       flags.orderChanged = true
+    }
+
+    if (minActiveDuration !== null) {
+      this.props.activeDuration = Math.max(this.props.activeDuration, minActiveDuration)
     }
 
     Object.assign(this.props, rest)
