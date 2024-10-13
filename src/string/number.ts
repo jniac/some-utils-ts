@@ -15,7 +15,7 @@ export function removeTrailingZeros(str: string): string {
 }
 
 export function formatNumber(n: number, {
-  maxDigits = 6,
+  maxDigits = 8,
 } = {}): string {
   if (maxDigits < 6) {
     throw new Error('maxDigits must be at least 6')
@@ -34,7 +34,7 @@ export function formatNumber(n: number, {
     ilen > maxDigits ||
     flen < 0
   if (usePrecision) {
-    let [b, e] = n.toPrecision().split('e')
+    let [b, e] = n.toPrecision(maxDigits).split('e')
     b = b.slice(0, maxDigits - e.length - 1)
     return `${removeTrailingZeros(b)}e${e}`
   }
