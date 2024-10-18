@@ -1,3 +1,4 @@
+import { formatNumber } from '../../string/number'
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
 import { Padding, PaddingDeclaration } from './padding'
@@ -780,6 +781,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
 
   tupple(): [number, number, number, number] {
     return [this.x, this.y, this.width, this.height]
+  }
+
+  toViewBox(): string {
+    return `${formatNumber(this.x)} ${formatNumber(this.y)} ${formatNumber(this.width)} ${formatNumber(this.height)}`
   }
 }
 
