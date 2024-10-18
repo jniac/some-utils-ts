@@ -93,6 +93,10 @@ export const glsl_utils = /* glsl */`
     return k * pow(x, a) * pow(1.0 - x, b);
   }
 
+  float hash(vec3 p) {
+    return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
+  }
+
   ${generics('vecX', /* glsl */`
     T min3(in T a, in T b, in T c) {
       return min(min(a, b), c);
