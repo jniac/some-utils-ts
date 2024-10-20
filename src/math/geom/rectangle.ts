@@ -12,6 +12,8 @@ export type RectangleDeclaration =
   | { position?: Vector2Like, extent: number | Vector2Like }
   | { position?: Vector2Like, size: Vector2Like }
 
+export const defaultRectangleDeclaration: RectangleDeclaration = { x: 0, y: 0, width: 1, height: 1 }
+
 export function fromRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
   if (Array.isArray(declaration)) {
     if (declaration.length === 2) {
@@ -160,8 +162,8 @@ class RectangleCastResult {
  * - contains methods
  */
 export class Rectangle implements RectangleLike, Iterable<number> {
-  static from(source: RectangleDeclaration): Rectangle {
-    return fromRectangleDeclaration(source, new Rectangle())
+  static from(source?: RectangleDeclaration): Rectangle {
+    return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, new Rectangle())
   }
 
   x: number = 0
