@@ -220,15 +220,50 @@ export class Ticker implements DestroyableObject {
 
   // Static props
   static defaultStaticProps = {
+    /**
+     * The name of the ticker. It's used identifiy the ticker, by example when
+     * calling `Ticker.get(name)`.
+     */
     name: null as string | null,
+    /**
+     * The maximum number of ticks that is kept in memory. If the number of ticks
+     * exceeds this value, the oldest ticks will be removed.
+     * 
+     * NOTE: Ticks are stored in a linked list, each tick has a reference to the
+     * previous tick. 
+     */
     tickMaxCount: 60,
+    /**
+     * The maximum deltaTime that can be used in a single tick. It's useful to
+     * prevent the application from making huge jumps in time when the application
+     * lags for a moment.
+     */
     maxDeltaTime: 1 / 10,
   }
 
   // Dynamic props
   static defaultProps = {
+    /**
+     * The order of the ticker. The lower the order, the earlier the ticker will be
+     * updated.
+     * 
+     * NOTE: Listeners of the ticker have also their own order, which is used to 
+     * sort the listeners "inside" the ticker.
+     */
     order: 0,
+    /**
+     * The duration of the active state of the ticker. When the ticker is activated,
+     * the ticker updates itself until the active duration is reached. After that,
+     * the ticker deactivates itself, listeners are no more called.
+     * 
+     * Set to `Infinity` to keep the ticker always active.
+     */
     activeDuration: 10,
+    /**
+     * The duration of the fade-out of the active state of the ticker. This allows
+     * to make a smooth transition when the ticker deactivates itself (the application
+     * will smoothly stop updating).
+     */
     activeFadeDuration: 1,
   }
 
@@ -462,67 +497,80 @@ export class Ticker implements DestroyableObject {
     const { updateListeners } = this.internal
     return updateListeners.removeById(id)
   }
+
+  /**
+   * Creates the next tick which is immediately called dispatched to the listeners.
+   * 
+   * That's the core method of the Ticker. It is automatically called internally.
+   * Normally, you don't need to call it manually. But in some cases, it can be
+   * used to manually update the ticker, for example to capture every frame of an
+   * animation. In such cases, the ticker must be stopped first, after which the
+   * `nextTick` method can be called manually:
+   * 
+   * ```
+   * ticker.stop()
+   * ticker.nextTick(1 / 120)
+   * ```
+   * 
+   * @param deltaTime The time that has passed since the last tick.
+   * @param activeTime The current "active" time. It's the time that has passed since the ticker was activated OR the last request of activation. It's used internally to calculate the activeTimeScale. For manual use, `0` can be passed.
+   * @returns 
+   */
+  nextTick(deltaTime = 1 / 60, activeTime = 0): this {
+    const { timeScale } = this.internal
+    const { tickMaxCount } = this.staticProps
+    const { activeDuration, activeFadeDuration } = this.props
+
+    const { tick: previousTick } = this
+
+    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
+    const activeTimeScale = 1 - activeExtraTime * activeExtraTime // ease-out-2
+
+    const frame = previousTick.frame + 1
+    const time = previousTick.time + deltaTime
+
+    this.tick = new Tick(
+      previousTick,
+      frame,
+      time,
+      deltaTime,
+      timeScale,
+      activeTimeScale,
+      activeTime,
+      activeDuration,
+    )
+
+    let currentTick: Tick | null = previousTick
+    let count = 0
+    while (currentTick && ++count < tickMaxCount) {
+      currentTick = currentTick.previousTick
+    }
+    if (currentTick) {
+      currentTick.previousTick = null // Prevent memory leak
+    }
+
+    try {
+      this.internal.updateListeners.call(this.tick)
+    } catch (error) {
+      console.error(`Error in Ticker "${this.name}"`)
+      console.error(this.tick.toString())
+      console.error(error)
+      this.internal.caughtErrors = true
+    }
+
+    if (activeTimeScale === 0) {
+      this.internal.active = false
+      this.internal.deactivationListeners.call(this.tick)
+    }
+
+    return this
+  }
 }
 
 const tickers: Ticker[] = []
 
 const flags = {
   orderChanged: false,
-}
-
-function updateTicker(ticker: Ticker) {
-  const { active, activeLastRequest, stopped, timeScale, caughtErrors } = ticker.internal
-
-  if (caughtErrors || active === false || stopped) {
-    return
-  }
-
-  const { tickMaxCount, maxDeltaTime } = ticker.staticProps
-  const { activeDuration, activeFadeDuration } = ticker.props
-
-  const { tick: previousTick } = ticker
-
-  const activeTime = globalTime - activeLastRequest
-  const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
-  const activeTimeScale = 1 - activeExtraTime * activeExtraTime // ease-out-2
-
-  const frame = previousTick.frame + 1
-  const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale
-  const time = previousTick.time + deltaTime
-
-  ticker.tick = new Tick(
-    previousTick,
-    frame,
-    time,
-    deltaTime,
-    timeScale,
-    activeTimeScale,
-    activeTime,
-    activeDuration,
-  )
-
-  let currentTick: Tick | null = previousTick
-  let count = 0
-  while (currentTick && ++count < tickMaxCount) {
-    currentTick = currentTick.previousTick
-  }
-  if (currentTick) {
-    currentTick.previousTick = null // Prevent memory leak
-  }
-
-  try {
-    ticker.internal.updateListeners.call(ticker.tick)
-  } catch (error) {
-    console.error(`Error in Ticker "${ticker.name}"`)
-    console.error(ticker.tick.toString())
-    console.error(error)
-    ticker.internal.caughtErrors = true
-  }
-
-  if (activeTimeScale === 0) {
-    ticker.internal.active = false
-    ticker.internal.deactivationListeners.call(ticker.tick)
-  }
 }
 
 function update(ms: number) {
@@ -536,7 +584,22 @@ function update(ms: number) {
   }
 
   for (const ticker of tickers) {
-    updateTicker(ticker)
+    const { active, activeLastRequest, stopped, timeScale, caughtErrors } = ticker.internal
+
+    if (caughtErrors || active === false || stopped) {
+      return
+    }
+
+    const { maxDeltaTime } = ticker.staticProps
+    const { activeDuration, activeFadeDuration } = ticker.props
+
+    const activeTime = globalTime - activeLastRequest
+    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
+    const activeTimeScale = 1 - activeExtraTime ** 2 // ease-out-2
+
+    const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale
+
+    ticker.nextTick(deltaTime, activeTime)
   }
 }
 
@@ -544,6 +607,7 @@ function windowLoop() {
   window.requestAnimationFrame(windowLoop)
   update(performance.now())
 }
+
 if (typeof window !== 'undefined') {
   windowLoop()
 }
