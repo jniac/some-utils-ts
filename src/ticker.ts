@@ -499,7 +499,7 @@ export class Ticker implements DestroyableObject {
   }
 
   /**
-   * Creates the next tick which is immediately called dispatched to the listeners.
+   * Creates the next tick which is immediately dispatched to the listeners.
    * 
    * That's the core method of the Ticker. It is automatically called internally.
    * Normally, you don't need to call it manually. But in some cases, it can be
