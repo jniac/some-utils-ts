@@ -12,6 +12,23 @@ export function calculateExponentialDecay(currentValue: number, desiredValue: nu
 }
 
 /**
+ * Calculates the lerp ratio for exponential decay.
+ * 
+ * The returned value can be used to lerp between two values, where the first 
+ * value is the current value and the second value is the target value.
+ * 
+ * Usage: 
+ * ```
+ * const lerpRatio = calculateExponentialDecayLerpRatio(.33, deltaTime)
+ * const value = lerp(currentValue, targetValue, lerpRatio)
+ * ```
+ */
+export function calculateExponentialDecayLerpRatio(decay: number, deltaTime: number) {
+  const k = -Math.log(decay)
+  return 1 - Math.exp(-k * deltaTime)
+}
+
+/**
  * Represents a value that decays exponentially towards a target value.
  * 
  * Usage:
