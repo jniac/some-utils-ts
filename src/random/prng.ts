@@ -95,6 +95,9 @@ function create() {
       }
     }
   }
+  /**
+   * Returns a random number between min and max.
+   */
   function between(): number
   function between(max: number): number
   function between(min: number, max: number): number
@@ -104,6 +107,12 @@ function create() {
     return min + (max - min) * distribution(random())
   }
 
+  /**
+   * Returns a random number between -extent and extent.
+   * 
+   * If distribution is provided, it will be used to transform the random value 
+   * "around" the center (0) value.
+   */
   function around(): number
   function around(extent: number): number
   function around(extent: number, distribution: (x: number) => number): number
@@ -146,6 +155,14 @@ function create() {
     return result
   }
 
+  /**
+   * Returns a random item from the given list of items.
+   * 
+   * If weights are provided, the items will be picked with the given weights.
+   * @param items The list of items to pick from.
+   * @param weights The list of weights associated with the items (optional).
+   * @param pickOptions Some options to control the behavior of the function (optional).
+   */
   function pick<T>(
     items: T[],
     weights?: number[] | null,
