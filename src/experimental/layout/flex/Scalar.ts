@@ -1,10 +1,10 @@
 export enum ScalarType {
-  Absolute = 1 << 0,
-  Relative = 1 << 1,
-  OppositeRelative = 1 << 2,
-  SmallerRelative = 1 << 3,
-  LargerRelative = 1 << 4,
-  Fraction = 1 << 5,
+  Absolute = 0,
+  Relative = 1,
+  OppositeRelative = 2,
+  SmallerRelative = 3,
+  LargerRelative = 4,
+  Share = 5,
 }
 
 const scalarExtensions = {
@@ -13,21 +13,63 @@ const scalarExtensions = {
   'opp': ScalarType.OppositeRelative,
   'sm': ScalarType.SmallerRelative,
   'lg': ScalarType.LargerRelative,
-  'fr': ScalarType.Fraction,
+  'sh': ScalarType.Share,
 }
 
 const scalarExtraExtensions = {
   '%': ScalarType.Relative,
+  /**
+   * @deprecated
+   * Use `sh` instead.
+   * @see ScalarType.Share
+   */
+  'fr': ScalarType.Share,
 }
 
 const allScalarExtensions = { ...scalarExtensions, ...scalarExtraExtensions }
 
 type ScalarExtension = keyof typeof allScalarExtensions
 
-export type ScalarDeclaration = number | `${number}${ScalarExtension}`
+export type ScalarDeclaration =
+  | number
+  | `${number}`
+  | `${number}${ScalarExtension}`
 
 const scalarExtensionsReverse: Record<ScalarType, ScalarExtension> = Object.fromEntries(
   Object.entries(allScalarExtensions).map(([k, v]) => [v, k] as [ScalarType, ScalarExtension])) as any
+
+export function parseScalar(arg: ScalarDeclaration, out = new Scalar()): Scalar {
+  if (typeof arg === 'number') {
+    out.value = arg
+    out.type = ScalarType.Absolute
+    return out
+  }
+
+  if (typeof arg !== 'string') {
+    console.log(`received:`, arg)
+    throw new Error('Invalid scalar declaration')
+  }
+
+  const m = arg.match(/([\d\.]+)([a-z%]+)?$/)!
+  if (!m) {
+    console.log(`received:`, arg)
+    throw new Error('Invalid scalar declaration')
+  }
+
+  const [_, v, t] = m
+  let value = Number.parseFloat(v)
+  const type = allScalarExtensions[t as ScalarExtension] ?? ScalarType.Absolute
+  if (Number.isNaN(value)) {
+    throw new Error('Invalid scalar declaration')
+  }
+  if (t === '%') {
+    value /= 100
+  }
+  out.value = value
+  out.type = type
+
+  return out
+}
 
 export class Scalar {
   static parse(str: ScalarDeclaration, out = new Scalar()): Scalar {
@@ -60,32 +102,14 @@ export class Scalar {
         return this.value * Math.min(parentValue, parentOppositeValue)
       case ScalarType.LargerRelative:
         return this.value * Math.max(parentValue, parentOppositeValue)
-      case ScalarType.Fraction:
+      case ScalarType.Share:
         return parentValue // "Part" space is always parent's size on normal axis (on colinear axis it is not computed here)
     }
   }
 
-  parse(arg: ScalarDeclaration): boolean {
-    if (typeof arg === 'number') {
-      this.value = arg
-      this.type = ScalarType.Absolute
-      return true
-    }
-
-    if (typeof arg !== 'string') {
-      console.log(`received:`, arg)
-      throw new Error('Invalid scalar declaration')
-    }
-
-    const m = arg.match(/([\d\.]+)([a-z]+)$/)!
-    if (!m) return false
-    const [_, v, t] = m
-    const value = Number.parseFloat(v)
-    const type = allScalarExtensions[t as ScalarExtension]
-    if (Number.isNaN(value) || type === undefined) return false
-    this.value = value
-    this.type = type
-    return true
+  parse(arg: any): this {
+    parseScalar(arg, this)
+    return this
   }
 
   toString(): string {
