@@ -1,9 +1,9 @@
 import { Rectangle } from '../../../math/geom/rectangle'
 import { Vector2Like } from '../../../types'
 
-import { Direction, DirectionDeclaration, parseDirection } from './Direction'
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { computeChildrenRect, computeRootRect } from './Space.layout'
+import { Direction, DirectionDeclaration, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 type PaddingDeclaration =
   | ScalarDeclaration
@@ -26,7 +26,6 @@ function fromPaddingDeclaration(arg: PaddingDeclaration) {
   }
   throw new Error('Invalid number of arguments')
 }
-
 
 /**
  * `some-utilz/layout/flex` is a naive yet robust flex layout system.
@@ -99,6 +98,7 @@ function fromPaddingDeclaration(arg: PaddingDeclaration) {
 export class Space {
   enabled: boolean = true
   direction: Direction
+  positioning: Positioning
 
   root: Space
   parent: Space | null = null
@@ -106,8 +106,8 @@ export class Space {
 
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
-  sizeX = new Scalar(1, ScalarType.Fraction)
-  sizeY = new Scalar(1, ScalarType.Fraction)
+  sizeX = new Scalar(1, ScalarType.Share)
+  sizeY = new Scalar(1, ScalarType.Share)
 
   extraSizeX = new Scalar(1, ScalarType.Relative)
   extraSizeY = new Scalar(1, ScalarType.Relative)
@@ -121,15 +121,31 @@ export class Space {
 
   gap: Scalar = new Scalar(0, ScalarType.Absolute)
 
+  /**
+   * The horizontal alignment of the children spaces:
+   * - `0`: left
+   * - `1`: right
+   * 
+   * Default is `0.5` (center).
+   */
   alignX: number = .5
+
+  /**
+   * The vertical alignment of the children spaces:
+   * - `0`: top
+   * - `1`: bottom
+   * 
+   * Default is `0.5` (center).
+   */
   alignY: number = .5
 
   rect = new Rectangle()
 
   userData: Record<string, any> = {}
 
-  constructor(direction: Direction = Direction.Horizontal) {
+  constructor(direction = Direction.Horizontal, positioning = Positioning.Flow) {
     this.direction = direction
+    this.positioning = positioning
     this.root = this
   }
 
@@ -321,8 +337,34 @@ export class Space {
     return this
   }
 
+  set(props: Partial<{
+    positioning: Parameters<Space['setPositioning']>[0]
+    direction: Parameters<Space['setDirection']>[0]
+    offset: Parameters<Space['setOffset']>[0]
+    size: Parameters<Space['setSize']>[0]
+  }>) {
+    if (props.positioning) {
+      this.setPositioning(props.positioning)
+    }
+    if (props.direction) {
+      this.setDirection(props.direction)
+    }
+    if (props.offset) {
+      this.setOffset(props.offset)
+    }
+    if (props.size) {
+      this.setSize(props.size)
+    }
+    return this
+  }
+
   setDirection(direction: DirectionDeclaration): this {
     this.direction = parseDirection(direction)
+    return this
+  }
+
+  setPositioning(positioning: PositioningDeclaration): this {
+    this.positioning = parsePositioning(positioning)
     return this
   }
 
@@ -369,9 +411,9 @@ export class Space {
       this.sizeX.parse(x)
       this.sizeY.parse(y)
     } else {
-      const [x, y] = args
+      const [x, y = x] = args
       this.sizeX.parse(x)
-      this.sizeY.parse(y ?? x)
+      this.sizeY.parse(y)
     }
     return this
   }
@@ -453,5 +495,46 @@ export class Space {
   // Utils:
   getUvRect(): Rectangle {
     return this.rect.clone().relativeTo(this.root.rect)
+  }
+
+  parse(str: string) {
+    if (!str) {
+      return
+    }
+
+    // Define the regular expression pattern
+    const pattern = /(\w+)(?:\(([^)]+)\))?/g
+    const matches = [] as { token: string, args: string[] }[]
+
+    // Iterate over all matches
+    let match
+    while ((match = pattern.exec(str)) !== null) {
+      const token = match[1]
+      const args = match[2] ? match[2].split(',').map(arg => arg.trim()) : []
+      matches.push({ token, args })
+    }
+
+    for (const { token, args } of matches) {
+      switch (token) {
+        case 'horizontal': {
+          this.direction = Direction.Horizontal
+          break
+        }
+        case 'vertical': {
+          this.direction = Direction.Vertical
+          break
+        }
+        case 'size': {
+          const [width, height = width] = args
+          this.sizeX.parse(width)
+          this.sizeY.parse(height)
+          break
+        }
+        default: {
+          console.log(str, matches)
+          throw new Error(`Unknow type: "${token}"`)
+        }
+      }
+    }
   }
 }

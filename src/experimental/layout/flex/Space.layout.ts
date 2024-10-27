@@ -1,9 +1,9 @@
 import { split } from '../../../iteration/high-order'
 import { Padding } from '../../../math/geom/padding'
 import { Rectangle } from '../../../math/geom/rectangle'
-import { Direction } from './Direction'
 import { ScalarType } from './Scalar'
 import { Space } from './Space'
+import { Direction, Positioning } from './types'
 
 export function computeRootRect(space: Space) {
   const { offsetX, offsetY, sizeX, sizeY } = space
@@ -31,7 +31,7 @@ export function computePadding(space: Space) {
   {
     // Check
     for (const side of space.padding) {
-      if (side.type === ScalarType.Fraction) {
+      if (side.type === ScalarType.Share) {
         throw new Error('Share padding is not allowed')
       }
     }
@@ -67,23 +67,40 @@ export function computeChildrenRect(space: Space) {
     return
   }
 
-  const { width, height } = _innerRect
+  const { x, y, width, height } = _innerRect
     .copy(space.rect)
     .applyPadding(computePadding(space))
   const gap = space.gap.compute(width, height)
 
-  const [regularChildren, shareChildren, totalShare] = enabledChildren.reduce((acc, child) => {
-    const size = direction === Direction.Horizontal
-      ? child.sizeX
-      : child.sizeY
-    if (size.type !== ScalarType.Fraction) {
+  const [detachedChildren, flowChildren, regularChildren, shareChildren, totalShare] = enabledChildren.reduce((acc, child) => {
+    if (child.positioning === Positioning.Detached) {
       acc[0].push(child)
     } else {
-      acc[1].push(child)
-      acc[2] += size.value
+      acc[1].push(child) // Flow
+      const size = direction === Direction.Horizontal
+        ? child.sizeX
+        : child.sizeY
+      if (size.type !== ScalarType.Share) {
+        acc[2].push(child)
+      } else {
+        acc[3].push(child)
+        acc[4] += size.value
+      }
     }
     return acc
-  }, [[], [], 0] as [Space[], Space[], number])
+  }, [[], [], [], [], 0] as [Space[], Space[], Space[], Space[], number])
+
+  // Detached children
+  for (const child of detachedChildren) {
+    const w = child.sizeX.compute(width, height)
+    const h = child.sizeY.compute(height, width)
+    child.rect.width = child.extraSizeX.compute(w, h)
+    child.rect.height = child.extraSizeY.compute(h, w)
+    const innerWidth = width - child.rect.width
+    const innerHeight = height - child.rect.height
+    child.rect.x = x + child.offsetX.compute(innerWidth, innerHeight)
+    child.rect.y = y + child.offsetY.compute(innerHeight, innerWidth)
+  }
 
   let cumulative = 0
 
@@ -109,7 +126,7 @@ export function computeChildrenRect(space: Space) {
   // Share children
   const shareRemaining = (direction === Direction.Horizontal ? width : height)
     - cumulative
-    - Math.max(0, enabledChildren.length - 1) * gap
+    - Math.max(0, flowChildren.length - 1) * gap
   const shareSize = shareRemaining > 0
     ? shareRemaining / totalShare : 0
   if (direction === Direction.Horizontal) {
@@ -130,20 +147,20 @@ export function computeChildrenRect(space: Space) {
 
   let finalRemaining = 0
   if (direction === Direction.Horizontal) {
-    finalRemaining = width - Math.max(0, enabledChildren.length - 1) * gap
-    for (const child of enabledChildren) {
+    finalRemaining = width - Math.max(0, flowChildren.length - 1) * gap
+    for (const child of flowChildren) {
       finalRemaining -= child.rect.width
     }
   } else {
-    finalRemaining = height - Math.max(0, enabledChildren.length - 1) * gap
-    for (const child of enabledChildren) {
+    finalRemaining = height - Math.max(0, flowChildren.length - 1) * gap
+    for (const child of flowChildren) {
       finalRemaining -= child.rect.height
     }
   }
 
   if (direction === Direction.Horizontal) {
     let cumulative = _innerRect.x + finalRemaining * alignX
-    for (const child of enabledChildren) {
+    for (const child of flowChildren) {
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
       const offy = child.offsetY.compute(child.rect.height, child.rect.width)
       child.rect.x = offx + cumulative
@@ -152,7 +169,7 @@ export function computeChildrenRect(space: Space) {
     }
   } else {
     let cumulative = _innerRect.y + finalRemaining * alignY
-    for (const child of enabledChildren) {
+    for (const child of flowChildren) {
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
       const offy = child.offsetY.compute(child.rect.height, child.rect.width)
       child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * alignX
