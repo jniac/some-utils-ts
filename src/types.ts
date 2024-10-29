@@ -63,6 +63,15 @@ export type Vector3Like = {
 
 export type Point3Like = Vector3Like
 
+export type Vector4Like = {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+export type Point4Like = Vector4Like
+
 export type RectangleLike = {
   x: number
   y: number
