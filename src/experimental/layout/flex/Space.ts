@@ -1,3 +1,4 @@
+import { fromVector2Declaration, Vector2Declaration } from '../../../declaration'
 import { Rectangle } from '../../../math/geom/rectangle'
 import { Vector2Like } from '../../../types'
 
@@ -5,13 +6,39 @@ import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { computeChildrenRect, computeRootRect } from './Space.layout'
 import { Direction, DirectionDeclaration, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
+export type Scalar2Declaration =
+  | ScalarDeclaration
+  | [x: ScalarDeclaration, y: ScalarDeclaration]
+  | { x: ScalarDeclaration, y: ScalarDeclaration }
+
+export function fromScalar2Declaration(arg: Scalar2Declaration, outX: Scalar, outY: Scalar): [Scalar, Scalar] {
+  if (Array.isArray(arg)) {
+    const [x, y] = arg
+    outX.parse(x)
+    outY.parse(y)
+    return [outX, outY]
+  }
+
+  if (typeof arg === 'object') {
+    outX.parse(arg.x)
+    outY.parse(arg.y)
+    return [outX, outY]
+  }
+
+  outX.parse(arg)
+  outY.parse(arg)
+  return [outX, outY]
+}
+
+type PaddingTupleDeclaration = [top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration]
+
 type PaddingDeclaration =
   | ScalarDeclaration
   | [all: ScalarDeclaration]
   | [vertical: ScalarDeclaration, horizontal: ScalarDeclaration]
-  | [top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration]
+  | PaddingTupleDeclaration
 
-function fromPaddingDeclaration(arg: PaddingDeclaration) {
+function fromPaddingDeclaration(arg: PaddingDeclaration): PaddingTupleDeclaration {
   if (Array.isArray(arg) === false) {
     return [arg, arg, arg, arg]
   } else {
@@ -21,11 +48,49 @@ function fromPaddingDeclaration(arg: PaddingDeclaration) {
     } else if (array.length === 2) {
       return [array[0], array[1], array[0], array[1]]
     } else if (array.length === 4) {
-      return array
+      return array as PaddingTupleDeclaration
     }
   }
   throw new Error('Invalid number of arguments')
 }
+
+type SpacingTupleDeclaration = [gap: ScalarDeclaration, ...PaddingTupleDeclaration]
+
+type SpacingDeclaration =
+  | ScalarDeclaration
+  | [gap: ScalarDeclaration, padding: ScalarDeclaration]
+  | [gap: ScalarDeclaration, vertical: ScalarDeclaration, horizontal: ScalarDeclaration]
+  | SpacingTupleDeclaration
+
+function fromSpacingDeclaration(arg: SpacingDeclaration): SpacingTupleDeclaration {
+  if (Array.isArray(arg) === false) {
+    return [arg, arg, arg, arg, arg]
+  }
+
+  const [gap, ...rest] = arg
+  return [gap, ...fromPaddingDeclaration(rest)]
+}
+
+type SetProps = Partial<{
+  direction: DirectionDeclaration
+  positioning: PositioningDeclaration
+  offset: Scalar2Declaration
+  offsetX: ScalarDeclaration
+  offsetY: ScalarDeclaration
+  size: Scalar2Declaration
+  sizeX: ScalarDeclaration
+  sizeY: ScalarDeclaration
+  align: Vector2Declaration
+  alignX: ScalarDeclaration
+  alignY: ScalarDeclaration
+  padding: PaddingDeclaration
+  paddingTop: ScalarDeclaration
+  paddingRight: ScalarDeclaration
+  paddingBottom: ScalarDeclaration
+  paddingLeft: ScalarDeclaration
+  gap: ScalarDeclaration
+  spacing: SpacingDeclaration
+}>
 
 /**
  * `some-utilz/layout/flex` is a naive yet robust flex layout system.
@@ -97,10 +162,10 @@ function fromPaddingDeclaration(arg: PaddingDeclaration) {
  */
 export class Space {
   enabled: boolean = true
-  direction: Direction
-  positioning: Positioning
+  direction: Direction = Direction.Horizontal
+  positioning: Positioning = Positioning.Flow
 
-  root: Space
+  root: Space = this
   parent: Space | null = null
   children: Space[] = []
 
@@ -143,10 +208,173 @@ export class Space {
 
   userData: Record<string, any> = {}
 
-  constructor(direction = Direction.Horizontal, positioning = Positioning.Flow) {
-    this.direction = direction
-    this.positioning = positioning
-    this.root = this
+  /**
+   * @deprecated Use `new Space({ direction: Direction.Horizontal })` instead.
+   */
+  constructor(direction: Direction)
+  /**
+   * Create a new Space with the given properties.
+   */
+  constructor(props?: SetProps)
+  constructor(arg?: Direction | SetProps) {
+    if (arg) {
+      if (typeof arg === 'object') {
+        this.set(arg)
+      } else {
+        this.direction = arg
+      }
+      this.root = this
+    }
+  }
+
+  set(props: SetProps): this {
+    if (props.direction) {
+      this.direction = parseDirection(props.direction)
+    }
+    if (props.positioning) {
+      this.positioning = parsePositioning(props.positioning)
+    }
+    if (props.offset) {
+      fromScalar2Declaration(props.offset, this.offsetX, this.offsetY)
+    }
+    if (props.offsetX) {
+      this.offsetX.parse(props.offsetX)
+    }
+    if (props.offsetY) {
+      this.offsetY.parse(props.offsetY)
+    }
+    if (props.size) {
+      fromScalar2Declaration(props.size, this.sizeX, this.sizeY)
+    }
+    if (props.sizeX) {
+      this.sizeX.parse(props.sizeX)
+    }
+    if (props.sizeY) {
+      this.sizeY.parse(props.sizeY)
+    }
+    if (props.align) {
+      const { x, y } = fromVector2Declaration(props.align)
+      this.alignX = x
+      this.alignY = y
+    }
+    if (props.padding) {
+      const [top, right, bottom, left] = fromPaddingDeclaration(props.padding as any)
+      this.padding[0].parse(top)
+      this.padding[1].parse(right)
+      this.padding[2].parse(bottom)
+      this.padding[3].parse(left)
+    }
+    if (props.gap) {
+      this.gap.parse(props.gap)
+    }
+    if (props.spacing) {
+      const [gap, top, right, bottom, left] = fromSpacingDeclaration(props.spacing as any)
+      this.gap.parse(gap)
+      this.padding[0].parse(top)
+      this.padding[1].parse(right)
+      this.padding[2].parse(bottom)
+      this.padding[3].parse(left)
+    }
+    return this
+  }
+
+  setDirection(direction: DirectionDeclaration): this {
+    this.direction = parseDirection(direction)
+    return this
+  }
+
+  setPositioning(positioning: PositioningDeclaration): this {
+    this.positioning = parsePositioning(positioning)
+    return this
+  }
+
+  setOffset(x: ScalarDeclaration, y?: ScalarDeclaration): this
+  setOffset(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
+  setOffset(...args: any): this {
+    if (args[0] && typeof args[0] === 'object') {
+      const { x, y = x } = args[0]
+      this.offsetX.parse(x)
+      this.offsetY.parse(y)
+    } else {
+      const [x, y = x] = args
+      this.offsetX.parse(x)
+      this.offsetY.parse(y)
+    }
+    return this
+  }
+
+  setSize(x: ScalarDeclaration, y?: ScalarDeclaration): this
+  setSize(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
+  setSize(...args: any): this {
+    if (args[0] && typeof args[0] === 'object') {
+      const { x, y = x } = args[0]
+      this.sizeX.parse(x)
+      this.sizeY.parse(y)
+    } else {
+      const [x, y = x] = args
+      this.sizeX.parse(x)
+      this.sizeY.parse(y)
+    }
+    return this
+  }
+
+  /**
+   * Set the size of the space as an absolute rectangle. Useful for setting the 
+   * size of the root space.
+   */
+  setOffsetSizeAsAbsoluteRect(rect: Rectangle): this {
+    this.offsetX.set(rect.x, ScalarType.Absolute)
+    this.offsetY.set(rect.y, ScalarType.Absolute)
+    this.sizeX.set(rect.width, ScalarType.Absolute)
+    this.sizeY.set(rect.height, ScalarType.Absolute)
+    return this
+  }
+
+  setAlign(x: number, y: number = x): this {
+    this.alignX = x
+    this.alignY = y
+    return this
+  }
+
+  setUserData(props: Record<string, any>): this {
+    Object.assign(this.userData, props)
+    return this
+  }
+
+  setPadding(all: PaddingDeclaration): this
+  setPadding(all: ScalarDeclaration): this
+  setPadding(vertical: ScalarDeclaration, horizontal: ScalarDeclaration): this
+  setPadding(top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration): this
+  setPadding(...args: any[]): this {
+    if (args.length === 1 && Array.isArray(args[0])) {
+      args = args[0]
+    }
+    const [top, right, bottom, left] = fromPaddingDeclaration(args as any)
+    this.padding[0].parse(top)
+    this.padding[1].parse(right)
+    this.padding[2].parse(bottom)
+    this.padding[3].parse(left)
+    return this
+  }
+
+  setGap(value: ScalarDeclaration): this {
+    this.gap.parse(value)
+    return this
+  }
+
+  setSpacing(all: ScalarDeclaration): this
+  setSpacing(gap: ScalarDeclaration, padding: ScalarDeclaration): this
+  setSpacing(gap: ScalarDeclaration, vertical: ScalarDeclaration, horizontal: ScalarDeclaration): this
+  setSpacing(gap: ScalarDeclaration, top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration): this
+  setSpacing(...args: any[]): this {
+    const [gap, ...padding] = args
+    this.setGap(gap)
+    if (padding.length > 0) {
+      this.setPadding.apply(this, padding as any)
+    } else {
+      this.setPadding(gap)
+    }
+    return this
   }
 
   isRoot(): boolean {
@@ -223,7 +451,10 @@ export class Space {
    * 
    * Negative indexes are allowed.
    */
-  get(path: Iterable<number>): Space | null {
+  get(...path: number[]): Space | null
+  get(path: Iterable<number>): Space | null
+  get(...args: any[]): Space | null {
+    const path = (args[0] && typeof args[0] === 'object' && Symbol.iterator in args[0]) ? args[0] : args
     let current: Space = this
     for (let index of path) {
       if (index < 0) {
@@ -276,20 +507,32 @@ export class Space {
     return this
   }
 
-  populate({
-    count = 3,
-    size = <ScalarDeclaration>'1fr',
-    sizeX = <ScalarDeclaration>size,
-    sizeY = <ScalarDeclaration>size,
-    spacing = <ScalarDeclaration>0,
-    gap = <ScalarDeclaration>spacing,
-    padding = <PaddingDeclaration>0,
-  } = {}): this {
+  /**
+   * @deprecated Use `populate(count, props)` instead.
+   */
+  populate(props?: {
+    count: number
+    size: ScalarDeclaration
+    sizeX: ScalarDeclaration
+    sizeY: ScalarDeclaration
+    spacing: ScalarDeclaration
+    gap: ScalarDeclaration
+    padding: PaddingDeclaration
+  }): this
+  /**
+   * Populate the space with `count` spaces with the given properties for each space.
+   * @param count 
+   * @param props 
+   */
+  populate(count: number, props?: SetProps): this
+  populate(...args: any[]): this {
+    if (args.length === 1 && typeof args[0] === 'object') {
+      const { count, ...props } = args[0]
+      return this.populate(count, props)
+    }
+    const [count, props] = args
     for (let i = 0; i < count; i++) {
-      this.add(new Space()
-        .setSize(sizeX, sizeY)
-        .setPadding(padding)
-        .setSpacing(gap))
+      this.add(new Space(props))
     }
     return this
   }
@@ -337,37 +580,6 @@ export class Space {
     return this
   }
 
-  set(props: Partial<{
-    positioning: Parameters<Space['setPositioning']>[0]
-    direction: Parameters<Space['setDirection']>[0]
-    offset: Parameters<Space['setOffset']>[0]
-    size: Parameters<Space['setSize']>[0]
-  }>) {
-    if (props.positioning) {
-      this.setPositioning(props.positioning)
-    }
-    if (props.direction) {
-      this.setDirection(props.direction)
-    }
-    if (props.offset) {
-      this.setOffset(props.offset)
-    }
-    if (props.size) {
-      this.setSize(props.size)
-    }
-    return this
-  }
-
-  setDirection(direction: DirectionDeclaration): this {
-    this.direction = parseDirection(direction)
-    return this
-  }
-
-  setPositioning(positioning: PositioningDeclaration): this {
-    this.positioning = parsePositioning(positioning)
-    return this
-  }
-
   /**
    * Return the size of the space in the direction of the parent space.
    * 
@@ -386,110 +598,6 @@ export class Space {
   normalSize(): Scalar {
     const direction = this.direction
     return direction === Direction.Horizontal ? this.sizeX : this.sizeY
-  }
-
-  setOffset(x: ScalarDeclaration, y?: ScalarDeclaration): this
-  setOffset(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
-  setOffset(...args: any): this {
-    if (args[0] && typeof args[0] === 'object') {
-      const { x, y } = args[0]
-      this.offsetX.parse(x)
-      this.offsetY.parse(y)
-    } else {
-      const [x, y] = args
-      this.offsetX.parse(x)
-      this.offsetY.parse(y ?? x)
-    }
-    return this
-  }
-
-  setSize(x: ScalarDeclaration, y?: ScalarDeclaration): this
-  setSize(value: { x: ScalarDeclaration, y: ScalarDeclaration }): this
-  setSize(...args: any): this {
-    if (args[0] && typeof args[0] === 'object') {
-      const { x, y } = args[0]
-      this.sizeX.parse(x)
-      this.sizeY.parse(y)
-    } else {
-      const [x, y = x] = args
-      this.sizeX.parse(x)
-      this.sizeY.parse(y)
-    }
-    return this
-  }
-
-  /**
-   * Set the size of the space as an absolute rectangle. Useful for setting the 
-   * size of the root space.
-   */
-  setOffsetSizeAsAbsoluteRect(rect: Rectangle): this {
-    this.offsetX.set(rect.x, ScalarType.Absolute)
-    this.offsetY.set(rect.y, ScalarType.Absolute)
-    this.sizeX.set(rect.width, ScalarType.Absolute)
-    this.sizeY.set(rect.height, ScalarType.Absolute)
-    return this
-  }
-
-  setAlign(x: number, y: number = x): this {
-    this.alignX = x
-    this.alignY = y
-    return this
-  }
-
-  setUserData(props: Record<string, any>): this {
-    Object.assign(this.userData, props)
-    return this
-  }
-
-  setPadding(all: PaddingDeclaration): this
-  setPadding(all: ScalarDeclaration): this
-  setPadding(vertical: ScalarDeclaration, horizontal: ScalarDeclaration): this
-  setPadding(top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration): this
-  setPadding(...args: any[]): this {
-    if (args.length === 1 && Array.isArray(args[0])) {
-      args = args[0]
-    }
-    const [top, right, bottom, left] = fromPaddingDeclaration(args as any)
-    this.padding[0].parse(top)
-    this.padding[1].parse(right)
-    this.padding[2].parse(bottom)
-    this.padding[3].parse(left)
-    return this
-  }
-
-  setGap(value: ScalarDeclaration): this {
-    this.gap.parse(value)
-    return this
-  }
-
-  setSpacing(all: ScalarDeclaration): this
-  setSpacing(gap: ScalarDeclaration, padding: ScalarDeclaration): this
-  setSpacing(gap: ScalarDeclaration, vertical: ScalarDeclaration, horizontal: ScalarDeclaration): this
-  setSpacing(gap: ScalarDeclaration, top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration): this
-  setSpacing(...args: any[]): this {
-    const [gap, ...padding] = args
-    this.setGap(gap)
-    if (padding.length > 0) {
-      this.setPadding.apply(this, padding as any)
-    } else {
-      this.setPadding(gap)
-    }
-    return this
-  }
-
-  computeLayout(): this {
-    if (this.isRoot()) {
-      computeRootRect(this)
-    }
-
-    const queue: Space[] = [this]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      computeChildrenRect(current)
-      queue.push(...current.children)
-    }
-
-    return this
   }
 
   // Utils:
@@ -536,5 +644,23 @@ export class Space {
         }
       }
     }
+  }
+
+  /**
+   * Compute the layout of the space and its children. Should be called on the root space.
+   */
+  computeLayout(): this {
+    if (this.isRoot()) {
+      computeRootRect(this)
+    }
+
+    const queue: Space[] = [this]
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      computeChildrenRect(current)
+      queue.push(...current.children)
+    }
+
+    return this
   }
 }
