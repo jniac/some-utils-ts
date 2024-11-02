@@ -24,6 +24,13 @@ export class Tick {
   }
 
   /**
+   * Convenient method to get the cosine of the time.
+   */
+  cosTime({ frequency = 1, phase = 0 } = {}) {
+    return Math.cos((this.time + phase) * 2 * Math.PI * frequency)
+  }
+
+  /**
    * Convenient method to get the sine of the time.
    */
   sinTime({ frequency = 1, phase = 0 } = {}) {
@@ -31,12 +38,25 @@ export class Tick {
   }
 
   /**
+   * Convenient method to get the cosine of the time, but the value is between 0 and 1.
+   * 
+   * It's useful for animations combined with lerp.
+   * 
+   * NOTE: Starts at `0.0`
+   */
+  cos01Time(...args: Parameters<Tick['cosTime']>) {
+    return this.cosTime(...args) * -.5 + .5
+  }
+
+  /**
    * Convenient method to get the sine of the time, but the value is between 0 and 1.
    * 
    * It's useful for animations combined with lerp.
+   * 
+   * NOTE: Starts at `0.5`
    */
   sin01Time(...args: Parameters<Tick['sinTime']>) {
-    return this.sinTime(...args) * 0.5 + 0.5
+    return this.sinTime(...args) * .5 + .5
   }
 
   static defaultPropagateOptions = {
