@@ -1,4 +1,4 @@
-import { clamp01 } from './math/basic'
+import { clamp01, lerp } from './math/basic'
 import { DestroyableObject } from './types'
 
 let globalTime = 0
@@ -13,6 +13,9 @@ export class Tick {
     public readonly time: number = 0,
     public readonly deltaTime: number = 0,
     public readonly timeScale: number = 1,
+
+    public readonly unscaledTime: number = 0,
+    public readonly unscaledDeltaTime: number = 0,
 
     public readonly activeTimeScale: number = 1,
     public readonly activeTime: number = 0,
@@ -536,7 +539,7 @@ export class Ticker implements DestroyableObject {
    * @param activeTime The current "active" time. It's the time that has passed since the ticker was activated OR the last request of activation. It's used internally to calculate the activeTimeScale. For manual use, `0` can be passed.
    * @returns 
    */
-  nextTick(deltaTime = 1 / 60, activeTime = 0): this {
+  nextTick(deltaTime = 1 / 60, activeTime = 0, unscaledDeltaTime = deltaTime): this {
     const { timeScale } = this.internal
     const { tickMaxCount } = this.staticProps
     const { activeDuration, activeFadeDuration } = this.props
@@ -548,13 +551,19 @@ export class Ticker implements DestroyableObject {
 
     const frame = previousTick.frame + 1
     const time = previousTick.time + deltaTime
+    const unscaledTime = previousTick.unscaledTime + unscaledDeltaTime
 
     this.tick = new Tick(
       previousTick,
       frame,
+
       time,
       deltaTime,
       timeScale,
+
+      unscaledTime,
+      unscaledDeltaTime,
+
       activeTimeScale,
       activeTime,
       activeDuration,
@@ -617,9 +626,14 @@ function update(ms: number) {
     const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
     const activeTimeScale = 1 - activeExtraTime ** 2 // ease-out-2
 
-    const deltaTime = Math.min(globalDeltaTime, maxDeltaTime) * timeScale * activeTimeScale
+    let unscaledDeltaTime = Math.min(globalDeltaTime, maxDeltaTime)
 
-    ticker.nextTick(deltaTime, activeTime)
+    // Smooth deltaTime
+    unscaledDeltaTime = lerp(ticker.tick.unscaledDeltaTime, unscaledDeltaTime, .05)
+
+    const deltaTime = unscaledDeltaTime * timeScale * activeTimeScale
+
+    ticker.nextTick(deltaTime, activeTime, unscaledDeltaTime)
   }
 }
 
