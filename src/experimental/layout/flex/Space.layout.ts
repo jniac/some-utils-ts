@@ -110,7 +110,7 @@ const _innerRect = new Rectangle()
  * It assumes that the rect of the space itself has already been computed.
  */
 export function computeChildrenRect(space: Space) {
-  const { direction, alignItemsX, alignItemsY } = space
+  const { direction, alignChildrenX, alignChildrenY } = space
   const [enabledChildren, disabledChildren] = split(space.children, child => child.enabled ? 0 : 1)
 
   if (disabledChildren) {
@@ -205,10 +205,10 @@ export function computeChildrenRect(space: Space) {
     const freeWidth = innerWidth - child.rect.width
     const freeHeight = innerHeight - child.rect.height
     child.rect.x = innerX
-      + freeWidth * (child.alignSelfX ?? alignItemsX)
+      + freeWidth * (child.alignSelfX ?? alignChildrenX)
       + child.offsetX.compute(innerWidth, innerHeight)
     child.rect.y = innerY
-      + freeHeight * (child.alignSelfY ?? alignItemsY)
+      + freeHeight * (child.alignSelfY ?? alignChildrenY)
       + child.offsetY.compute(innerHeight, innerWidth)
   }
 
@@ -265,7 +265,7 @@ export function computeChildrenRect(space: Space) {
   // Compute the position of all children
   if (direction === Direction.Horizontal) {
     // let cumulative = _innerRect.x + finalRemaining * alignX
-    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignItemsX
+    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignChildrenX
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
@@ -274,9 +274,9 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeY.type === ScalarType.Fraction || child.sizeY.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].top - _padding.top)
         const endMargin = Math.max(0, _childrenMargins[index].bottom - _padding.bottom)
-        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignSelfY ?? alignItemsY)
+        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignSelfY ?? alignChildrenY)
       } else {
-        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignSelfY ?? alignItemsY)
+        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignSelfY ?? alignChildrenY)
       }
       cumulative += child.rect.width + tangentSpacings[index + 1]
     }
@@ -284,7 +284,7 @@ export function computeChildrenRect(space: Space) {
 
   else {
     // let cumulative = _innerRect.y + finalRemaining * alignY
-    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignItemsY
+    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignChildrenY
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
@@ -292,9 +292,9 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeX.type === ScalarType.Fraction || child.sizeX.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].left - _padding.left)
         const endMargin = Math.max(0, _childrenMargins[index].right - _padding.right)
-        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignSelfX ?? alignItemsX)
+        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignSelfX ?? alignChildrenX)
       } else {
-        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignSelfX ?? alignItemsX)
+        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignSelfX ?? alignChildrenX)
       }
       child.rect.y = offy + cumulative
       cumulative += child.rect.height + tangentSpacings[index + 1]
