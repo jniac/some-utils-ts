@@ -80,9 +80,9 @@ type SetProps = Partial<{
   size: Scalar2Declaration
   sizeX: ScalarDeclaration
   sizeY: ScalarDeclaration
-  alignItems: Vector2Declaration
-  alignItemsX: number
-  alignItemsY: number
+  alignChildren: Vector2Declaration
+  alignChildrenX: number
+  alignChildrenY: number
   alignSelf: Vector2Declaration<number | null>
   alignSelfX: number | null
   alignSelfY: number | null
@@ -212,7 +212,7 @@ export class Space {
    * 
    * Default is `0.5` (center).
    */
-  alignItemsX: number = .5
+  alignChildrenX: number = .5
 
   /**
    * The vertical alignment of the children spaces:
@@ -221,7 +221,7 @@ export class Space {
    * 
    * Default is `0.5` (center).
    */
-  alignItemsY: number = .5
+  alignChildrenY: number = .5
 
   alignSelfX: number | null = null
   alignSelfY: number | null = null
@@ -277,16 +277,16 @@ export class Space {
     if (props.aspect !== undefined) {
       this.aspect = props.aspect
     }
-    if (props.alignItems !== undefined) {
-      const { x, y } = fromVector2Declaration(props.alignItems)
-      this.alignItemsX = x
-      this.alignItemsY = y
+    if (props.alignChildren !== undefined) {
+      const { x, y } = fromVector2Declaration(props.alignChildren)
+      this.alignChildrenX = x
+      this.alignChildrenY = y
     }
-    if (props.alignItemsX !== undefined) {
-      this.alignItemsX = props.alignItemsX
+    if (props.alignChildrenX !== undefined) {
+      this.alignChildrenX = props.alignChildrenX
     }
-    if (props.alignItemsY !== undefined) {
-      this.alignItemsY = props.alignItemsY
+    if (props.alignChildrenY !== undefined) {
+      this.alignChildrenY = props.alignChildrenY
     }
     if (props.alignSelf !== undefined) {
       const { x, y } = fromVector2Declaration(props.alignSelf)
@@ -407,8 +407,8 @@ export class Space {
   }
 
   setAlign(x: number, y: number = x): this {
-    this.alignItemsX = x
-    this.alignItemsY = y
+    this.alignChildrenX = x
+    this.alignChildrenY = y
     return this
   }
 
