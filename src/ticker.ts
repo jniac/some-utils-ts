@@ -62,6 +62,20 @@ export class Tick {
     return this.sinTime(...args) * .5 + .5
   }
 
+  /**
+   * Convenient method to lerp between two values using the cosine of the time.
+   */
+  lerpCos01Time(a: number, b: number, ...args: Parameters<Tick['cosTime']>) {
+    return lerp(a, b, this.cos01Time(...args))
+  }
+
+  /**
+   * Convenient method to lerp between two values using the sine of the time.
+   */
+  lerpSin01Time(a: number, b: number, ...args: Parameters<Tick['sinTime']>) {
+    return lerp(a, b, this.sin01Time(...args))
+  }
+
   static defaultPropagateOptions = {
     /**
      * Children accessor function.
@@ -647,7 +661,7 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Shortcut for `Ticker.current().onTick(...)`.
+ * Shortcut for `Ticker.get("my-ticker").onTick(...)`.
  */
 export function onTick(tickerName: string, ...args: OnTickParameters): DestroyableObject
 export function onTick(...args: OnTickParameters): DestroyableObject
