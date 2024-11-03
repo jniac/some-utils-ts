@@ -264,7 +264,6 @@ export function computeChildrenRect(space: Space) {
 
   // Compute the position of all children
   if (direction === Direction.Horizontal) {
-    // let cumulative = _innerRect.x + finalRemaining * alignX
     let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignChildrenX
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
@@ -283,8 +282,7 @@ export function computeChildrenRect(space: Space) {
   }
 
   else {
-    // let cumulative = _innerRect.y + finalRemaining * alignY
-    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignChildrenY
+    let cumulative = space.rect.y + tangentSpacings[0] + finalRemaining * alignChildrenY
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
