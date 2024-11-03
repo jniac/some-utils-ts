@@ -781,8 +781,8 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     this.setAspect(value)
   }
 
-  tupple(): [number, number, number, number] {
-    return [this.x, this.y, this.width, this.height]
+  tupple(scalar = 1): [number, number, number, number] {
+    return [this.x * scalar, this.y * scalar, this.width * scalar, this.height * scalar]
   }
 
   toViewBox(): string {
