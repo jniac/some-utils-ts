@@ -1,10 +1,11 @@
 export enum ScalarType {
-  Absolute = 0,
-  Relative = 1,
-  OppositeRelative = 2,
-  SmallerRelative = 3,
-  LargerRelative = 4,
-  Share = 5,
+  Auto,
+  Absolute,
+  Relative,
+  OppositeRelative,
+  SmallerRelative,
+  LargerRelative,
+  Fraction,
 }
 
 const scalarExtensions = {
@@ -13,17 +14,16 @@ const scalarExtensions = {
   'opp': ScalarType.OppositeRelative,
   'sm': ScalarType.SmallerRelative,
   'lg': ScalarType.LargerRelative,
-  'sh': ScalarType.Share,
+  'fr': ScalarType.Fraction,
 }
 
 const scalarExtraExtensions = {
   '%': ScalarType.Relative,
+  'part': ScalarType.Fraction,
   /**
-   * @deprecated
-   * Use `sh` instead.
-   * @see ScalarType.Share
+   * "sh" for "share".
    */
-  'fr': ScalarType.Share,
+  'sh': ScalarType.Fraction,
 }
 
 const allScalarExtensions = { ...scalarExtensions, ...scalarExtraExtensions }
@@ -31,6 +31,7 @@ const allScalarExtensions = { ...scalarExtensions, ...scalarExtraExtensions }
 type ScalarExtension = keyof typeof allScalarExtensions
 
 export type ScalarDeclaration =
+  | 'auto'
   | number
   | `${number}`
   | `${number}${ScalarExtension}`
@@ -39,6 +40,12 @@ const scalarExtensionsReverse: Record<ScalarType, ScalarExtension> = Object.from
   Object.entries(allScalarExtensions).map(([k, v]) => [v, k] as [ScalarType, ScalarExtension])) as any
 
 export function parseScalar(arg: ScalarDeclaration, out = new Scalar()): Scalar {
+  if (arg === 'auto') {
+    out.value = 1
+    out.type = ScalarType.Auto
+    return out
+  }
+
   if (typeof arg === 'number') {
     out.value = arg
     out.type = ScalarType.Absolute
@@ -102,7 +109,8 @@ export class Scalar {
         return this.value * Math.min(parentValue, parentOppositeValue)
       case ScalarType.LargerRelative:
         return this.value * Math.max(parentValue, parentOppositeValue)
-      case ScalarType.Share:
+      case ScalarType.Auto:
+      case ScalarType.Fraction:
         return parentValue // "Part" space is always parent's size on normal axis (on colinear axis it is not computed here)
     }
   }

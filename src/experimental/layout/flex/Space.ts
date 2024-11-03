@@ -30,15 +30,15 @@ export function fromScalar2Declaration(arg: Scalar2Declaration, outX: Scalar, ou
   return [outX, outY]
 }
 
-type PaddingTupleDeclaration = [top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration]
+type BoxSpacingTupleDeclaration = [top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration]
 
-type PaddingDeclaration =
+type BoxSpacingDeclaration =
   | ScalarDeclaration
   | [all: ScalarDeclaration]
   | [vertical: ScalarDeclaration, horizontal: ScalarDeclaration]
-  | PaddingTupleDeclaration
+  | BoxSpacingTupleDeclaration
 
-function fromPaddingDeclaration(arg: PaddingDeclaration): PaddingTupleDeclaration {
+function fromBoxSpacingDeclaration(arg: BoxSpacingDeclaration): BoxSpacingTupleDeclaration {
   if (Array.isArray(arg) === false) {
     return [arg, arg, arg, arg]
   } else {
@@ -48,13 +48,13 @@ function fromPaddingDeclaration(arg: PaddingDeclaration): PaddingTupleDeclaratio
     } else if (array.length === 2) {
       return [array[0], array[1], array[0], array[1]]
     } else if (array.length === 4) {
-      return array as PaddingTupleDeclaration
+      return array as BoxSpacingTupleDeclaration
     }
   }
   throw new Error('Invalid number of arguments')
 }
 
-type SpacingTupleDeclaration = [gap: ScalarDeclaration, ...PaddingTupleDeclaration]
+type SpacingTupleDeclaration = [gap: ScalarDeclaration, ...BoxSpacingTupleDeclaration]
 
 type SpacingDeclaration =
   | ScalarDeclaration
@@ -68,7 +68,7 @@ function fromSpacingDeclaration(arg: SpacingDeclaration): SpacingTupleDeclaratio
   }
 
   const [gap, ...rest] = arg
-  return [gap, ...fromPaddingDeclaration(rest)]
+  return [gap, ...fromBoxSpacingDeclaration(rest)]
 }
 
 type SetProps = Partial<{
@@ -80,16 +80,26 @@ type SetProps = Partial<{
   size: Scalar2Declaration
   sizeX: ScalarDeclaration
   sizeY: ScalarDeclaration
-  align: Vector2Declaration
-  alignX: ScalarDeclaration
-  alignY: ScalarDeclaration
-  padding: PaddingDeclaration
+  alignItems: Vector2Declaration
+  alignItemsX: number
+  alignItemsY: number
+  alignSelf: Vector2Declaration<number | null>
+  alignSelfX: number | null
+  alignSelfY: number | null
+  aspect: null | number
+  padding: BoxSpacingDeclaration
   paddingTop: ScalarDeclaration
   paddingRight: ScalarDeclaration
   paddingBottom: ScalarDeclaration
   paddingLeft: ScalarDeclaration
+  margin: BoxSpacingDeclaration
+  marginTop: ScalarDeclaration
+  marginRight: ScalarDeclaration
+  marginBottom: ScalarDeclaration
+  marginLeft: ScalarDeclaration
   gap: ScalarDeclaration
   spacing: SpacingDeclaration
+  userData: Record<string, any>
 }>
 
 /**
@@ -162,22 +172,31 @@ type SetProps = Partial<{
  */
 export class Space {
   enabled: boolean = true
-  direction: Direction = Direction.Horizontal
-  positioning: Positioning = Positioning.Flow
 
   root: Space = this
   parent: Space | null = null
   children: Space[] = []
 
+  direction: Direction = Direction.Horizontal
+  positioning: Positioning = Positioning.Flow
+  aspect: number | null = null
+
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
-  sizeX = new Scalar(1, ScalarType.Share)
-  sizeY = new Scalar(1, ScalarType.Share)
+  sizeX = new Scalar(1, ScalarType.Auto)
+  sizeY = new Scalar(1, ScalarType.Auto)
 
   extraSizeX = new Scalar(1, ScalarType.Relative)
   extraSizeY = new Scalar(1, ScalarType.Relative)
 
   padding: [top: Scalar, right: Scalar, bottom: Scalar, left: Scalar] = [
+    new Scalar(0, ScalarType.Absolute),
+    new Scalar(0, ScalarType.Absolute),
+    new Scalar(0, ScalarType.Absolute),
+    new Scalar(0, ScalarType.Absolute),
+  ]
+
+  margin: [top: Scalar, right: Scalar, bottom: Scalar, left: Scalar] = [
     new Scalar(0, ScalarType.Absolute),
     new Scalar(0, ScalarType.Absolute),
     new Scalar(0, ScalarType.Absolute),
@@ -193,7 +212,7 @@ export class Space {
    * 
    * Default is `0.5` (center).
    */
-  alignX: number = .5
+  alignItemsX: number = .5
 
   /**
    * The vertical alignment of the children spaces:
@@ -202,7 +221,10 @@ export class Space {
    * 
    * Default is `0.5` (center).
    */
-  alignY: number = .5
+  alignItemsY: number = .5
+
+  alignSelfX: number | null = null
+  alignSelfY: number | null = null
 
   rect = new Rectangle()
 
@@ -228,52 +250,106 @@ export class Space {
   }
 
   set(props: SetProps): this {
-    if (props.direction) {
+    if (props.direction !== undefined) {
       this.direction = parseDirection(props.direction)
     }
-    if (props.positioning) {
+    if (props.positioning !== undefined) {
       this.positioning = parsePositioning(props.positioning)
     }
-    if (props.offset) {
+    if (props.offset !== undefined) {
       fromScalar2Declaration(props.offset, this.offsetX, this.offsetY)
     }
-    if (props.offsetX) {
+    if (props.offsetX !== undefined) {
       this.offsetX.parse(props.offsetX)
     }
-    if (props.offsetY) {
+    if (props.offsetY !== undefined) {
       this.offsetY.parse(props.offsetY)
     }
-    if (props.size) {
+    if (props.size !== undefined) {
       fromScalar2Declaration(props.size, this.sizeX, this.sizeY)
     }
-    if (props.sizeX) {
+    if (props.sizeX !== undefined) {
       this.sizeX.parse(props.sizeX)
     }
-    if (props.sizeY) {
+    if (props.sizeY !== undefined) {
       this.sizeY.parse(props.sizeY)
     }
-    if (props.align) {
-      const { x, y } = fromVector2Declaration(props.align)
-      this.alignX = x
-      this.alignY = y
+    if (props.aspect !== undefined) {
+      this.aspect = props.aspect
     }
-    if (props.padding) {
-      const [top, right, bottom, left] = fromPaddingDeclaration(props.padding as any)
+    if (props.alignItems !== undefined) {
+      const { x, y } = fromVector2Declaration(props.alignItems)
+      this.alignItemsX = x
+      this.alignItemsY = y
+    }
+    if (props.alignItemsX !== undefined) {
+      this.alignItemsX = props.alignItemsX
+    }
+    if (props.alignItemsY !== undefined) {
+      this.alignItemsY = props.alignItemsY
+    }
+    if (props.alignSelf !== undefined) {
+      const { x, y } = fromVector2Declaration(props.alignSelf)
+      this.alignSelfX = x
+      this.alignSelfY = y
+    }
+    if (props.alignSelfX !== undefined) {
+      this.alignSelfX = props.alignSelfX
+    }
+    if (props.alignSelfY !== undefined) {
+      this.alignSelfY = props.alignSelfY
+    }
+    if (props.padding !== undefined) {
+      const [top, right, bottom, left] = fromBoxSpacingDeclaration(props.padding as any)
       this.padding[0].parse(top)
       this.padding[1].parse(right)
       this.padding[2].parse(bottom)
       this.padding[3].parse(left)
     }
-    if (props.gap) {
+    if (props.paddingTop !== undefined) {
+      this.padding[0].parse(props.paddingTop)
+    }
+    if (props.paddingRight !== undefined) {
+      this.padding[1].parse(props.paddingRight)
+    }
+    if (props.paddingBottom !== undefined) {
+      this.padding[2].parse(props.paddingBottom)
+    }
+    if (props.paddingLeft !== undefined) {
+      this.padding[3].parse(props.paddingLeft)
+    }
+    if (props.margin !== undefined) {
+      const [top, right, bottom, left] = fromBoxSpacingDeclaration(props.margin as any)
+      this.margin[0].parse(top)
+      this.margin[1].parse(right)
+      this.margin[2].parse(bottom)
+      this.margin[3].parse(left)
+    }
+    if (props.marginTop !== undefined) {
+      this.margin[0].parse(props.marginTop)
+    }
+    if (props.marginRight !== undefined) {
+      this.margin[1].parse(props.marginRight)
+    }
+    if (props.marginBottom !== undefined) {
+      this.margin[2].parse(props.marginBottom)
+    }
+    if (props.marginLeft !== undefined) {
+      this.margin[3].parse(props.marginLeft)
+    }
+    if (props.gap !== undefined) {
       this.gap.parse(props.gap)
     }
-    if (props.spacing) {
+    if (props.spacing !== undefined) {
       const [gap, top, right, bottom, left] = fromSpacingDeclaration(props.spacing as any)
       this.gap.parse(gap)
       this.padding[0].parse(top)
       this.padding[1].parse(right)
       this.padding[2].parse(bottom)
       this.padding[3].parse(left)
+    }
+    if (props.userData !== undefined) {
+      Object.assign(this.userData, props.userData)
     }
     return this
   }
@@ -331,8 +407,8 @@ export class Space {
   }
 
   setAlign(x: number, y: number = x): this {
-    this.alignX = x
-    this.alignY = y
+    this.alignItemsX = x
+    this.alignItemsY = y
     return this
   }
 
@@ -341,7 +417,7 @@ export class Space {
     return this
   }
 
-  setPadding(all: PaddingDeclaration): this
+  setPadding(all: BoxSpacingDeclaration): this
   setPadding(all: ScalarDeclaration): this
   setPadding(vertical: ScalarDeclaration, horizontal: ScalarDeclaration): this
   setPadding(top: ScalarDeclaration, right: ScalarDeclaration, bottom: ScalarDeclaration, left: ScalarDeclaration): this
@@ -349,7 +425,7 @@ export class Space {
     if (args.length === 1 && Array.isArray(args[0])) {
       args = args[0]
     }
-    const [top, right, bottom, left] = fromPaddingDeclaration(args as any)
+    const [top, right, bottom, left] = fromBoxSpacingDeclaration(args as any)
     this.padding[0].parse(top)
     this.padding[1].parse(right)
     this.padding[2].parse(bottom)
@@ -517,7 +593,7 @@ export class Space {
     sizeY: ScalarDeclaration
     spacing: ScalarDeclaration
     gap: ScalarDeclaration
-    padding: PaddingDeclaration
+    padding: BoxSpacingDeclaration
   }): this
   /**
    * Populate the space with `count` spaces with the given properties for each space.
