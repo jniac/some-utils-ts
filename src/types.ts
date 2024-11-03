@@ -48,26 +48,26 @@ export type MutableOnly<T> = Pick<T, MutableKeys<T>>
 //                                        //
 //----------------------------------------//
 
-export type Vector2Like = {
-  x: number
-  y: number
+export type Vector2Like<T = number> = {
+  x: T
+  y: T
 }
 
 export type Point2Like = Vector2Like
 
-export type Vector3Like = {
-  x: number
-  y: number
-  z: number
+export type Vector3Like<T = number> = {
+  x: T
+  y: T
+  z: T
 }
 
 export type Point3Like = Vector3Like
 
-export type Vector4Like = {
-  x: number
-  y: number
-  z: number
-  w: number
+export type Vector4Like<T = number> = {
+  x: T
+  y: T
+  z: T
+  w: T
 }
 
 export type Point4Like = Vector4Like
