@@ -1,8 +1,8 @@
-import { formatNumber } from '../../string/number'
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
 import { Padding, PaddingDeclaration } from './padding'
 import { Ray2, Ray2Args } from './ray2'
+import { SvgUtils } from './rectangle.svg'
 
 export type RectangleDeclaration =
   | [x: number, y: number, width: number, height: number]
@@ -785,8 +785,19 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return [this.x * scalar, this.y * scalar, this.width * scalar, this.height * scalar]
   }
 
+  /**
+   * Access to the SVG utility methods.
+   */
+  get svg(): typeof SvgUtils {
+    return SvgUtils.setScope(this)
+  }
+
+  /**
+   * @deprecated Use `svg.toViewBox()` instead.
+   */
   toViewBox(): string {
-    return `${formatNumber(this.x)} ${formatNumber(this.y)} ${formatNumber(this.width)} ${formatNumber(this.height)}`
+    console.warn('Use `svg.toViewBox()` instead.')
+    return SvgUtils.setScope(this).toViewBox()
   }
 }
 
