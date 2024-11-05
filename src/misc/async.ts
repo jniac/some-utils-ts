@@ -2,7 +2,9 @@ export async function wait(seconds: number) {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
 
-
+export async function waitNextFrame(): Promise<void> {
+  return new Promise(resolve => window.requestAnimationFrame(() => resolve()))
+}
 
 const defaultWaitSecondsOptions = {
   /**
