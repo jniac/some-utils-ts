@@ -68,13 +68,8 @@ export function fromAngleDeclaration(declaration: AngleDeclaration, defaultUnit:
   return value * angleScalars[unit]
 }
 
-export function toAngleDeclarationString(value: number, unit: AngleUnit = 'rad', { maxDigits }: { maxDigits?: number } = {}): string & AngleDeclaration {
-  maxDigits ??= {
-    rad: 3,
-    deg: 1,
-    turn: 4,
-  }[unit]
-  return `${formatNumber(value / angleScalars[unit], { maxDigits })}${unit}` as any
+export function toAngleDeclarationString(value: number, unit: AngleUnit = 'rad'): string & AngleDeclaration {
+  return `${formatNumber(value / angleScalars[unit])}${unit}` as any
 }
 
 type IsBaseType<T> = (v: any) => v is T
