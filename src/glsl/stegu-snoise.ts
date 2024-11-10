@@ -1,3 +1,5 @@
+import { generics } from './tools/generics'
+
 /**
  * Adapted from: 
  * https://stegu.github.io/webgl-noise/webdemo/
@@ -174,4 +176,29 @@ float snoise(vec3 v)
   return 105.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
                                 dot(p2,x2), dot(p3,x3) ) );
 }
+
+
+
+
+// addons:
+// Fractal noise, based on Stefan Gustavson's Simplex noise
+${generics(['vec2', 'vec3'], /* glsl */`
+  float fnoise(T p, int octaves, float persistence) {
+    float total = 0.0;           // Final noise value
+    float amplitude = 1.0;       // Initial amplitude
+    float frequency = 1.0;       // Initial frequency
+    float maxValue = 0.0;        // Used for normalization
+
+    for (int i = 0; i < octaves; i++) {
+      total += snoise(p * frequency) * amplitude;
+
+      maxValue += amplitude;   // Keep track of max amplitude
+      amplitude *= persistence; // Reduce amplitude for next octave
+      frequency *= 2.0;        // Increase frequency for next octave
+    }
+
+    // Normalize the result to stay within the range [0, 1]
+    return total / maxValue;
+  }
+`)}
 `
