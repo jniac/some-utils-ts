@@ -128,22 +128,27 @@ class RectangleCastResult {
     public tmax: number,
   ) { }
 
-  getPoint<T extends Vector2Like>(t: number, out: T = { x: 0, y: 0 } as T): T {
+  getRayPoint<T extends Vector2Like>(t: number, out: T = { x: 0, y: 0 } as T): T {
     out.x = this.ray.origin.x + this.ray.direction.x * t
     out.y = this.ray.origin.y + this.ray.direction.y * t
     return out
   }
 
+  /**
+   * @deprecated Use `getRayPoint()` instead.
+   */
+  getPoint: RectangleCastResult['getRayPoint'] = this.getRayPoint
+
   getPointMin<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T, {
     offset = 0,
   } = {}): T {
-    return this.getPoint(this.tmin + offset, out)
+    return this.getRayPoint(this.tmin + offset, out)
   }
 
   getPointMax<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T, {
     offset = 0,
   } = {}): T {
-    return this.getPoint(this.tmax + offset, out)
+    return this.getRayPoint(this.tmax + offset, out)
   }
 }
 
