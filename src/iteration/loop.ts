@@ -1,5 +1,32 @@
 import { Vector2Like, Vector3Like } from '../types'
 
+type LoopYield = {
+  /**
+   * The current iteration index.
+   */
+  i: number
+  /**
+   * The normalized "time" coordinate (0 to (size - 1) / size).
+   */
+  t: number
+  /**
+   * The normalized "time" coordinate (0 to 1).
+   */
+  p: number
+}
+
+export function* loop(size: number): Generator<LoopYield> {
+  let i = 0
+  const out = {
+    get i() { return i },
+    get t() { return i / size },
+    get p() { return i / (size - 1) },
+  }
+  for (i = 0; i < size; i++) {
+    yield out
+  }
+}
+
 type Loop2Yield = {
   /**
    * The current iteration index.
@@ -14,13 +41,25 @@ type Loop2Yield = {
    */
   y: number
   /**
-   * The normalized x coordinate (0 to 1).
+   * The current z coordinate.
+   */
+  z: number
+  /**
+   * The normalized "time" x coordinate (0 to (size - 1) / size).
    */
   tx: number
   /**
-   * The normalized y coordinate (0 to 1).
+   * The normalized "time" y coordinate (0 to (size - 1) / size).
    */
   ty: number
+  /**
+   * The normalized "progress" x coordinate (0 to 1).
+   */
+  px: number
+  /**
+   * The normalized "progress" y coordinate (0 to 1).
+   */
+  py: number
 }
 export function loop2(width: number, height: number): Generator<Loop2Yield>
 export function loop2(size: Vector2Like | [number, number]): Generator<Loop2Yield>
@@ -45,8 +84,10 @@ export function* loop2(...args: any[]) {
     get i() { return i },
     get x() { return x },
     get y() { return y },
-    get tx() { return x / (sx - 1) },
-    get ty() { return y / (sy - 1) },
+    get tx() { return x / sx },
+    get ty() { return y / sy },
+    get px() { return x / (sx - 1) },
+    get py() { return y / (sy - 1) },
   }
   for (y = 0; y < sy; y++) {
     for (x = 0; x < sx; x++) {
@@ -56,7 +97,48 @@ export function* loop2(...args: any[]) {
   }
 }
 
-type Loop3Yield = { i: number, x: number, y: number, z: number, tx: number, ty: number, tz: number }
+type Loop3Yield = {
+  /**
+   * The current iteration index.
+   */
+  i: number
+  /**
+   * The current x coordinate.
+   */
+  x: number
+  /**
+   * The current y coordinate.
+   */
+  y: number
+  /**
+   * The current z coordinate.
+   */
+  z: number
+  /**
+   * The normalized "time" x coordinate (0 to (size - 1) / size).
+   */
+  tx: number
+  /**
+   * The normalized "time" y coordinate (0 to (size - 1) / size).
+   */
+  ty: number
+  /**
+   * The normalized "time" z coordinate (0 to (size - 1) / size).
+   */
+  tz: number
+  /**
+   * The normalized "progress" x coordinate (0 to 1).
+   */
+  px: number
+  /**
+   * The normalized "progress" y coordinate (0 to 1).
+   */
+  py: number
+  /**
+   * The normalized "progress" z coordinate (0 to 1).
+   */
+  pz: number
+}
 
 /**
  * Allows declarative iteration over a 3D space.
@@ -96,9 +178,12 @@ export function* loop3(...args: any[]) {
     get x() { return x },
     get y() { return y },
     get z() { return z },
-    get tx() { return x / (sx - 1) },
-    get ty() { return y / (sy - 1) },
-    get tz() { return z / (sz - 1) },
+    get tx() { return x / sx },
+    get ty() { return y / sy },
+    get tz() { return z / sz },
+    get px() { return x / (sx - 1) },
+    get py() { return y / (sy - 1) },
+    get pz() { return z / (sz - 1) },
   }
   for (z = 0; z < sz; z++) {
     for (y = 0; y < sy; y++) {
