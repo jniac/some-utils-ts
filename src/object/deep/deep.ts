@@ -1,4 +1,4 @@
-import { DeepPartial } from '../../types'
+import { DeepPartial, DeepReadonly } from '../../types'
 
 export type Path = (string | number | symbol)[]
 
@@ -335,6 +335,16 @@ export function deepAssignWithOptions<T = any>(options: Partial<typeof defaultDe
  */
 export function deepAssign<T = any>(target: any, ...sources: any[]): T {
   return deepAssignWithOptions({}, target, ...sources)
+}
+
+export function deepFreeze<T = any>(obj: T): DeepReadonly<T> {
+  Object.freeze(obj)
+  if (isObject(obj)) {
+    for (const key in obj) {
+      deepFreeze(obj[key])
+    }
+  }
+  return obj
 }
 
 // import('./deep.test').then(({ test }) => test())
