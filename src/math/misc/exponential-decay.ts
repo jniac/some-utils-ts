@@ -22,10 +22,26 @@ export function calculateExponentialDecay(currentValue: number, desiredValue: nu
  * const lerpRatio = calculateExponentialDecayLerpRatio(.33, deltaTime)
  * const value = lerp(currentValue, targetValue, lerpRatio)
  * ```
+ * 
+ * @param decay The missing part of the value after 1 second. For example, 0.1 means 10% of the value will be missing after 1 second.
+ * @param deltaTime The time that has passed since the last update.
  */
 export function calculateExponentialDecayLerpRatio(decay: number, deltaTime: number) {
   const k = -Math.log(decay)
   return 1 - Math.exp(-k * deltaTime)
+}
+
+/**
+ * Same as `calculateExponentialDecayLerpRatio` but where the decay is specified
+ * for a specified `time` value (instead of 1 second).
+ * 
+ * @param decay The missing part of the value after a `time` value.
+ * @param time The time that it takes for the value to decay to the target value.
+ * @param deltaTime The time that has passed since the last update.
+ */
+export function calculateExponentialDecayLerpRatio2(decay: number, time: number, deltaTime: number) {
+  const decay2 = decay ** (1 / time)
+  return calculateExponentialDecayLerpRatio(decay2, deltaTime)
 }
 
 /**
