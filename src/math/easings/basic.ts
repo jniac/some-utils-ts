@@ -115,20 +115,42 @@ export const easeInLinearEaseOut = (x: number, p: number, q: number, s: number) 
   return (x * w - p1 + p2) / a
 }
 
+export const easeAsymmetricalInOut = (x: number, a: number, b: number) => {
+  return Math.pow(x, a) / (Math.pow(x, a) + Math.pow(1 - x, b))
+}
+
 /**
- * "in-then-out" easing curve using a cosine function.
- * https://www.desmos.com/calculator/koudvu41xb
+ * "bump" curve using a sine function. Hard slope at start and end (pi, -pi).
+ * https://www.desmos.com/calculator/tmjgyrq4wk
  */
-export const inThenOutCos = (x: number) => {
+export const bumpSin = (x: number) => {
+  return Math.sin(Math.PI * x)
+}
+
+/**
+ * "bump" curve using a cosine function. Soft slope at start and end (0, 0).
+ * https://www.desmos.com/calculator/tmjgyrq4wk
+ */
+export const bumpCos = (x: number) => {
   return .5 + .5 * Math.cos(2 * Math.PI * (x - .5))
 }
 
 /**
- * "in-then-out" easing curve using a power function.
- * https://www.desmos.com/calculator/fzvpkbwej0
+ * "bump" curve using a power function.
+ * https://www.desmos.com/calculator/tmjgyrq4wk
  */
-export const inThenOutPow = (x: number, p: number) => {
+export const bumpPow = (x: number, p: number) => {
   return 1 - Math.abs(2 * x - 1) ** p
+}
+
+/**
+ * "bump" curve using the Inigo Quilez power function. 
+ * https://www.desmos.com/calculator/tmjgyrq4wk
+ * 
+ * Note: Involves 5 power operations.
+ */
+export const bumpIqPower = (x: number, a: number, b: number) => {
+  return (Math.pow(a + b, a + b) / (Math.pow(a, a) * Math.pow(b, b))) * Math.pow(x, a) * Math.pow(1 - x, b)
 }
 
 /**
@@ -139,6 +161,17 @@ export const inThenOutPow = (x: number, p: number) => {
  */
 export const elasticInPlace = (x: number, f = 2, p = 2) => {
   return Math.sin(f * 2 * Math.PI * x) * Math.pow(1 - x, p)
+}
+
+/**
+* "bump" curves are normalized curves that start (0, 0) and end at zero (0, 1), 
+* reaching a peak (x, 1) somewhere in the middle.
+*/
+const bump = {
+  sin: bumpSin,
+  cos: bumpCos,
+  pow: bumpPow,
+  iqPower: bumpIqPower,
 }
 
 export const easing = {
@@ -167,12 +200,12 @@ export const easing = {
 
   inOut: easeInOut,
   inLinearOut: easeInLinearEaseOut,
+  asymmetricalInOut: easeAsymmetricalInOut,
+
+  bump,
 
   /**
-   * "in-then-out" easing curves are curves that start and end at zero.
+   * @deprecated Use `bump` instead (e.g. `bump.cos()`).
    */
-  inThenOut: {
-    cos: inThenOutCos,
-    pow: inThenOutPow,
-  },
+  inThenOut: bump,
 }
