@@ -1,1 +1,4 @@
-export * from './easings/index'
+/**
+ * @deprecated Use `easing` instead
+ */
+export * from './easing/index'

@@ -1,42 +1,27 @@
-import { clamp01 } from '../math/basic'
-import {
-  easeInOut,
-  elasticInPlace,
-  easeIn1 as in1,
-  easeIn2 as in2,
-  easeIn3 as in3,
-  easeIn4 as in4,
-  easeIn5 as in5,
-  easeInOut1 as inOut1,
-  easeInOut2 as inOut2,
-  easeInOut3 as inOut3,
-  easeInOut4 as inOut4,
-  easeInOut5 as inOut5,
-  easeOut1 as out1,
-  easeOut2 as out2,
-  easeOut3 as out3,
-  easeOut4 as out4,
-  easeOut5 as out5
-} from '../math/easings'
-import { solveCubicEase } from '../math/easings/cubic-bezier'
+import { bump } from '../math/easing/bump'
+import { solveCubicEase } from '../math/easing/cubic-bezier'
+import { transition } from '../math/easing/transition'
 
 const simple = {
-  linear: clamp01,
-  in1,
-  in2,
-  in3,
-  in4,
-  in5,
-  out1,
-  out2,
-  out3,
-  out4,
-  out5,
-  inOut1,
-  inOut2,
-  inOut3,
-  inOut4,
-  inOut5,
+  linear: transition.linear,
+  in1: transition.in1,
+  in2: transition.in2,
+  in3: transition.in3,
+  in4: transition.in4,
+  in5: transition.in5,
+  in6: transition.in6,
+  out1: transition.out1,
+  out2: transition.out2,
+  out3: transition.out3,
+  out4: transition.out4,
+  out5: transition.out5,
+  out6: transition.out6,
+  inOut1: transition.inOut1,
+  inOut2: transition.inOut2,
+  inOut3: transition.inOut3,
+  inOut4: transition.inOut4,
+  inOut5: transition.inOut5,
+  inOut6: transition.inOut6,
 }
 
 type SimpleEasingDeclaration = keyof typeof simple
@@ -84,7 +69,7 @@ function cacheCustomInOut(declaration: string) {
     .slice('inOut('.length, -1)
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
-  const ease = (x: number) => easeInOut(x, a, b)
+  const ease = (x: number) => transition.inOut(x, a, b)
   easeCache.set(declaration, ease)
   return ease
 }
@@ -95,7 +80,7 @@ function cacheElasticInPlace(declaration: string) {
     .slice('elasticInPlace('.length, -1)
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
-  const ease = (x: number) => elasticInPlace(x, f, p)
+  const ease = (x: number) => bump.elastic(x, f, p)
   easeCache.set(declaration, ease)
   return ease
 }
