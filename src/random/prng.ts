@@ -1,3 +1,4 @@
+import { Vector2Like, Vector3Like } from '../types'
 import {
   DEFAULT_SEED,
   MAX,
@@ -289,21 +290,72 @@ function create() {
   }
 
   /**
-   * Same as `vector`, but the resulting vector is normalized.
+   * Generates a truly random vector (i.e. each component is normally distributed, no box artifacts).
    * 
-   * - min, max default to [-1, 1].
+   * The length of the vector is distributed according to the normal distribution with mean = 0 and standard deviation = 1.
    */
-  function unitVector<T>(out: T, options?: [min: number, max: number]): T
-  function unitVector<T>(out: T, options?: { min: number, max: number }): T
-  function unitVector<T>(out: T, options?: any): T {
-    const [min = -1, max = 1] =
-      Array.isArray(options) ? options : [options?.min, options?.max]
+  function normalVector<T>(out: T): T {
     const keys = Object.keys(out as any)
-    const values = keys.map(() => between(min, max))
-    const length = Math.sqrt(values.reduce((acc, value) => acc + value * value, 0))
-    for (const [index, key] of keys.entries()) {
-      (out as any)[key] = values[index] / length
+    const max = keys.length
+    const d = Math.sqrt(max)
+    const value = out as any
+    for (let i = 0; i < max; i += 2) {
+      const [u, v] = boxMuller()
+      value[keys[i]] = u / d
+      if (i + 1 < max) {
+        value[keys[i + 1]] = v / d
+      }
     }
+    return out
+  }
+
+  /**
+   * Same as `vector`, but the resulting vector is normalized (whatever its dimension).
+   * 
+   * Similar to `normalVector`, but with normalization for any dimension.
+   */
+  function unitVector<T>(out: T): T {
+    const keys = Object.keys(out as any)
+    const max = keys.length
+    let d = 0
+    const value = out as any
+    for (let i = 0; i < max; i += 2) {
+      const [u, v] = boxMuller()
+      value[keys[i]] = u
+      d += u * u
+      if (i + 1 < max) {
+        value[keys[i + 1]] = v
+        d += v * v
+      }
+    }
+    d = Math.sqrt(d)
+    for (let i = 0; i < max; i++) {
+      (out as any)[keys[i]] /= d
+    }
+    return out
+  }
+
+  function unitVector2<T extends Vector2Like>(out: T): T {
+    const u = random()
+    const phi = 2 * Math.PI * u
+
+    out.x = Math.cos(phi)
+    out.y = Math.sin(phi)
+
+    return out
+  }
+
+  function unitVector3<T extends Vector3Like>(out: T): T {
+    const u = random()
+    const v = random()
+
+    const phi = 2 * Math.PI * u // Azimuthal angle
+    const theta = Math.acos(1 - 2 * v) // Polar angle
+
+    out.x = Math.sin(theta) * Math.cos(phi)
+    out.y = Math.sin(theta) * Math.sin(phi)
+    out.z = Math.cos(theta)
+
     return out
   }
 
@@ -335,6 +387,9 @@ function create() {
     pick,
     createPicker,
     vector,
+    unitVector2,
+    unitVector3,
+    normalVector,
     unitVector,
     boxMuller,
   }
