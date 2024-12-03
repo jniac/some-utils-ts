@@ -1,6 +1,6 @@
 import { Vector2Like, Vector3Like } from '../types'
 
-type LoopYield = {
+export type LoopResult = {
   /**
    * The current iteration index.
    */
@@ -13,21 +13,58 @@ type LoopYield = {
    * The normalized "time" coordinate (0 to 1).
    */
   p: number
+  /**
+   * Clone the current yield object (save the reference).
+   */
+  clone(): LoopResult
 }
 
-export function* loop(size: number): Generator<LoopYield> {
+/**
+ * Loop over a range of numbers (one-dimensional).
+ * 
+ * Important: The yield object is mutable, for performance reasons it is reused 
+ * on each iteration. If you need to store the values, you should clone the object,
+ * or use the {@link loopArray} function.
+ * 
+ * Usage:
+ * ```
+ * for (const { i, t, p } of loop(10)) {
+ *   console.log(i, t, p)
+ * }
+ * ```
+ */
+export function* loop(size: number): Generator<LoopResult> {
   let i = 0
-  const out = {
+  const out: LoopResult = {
     get i() { return i },
     get t() { return i / size },
     get p() { return i / (size - 1) },
+    clone() { return { ...this } }
   }
   for (i = 0; i < size; i++) {
     yield out
   }
 }
 
-type Loop2Yield = {
+/**
+ * Loop over a range of numbers (one-dimensional) and store the results in an array.
+ * 
+ * Usage:
+ * ```
+ * const results = loopArray(10)
+ * ```
+ */
+export function loopArray(size: number): LoopResult[]
+export function loopArray(...args: any[]) {
+  const out: LoopResult[] = []
+  // @ts-ignore
+  for (const item of loop(...args)) {
+    out.push(item.clone())
+  }
+  return out
+}
+
+export type Loop2Result = {
   /**
    * The current iteration index.
    */
@@ -40,10 +77,6 @@ type Loop2Yield = {
    * The current y coordinate.
    */
   y: number
-  /**
-   * The current z coordinate.
-   */
-  z: number
   /**
    * The normalized "time" x coordinate (0 to (size - 1) / size).
    */
@@ -60,9 +93,28 @@ type Loop2Yield = {
    * The normalized "progress" y coordinate (0 to 1).
    */
   py: number
+  /**
+   * Clone the current yield object (save the reference).
+   */
+  clone(): Loop2Result
 }
-export function loop2(width: number, height: number): Generator<Loop2Yield>
-export function loop2(size: Vector2Like | [number, number]): Generator<Loop2Yield>
+
+/**
+ * Allows declarative iteration over a 2D space.
+ * 
+ * Important: The yield object is mutable, for performance reasons it is reused
+ * on each iteration. If you need to store the values, you should clone the object,
+ * or use the {@link loop2Array} function.
+ * 
+ * Usage:
+ * ```
+ * for (const { i, x, y } of loop2(10, 10)) {
+ *  console.log(i, x, y)
+ * }
+ * ```
+ */
+export function loop2(width: number, height: number): Generator<Loop2Result>
+export function loop2(size: Vector2Like | [number, number]): Generator<Loop2Result>
 export function* loop2(...args: any[]) {
   let sx = 0, sy = 0
   if (args.length === 2) {
@@ -80,7 +132,7 @@ export function* loop2(...args: any[]) {
   let i = 0
   let x = 0
   let y = 0
-  const out = {
+  const out: Loop2Result = {
     get i() { return i },
     get x() { return x },
     get y() { return y },
@@ -88,6 +140,7 @@ export function* loop2(...args: any[]) {
     get ty() { return y / sy },
     get px() { return x / (sx - 1) },
     get py() { return y / (sy - 1) },
+    clone() { return { ...this } }
   }
   for (y = 0; y < sy; y++) {
     for (x = 0; x < sx; x++) {
@@ -97,7 +150,26 @@ export function* loop2(...args: any[]) {
   }
 }
 
-type Loop3Yield = {
+/**
+ * Allows declarative iteration over a 2D space and store the results in an array.
+ * 
+ * Usage:
+ * ```
+ * const results = loop2Array(10, 10)
+ * ```
+ */
+export function loop2Array(width: number, height: number): Loop2Result[]
+export function loop2Array(size: Vector2Like | [number, number]): Loop2Result[]
+export function loop2Array(...args: any[]) {
+  const out: Loop2Result[] = []
+  // @ts-ignore
+  for (const item of loop2(...args)) {
+    out.push(item.clone())
+  }
+  return out
+}
+
+export type Loop3Result = {
   /**
    * The current iteration index.
    */
@@ -138,10 +210,18 @@ type Loop3Yield = {
    * The normalized "progress" z coordinate (0 to 1).
    */
   pz: number
+  /**
+   * Clone the current yield object (save the reference).
+   */
+  clone(): Loop3Result
 }
 
 /**
  * Allows declarative iteration over a 3D space.
+ * 
+ * Important: The yield object is mutable, for performance reasons it is reused
+ * on each iteration. If you need to store the values, you should clone the object,
+ * or use the {@link loop3Array} function.
  * 
  * Usage:
  * ```
@@ -150,8 +230,8 @@ type Loop3Yield = {
  * }
  * ```
  */
-export function loop3(width: number, height: number, depth: number): Generator<Loop3Yield>
-export function loop3(size: Vector3Like | [number, number, number]): Generator<Loop3Yield>
+export function loop3(width: number, height: number, depth: number): Generator<Loop3Result>
+export function loop3(size: Vector3Like | [number, number, number]): Generator<Loop3Result>
 export function* loop3(...args: any[]) {
   let sx = 0, sy = 0, sz = 0
   if (args.length === 3) {
@@ -173,7 +253,7 @@ export function* loop3(...args: any[]) {
   let x = 0
   let y = 0
   let z = 0
-  const out = {
+  const out: Loop3Result = {
     get i() { return i },
     get x() { return x },
     get y() { return y },
@@ -184,6 +264,7 @@ export function* loop3(...args: any[]) {
     get px() { return x / (sx - 1) },
     get py() { return y / (sy - 1) },
     get pz() { return z / (sz - 1) },
+    clone() { return { ...this } }
   }
   for (z = 0; z < sz; z++) {
     for (y = 0; y < sy; y++) {
@@ -193,4 +274,23 @@ export function* loop3(...args: any[]) {
       }
     }
   }
+}
+
+/**
+ * Allows declarative iteration over a 3D space and store the results in an array.
+ * 
+ * Usage:
+ * ```
+ * const results = loop3Array(10, 10, 10)
+ * ```
+ */
+export function loop3Array(width: number, height: number, depth: number): Loop3Result[]
+export function loop3Array(size: Vector3Like | [number, number, number]): Loop3Result[]
+export function loop3Array(...args: any[]) {
+  const out: Loop3Result[] = []
+  // @ts-ignore
+  for (const item of loop3(...args)) {
+    out.push(item.clone())
+  }
+  return out
 }
