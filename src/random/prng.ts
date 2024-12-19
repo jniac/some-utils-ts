@@ -1,4 +1,4 @@
-import { Vector2Like, Vector3Like } from '../types'
+import { Vector2Like, Vector3Like, Vector4Like } from '../types'
 import {
   DEFAULT_SEED,
   MAX,
@@ -372,6 +372,22 @@ function create() {
     return [z0, z1]
   }
 
+  function quaternion<T extends Vector4Like>(out: T): T {
+    const u1 = random()
+    const u2 = random()
+    const u3 = random()
+
+    const sqrt1MinusU1 = Math.sqrt(1 - u1)
+    const sqrtU1 = Math.sqrt(u1)
+
+    out.x = sqrt1MinusU1 * Math.sin(2 * Math.PI * u2)
+    out.y = sqrt1MinusU1 * Math.cos(2 * Math.PI * u2)
+    out.z = sqrtU1 * Math.sin(2 * Math.PI * u3)
+    out.w = sqrtU1 * Math.cos(2 * Math.PI * u3)
+
+    return out
+  }
+
   const prng = {
     seed,
     seedMax,
@@ -392,6 +408,7 @@ function create() {
     normalVector,
     unitVector,
     boxMuller,
+    quaternion,
   }
 
   return prng
