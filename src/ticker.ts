@@ -331,6 +331,14 @@ export class Ticker implements DestroyableObject {
   set timeScale(value: number) {
     this.internal.timeScale = value
   }
+  get stopped() { return this.internal.stopped }
+  set stopped(value: boolean) {
+    if (value) {
+      this.stop()
+    } else {
+      this.start()
+    }
+  }
 
   /**
    * A convenient way to get the current time in the form of an object always up-to-date (getter).
