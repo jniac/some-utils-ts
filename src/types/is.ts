@@ -1,5 +1,9 @@
 import { RectangleLike, Vector2Like, Vector3Like } from '../types'
 
+export function isNumber(value: any): value is number {
+  return typeof value === 'number' && !Number.isNaN(value)
+}
+
 export function isVector2Like(obj: any): obj is Vector2Like {
   return obj && typeof obj.x === 'number' && typeof obj.y === 'number'
 }
