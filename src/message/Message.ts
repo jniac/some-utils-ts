@@ -102,6 +102,7 @@ function removeListener(id: number, listener: Listener): boolean {
 class Message<P = any> {
   static send = send
   static on = on
+  static wait = wait
   static debug = { listenerMap, idRegister }
 
   private static nextId = 0
@@ -199,6 +200,18 @@ function on<P = any>(...args: any): DestroyableObject {
     removeListener(targetId, listener)
   }
   return { destroy }
+}
+
+function wait<P = any>(target: any): Promise<Message<P>>
+function wait<P = any>(target: any, filter: StringMatcher): Promise<Message<P>>
+function wait<P = any>(...args: any): Promise<Message<P>> {
+  return new Promise(resolve => {
+    const callback = (message: Message<P>) => {
+      resolve(message)
+    }
+    const [target, filter] = solveOnArgs<P>([...args, callback])
+    on(target, filter, callback)
+  })
 }
 
 function solveSendArgs<P = any>(args: any[]): [target: any, type?: string, payload?: P] {
