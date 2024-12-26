@@ -160,7 +160,7 @@ class Message<P = any> {
    * payload is falsy, an error will be thrown.
    */
   assertPayload(): P {
-    if (this.payload) {
+    if (this.payload !== undefined) {
       return this.payload
     }
 
