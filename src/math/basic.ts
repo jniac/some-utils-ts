@@ -121,7 +121,7 @@ export function limitedClamp(x: number, min: number, minLimit: number, max: numb
 /**
  * Converts a 1D index to a 2D position.
  */
-export function index2(index: number, width: number) {
+export function index2(index: number, width: number): [x: number, y: number] {
   const y = Math.floor(index / width)
   return [index - y * width, y]
 }
@@ -129,7 +129,7 @@ export function index2(index: number, width: number) {
 /**
  * Converts a 1D index to a 3D position.
  */
-export function index3(index: number, width: number, height: number) {
+export function index3(index: number, width: number, height: number): [x: number, y: number, z: number] {
   const z = Math.floor(index / (width * height))
   const rest = index - z * width * height
   const y = Math.floor(rest / width)
