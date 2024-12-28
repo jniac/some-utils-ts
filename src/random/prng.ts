@@ -388,6 +388,19 @@ function create() {
     return out
   }
 
+  /**
+   * Returns a random vector inside a circle of the given radius. The vector is
+   * uniformly distributed over the circle (no bias towards the center).
+   */
+  function insideCircle<T extends Vector2Like>(radius: number, out: T): T {
+    const angle = random() * 2 * Math.PI
+    // Random radius with square root distribution
+    const r = Math.sqrt(random()) * radius
+    out.x = r * Math.cos(angle)
+    out.y = r * Math.sin(angle)
+    return out
+  }
+
   const prng = {
     seed,
     seedMax,
@@ -409,6 +422,7 @@ function create() {
     unitVector,
     boxMuller,
     quaternion,
+    insideCircle,
   }
 
   return prng
