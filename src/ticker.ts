@@ -388,6 +388,10 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
+  toggle(): this {
+    return this.stopped ? this.start() : this.stop()
+  }
+
   /**
    * `requestActivation()` is binded to the ticker and can be used as a pure callback:
    * ```
