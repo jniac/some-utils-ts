@@ -54,12 +54,12 @@ export function* loop(size: number): Generator<LoopResult> {
  * const results = loopArray(10)
  * ```
  */
-export function loopArray(size: number): LoopResult[]
-export function loopArray(...args: any[]) {
-  const out: LoopResult[] = []
+export function loopArray<T = LoopResult>(size: number, map?: (it: LoopResult) => T): T[] {
+  const out: T[] = []
   // @ts-ignore
-  for (const item of loop(...args)) {
-    out.push(item.clone())
+  for (const item of loop(size)) {
+    const it = item.clone()
+    out.push(map ? map(it) : it as T)
   }
   return out
 }
