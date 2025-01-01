@@ -430,6 +430,7 @@ function clear(...targets: any[]) {
   for (const target of targets) {
     clearExistingInstancesForTarget(target)
   }
+  return AnimationModule
 }
 
 
@@ -613,7 +614,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
  *   })
  * ```
  */
-const AnimationBundle = {
+const AnimationModule = {
   // easing:
   remap,
   ease: parseEase,
@@ -640,7 +641,7 @@ export type {
 }
 
 export {
-  AnimationBundle as Animation,
+  AnimationModule as Animation,
 
   // re-export easing functions:
   parseEase,
