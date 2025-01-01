@@ -1,7 +1,7 @@
 import { DeepPartial } from '../../types'
 import { Path, deepGet, deepSet, deepWalk } from './deep'
 
-class DiffResult<TypeA = any, TypeB = any> {
+export class DeepDiffResult<TypeA = any, TypeB = any> {
   objectA: TypeA
   objectB: TypeB
   aOnlyChanges: [Path, value: any][] = []
@@ -88,7 +88,7 @@ class DiffResult<TypeA = any, TypeB = any> {
  * - `differences !== aDifferences + bDifferences` because some differences may be common.
  */
 export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
-  const diff = new DiffResult(objectA, objectB)
+  const diff = new DeepDiffResult(objectA, objectB)
 
   deepWalk(objectA, {
     onValue(aValue, path) {

@@ -2,6 +2,31 @@ import { DeepPartial, DeepReadonly } from '../../types'
 
 export type Path = (string | number | symbol)[]
 
+export function comparePaths(a: Path, b: Path, {
+  maxLength = Infinity,
+  useLooseEquality = true,
+} = {}) {
+  const aLen = Math.min(a.length, maxLength)
+  const bLen = Math.min(b.length, maxLength)
+  if (aLen !== bLen) {
+    return false
+  }
+  if (useLooseEquality) {
+    for (let i = 0; i < aLen; i++) {
+      if (a[i] != b[i]) {
+        return false
+      }
+    }
+    return true
+  }
+  for (let i = 0; i < aLen; i++) {
+    if (a[i] !== b[i]) {
+      return false
+    }
+  }
+  return true
+}
+
 function isObject(value: any): value is any {
   return value !== null && typeof value === 'object'
 }
@@ -40,8 +65,20 @@ export function deepClone<T>(target: T): T {
     return cloner(target)
   }
 
+  // Rely on the `clone` method if it exists.
+  if ('clone' in (target as any) && typeof (target as any).clone === 'function') {
+    return (target as any).clone()
+  }
+
   // @ts-ignore
   const clone = new constructor()
+
+  // Rely on the `copy` method if it exists.
+  if ('copy' in (target as any) && typeof (target as any).copy === 'function') {
+    clone.copy(target)
+    return clone
+  }
+
   if (Array.isArray(target)) {
     for (let i = 0, len = target.length; i < len; i++) {
       clone[i] = deepClone(target[i])
