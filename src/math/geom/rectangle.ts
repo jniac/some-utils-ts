@@ -1,16 +1,43 @@
+import { fromVector2Declaration, Vector2Declaration } from '../../declaration'
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
 import { Padding, PaddingDeclaration } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 import { SvgUtils } from './rectangle.svg'
 
+const alignOptions = {
+  'top-left': { x: 0, y: 0 },
+  'top-center': { x: .5, y: 0 },
+  'top-right': { x: 1, y: 0 },
+  'center-left': { x: 0, y: .5 },
+  'center': { x: .5, y: .5 },
+  'center-right': { x: 1, y: .5 },
+  'bottom-left': { x: 0, y: 1 },
+  'bottom-center': { x: .5, y: 1 },
+  'bottom-right': { x: 1, y: 1 },
+}
+
+type AlignDeclaration =
+  | Vector2Declaration
+  | keyof typeof alignOptions
+
+function solveAlignDeclaration(declaration: AlignDeclaration): Vector2Like {
+  return typeof declaration === 'string'
+    ? alignOptions[declaration]
+    : fromVector2Declaration(declaration)
+}
+
+type WithAlignOption<T> = T & {
+  align?: AlignDeclaration
+}
+
 export type RectangleDeclaration =
   | [x: number, y: number, width: number, height: number]
   | [width: number, height: number]
-  | Partial<RectangleLike>
-  | { aspect: number, diagonal: number }
-  | { position?: Vector2Like, extent: number | Vector2Like }
-  | { position?: Vector2Like, size: Vector2Like }
+  | WithAlignOption<Partial<RectangleLike>>
+  | WithAlignOption<{ aspect: number, diagonal: number }>
+  | WithAlignOption<{ position?: Vector2Declaration, extent: number | Vector2Declaration }>
+  | WithAlignOption<{ position?: Vector2Declaration, size: Vector2Declaration }>
 
 export const defaultRectangleDeclaration: RectangleDeclaration = { x: 0, y: 0, width: 1, height: 1 }
 
@@ -27,32 +54,39 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
     throw new Error('Oops. Wrong parameters here.')
   }
 
-  if (isRectangleLike(declaration)) {
-    return out.copy(declaration)
-  }
+  const { align, ...restDeclaration } = declaration
+  const { x: ax, y: ay } = solveAlignDeclaration(align ?? 0)
 
-  if ('aspect' in declaration && 'diagonal' in declaration) {
-    const { aspect, diagonal } = declaration
-    return out.setDiagonalAndAspect(diagonal, aspect)
-  }
-
-  if ('extent' in declaration) {
-    const { position: { x: px, y: py } = { x: 0, y: 0 }, extent } = declaration
-    if (typeof extent === 'number') {
-      return out.set(px - extent, py - extent, extent * 2, extent * 2)
-    }
-    if (typeof extent === 'object') {
-      const { x = 0, y = 0 } = extent
-      return out.set(px - x, py - y, x * 2, y * 2)
-    }
-    throw new Error('Oops. Wrong parameters here.')
-  }
-
-  if ('size' in declaration) {
-    const { position = { x: 0, y: 0 }, size } = declaration
+  if (isRectangleLike(restDeclaration)) {
     return out
-      .setPosition(position.x, position.y)
-      .setSize(size.x, size.y)
+      .copy(restDeclaration)
+      .relativeTranslate(-ax, -ay)
+  }
+
+  if ('aspect' in restDeclaration && 'diagonal' in restDeclaration) {
+    const { aspect, diagonal } = restDeclaration
+    return out
+      .setDiagonalAndAspect(diagonal, aspect)
+      .relativeTranslate(-ax, -ay)
+  }
+
+  if ('extent' in restDeclaration) {
+    const { position = 0, extent } = restDeclaration
+    const p = fromVector2Declaration(position)
+    const e = fromVector2Declaration(extent)
+    return out
+      .set(p.x - e.x, p.y - e.y, e.x * 2, e.y * 2)
+      .relativeTranslate(-ax, -ay)
+  }
+
+  if ('size' in restDeclaration) {
+    const { position = 0, size } = restDeclaration
+    const p = fromVector2Declaration(position)
+    const s = fromVector2Declaration(size)
+    return out
+      .setPosition(p.x, p.y)
+      .setSize(s.x, s.y)
+      .relativeTranslate(-ax, -ay)
   }
 
   const {
@@ -60,10 +94,10 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
     y = 0,
     width = 0,
     height = 0,
-  } = declaration
-  out.set(x, y, width, height)
-
+  } = restDeclaration
   return out
+    .set(x, y, width, height)
+    .relativeTranslate(-ax, -ay)
 }
 
 export function union<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void {
@@ -237,17 +271,18 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   }
 
   fromRelativePoint<T extends Vector2Like>(alignX: number, alignY: number, out?: T): T
-  fromRelativePoint<T extends Vector2Like>(align: Vector2Like, out?: T): T
+  fromRelativePoint<T extends Vector2Like>(align: AlignDeclaration, out?: T): T
   fromRelativePoint<T extends Vector2Like>(...args: any[]): T {
-    if (typeof args[0] === 'object') {
-      const [align, out] = args as [Vector2Like, T?]
-      return this.fromRelativePoint(align.x, align.y, out)
-    }
-    if (typeof args[0] === 'number') {
+    if (typeof args[0] === 'number' && typeof args[1] === 'number') {
       const [alignX, alignY, out = { x: 0, y: 0 }] = args as [number, number, T?]
       out.x = this.x + this.width * alignX
       out.y = this.y + this.height * alignY
       return out as T
+    }
+    if (args.length > 0) {
+      const [align, out] = args as [AlignDeclaration, T?]
+      const { x, y } = solveAlignDeclaration(align)
+      return this.fromRelativePoint(x, y, out)
     }
     throw new Error('Oops. Wrong parameters here.')
   }
@@ -490,6 +525,12 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       this.width += left + right
       this.height += top + bottom
     }
+    return this
+  }
+
+  relativeTranslate(x: number, y: number): this {
+    this.x += this.width * x
+    this.y += this.height * y
     return this
   }
 
