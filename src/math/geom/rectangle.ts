@@ -270,6 +270,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  /**
+   * Converts a point relative to the rectangle to an absolute point.
+   * 
+   * ```
+   * const rect = new Rectangle(10, 10, 20, 30)
+   * const point = rect.fromRelativePoint(.5, .5) // center of the rectangle (20, 25)
+   * ```
+   */
   fromRelativePoint<T extends Vector2Like>(alignX: number, alignY: number, out?: T): T
   fromRelativePoint<T extends Vector2Like>(align: AlignDeclaration, out?: T): T
   fromRelativePoint<T extends Vector2Like>(...args: any[]): T {
