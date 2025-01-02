@@ -20,4 +20,9 @@ export class SvgUtils {
       ? `M ${x},${y} v ${height} h ${width} v ${-height} Z`
       : `M ${x},${y} h ${width} v ${height} h ${-width} Z`
   }
+
+  static toRectProps({ scalar = 1 } = {}): string {
+    const [x, y, width, height] = scope.tupple(scalar)
+    return `x="${formatNumber(x)}" y="${formatNumber(y)}" width="${formatNumber(width)}" height="${formatNumber(height)}"`
+  }
 }

@@ -535,7 +535,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   }
 
   /**
-   * Less useful method than `invertY()`, but still useful for flipping the x-axis. 
+   * Less useful method than `flipY()`, but still useful for flipping the x-axis. 
    */
   flipX(): this {
     this.x = -this.x - this.width
