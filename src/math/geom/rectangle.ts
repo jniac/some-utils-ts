@@ -430,7 +430,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  translate(x: number, y: number): this {
+  translate(deltaX: number, deltaY: number): this
+  translate(delta: Vector2Declaration): this
+  translate(...args: [number, number] | [Vector2Declaration]): this {
+    const { x, y } = fromVector2Declaration(args.length === 1 ? args[0] : args)
     this.x += x
     this.y += y
     return this
@@ -444,11 +447,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
-  multiply(scalarX: number, scalarY: number): this {
-    this.x *= scalarX
-    this.y *= scalarY
-    this.width *= scalarX
-    this.height *= scalarY
+  multiply(scalarX: number, scalarY: number): this
+  multiply(scalar: Vector2Declaration): this
+  multiply(...args: [number, number] | [Vector2Declaration]): this {
+    const { x, y } = fromVector2Declaration(args.length === 1 ? args[0] : args)
+    this.x *= x
+    this.y *= y
+    this.width *= x
+    this.height *= y
     return this
   }
 
