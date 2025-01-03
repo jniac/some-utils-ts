@@ -42,6 +42,10 @@ export type RectangleDeclaration =
 export const defaultRectangleDeclaration: RectangleDeclaration = { x: 0, y: 0, width: 1, height: 1 }
 
 export function fromRectangleDeclaration(declaration: RectangleDeclaration, out = new Rectangle()) {
+  if (declaration instanceof Rectangle) {
+    return out.copy(declaration)
+  }
+
   if (Array.isArray(declaration)) {
     if (declaration.length === 2) {
       const [width, height] = declaration
