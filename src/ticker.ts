@@ -126,12 +126,24 @@ type Listener = Readonly<{
   callback: TickCallback
 }>
 
-class Listeners {
+class ListenerRegister {
   static listenerNextId = 0
+
   private _sortDirty = true
   private _countDirty = true
+
+  /**
+   * The list of listeners. Note that this array is not called directly, but
+   * it's used to store the listeners when they are added. The `_clearDirty` 
+   * method is used to copy the listeners to the `_lockedListeners` array only
+   * when needed.
+   */
   private readonly _listeners: Listener[] = []
-  private _loopListeners: Listener[] = []
+
+  /**
+   * A copy of the listeners that is used to iterate over the listeners.
+   */
+  private _lockedListeners: Listener[] = []
 
   add(order: number, callback: TickCallback): Listener {
     // NOTE: Optimization: we don't need to sort the listeners if the new listener
@@ -144,7 +156,7 @@ class Listeners {
 
     this._countDirty = true
 
-    const id = Listeners.listenerNextId++
+    const id = ListenerRegister.listenerNextId++
     const listener = { id, order, callback }
     this._listeners.push(listener)
     return listener
@@ -172,21 +184,57 @@ class Listeners {
     }
   }
 
-  call(tick: Tick) {
+  private _clearDirty() {
     if (this._sortDirty) {
       this._listeners.sort((A, B) => A.order - B.order)
       this._sortDirty = false
     }
     if (this._countDirty) {
-      this._loopListeners = [...this._listeners]
+      this._lockedListeners = [...this._listeners]
       this._countDirty = false
     }
-    for (const { callback } of this._loopListeners) {
+  }
+
+  call(tick: Tick) {
+    this._clearDirty()
+    for (const { callback } of this._lockedListeners) {
       const result = callback(tick)
       if (result === 'stop') {
         this.remove(callback)
       }
     }
+  }
+
+  toDebugString() {
+    this._clearDirty()
+
+    const map = new Map<number, Listener[]>()
+    let longestOrderStr = ''
+    for (const listener of this._lockedListeners) {
+      const orderStr = listener.order.toString()
+      if (orderStr.length > longestOrderStr.length) {
+        longestOrderStr = orderStr
+      }
+      if (map.has(listener.order) === false) {
+        map.set(listener.order, [listener])
+      } else {
+        map.get(listener.order)!.push(listener)
+      }
+    }
+
+    const orders = [...map.keys()].sort((A, B) => A - B)
+
+    const str = orders.map(order => {
+      const listeners = map.get(order)!
+      const orderStr = `${order.toString().padStart(longestOrderStr.length)}:`
+      return `${orderStr} (${listeners.length})`
+    }).join('\n')
+
+    return str
+  }
+
+  logDebugString() {
+    console.log(this.toDebugString())
   }
 
   clear() {
@@ -317,9 +365,9 @@ export class Ticker implements DestroyableObject {
     timeScale: 1,
     activeLastRequest: 0,
 
-    updateListeners: new Listeners(),
-    deactivationListeners: new Listeners(),
-    activationListeners: new Listeners(),
+    updateRegister: new ListenerRegister(),
+    deactivationRegister: new ListenerRegister(),
+    activationRegister: new ListenerRegister(),
   }
 
   tick = new Tick()
@@ -406,7 +454,7 @@ export class Ticker implements DestroyableObject {
     this.internal.activeLastRequest = globalTime
     if (this.internal.active === false) {
       this.internal.active = true
-      this.internal.activationListeners.call(this.tick)
+      this.internal.activationRegister.call(this.tick)
     }
     return this
   }
@@ -488,31 +536,31 @@ export class Ticker implements DestroyableObject {
       })
     }
 
-    this.internal.updateListeners.add(order, callback)
+    this.internal.updateRegister.add(order, callback)
     const destroy = () => {
-      this.internal.updateListeners.remove(callback)
+      this.internal.updateRegister.remove(callback)
     }
 
     return { destroy, value: this }
   }
 
   offTick(callback: TickCallback): boolean {
-    return this.internal.updateListeners.remove(callback)
+    return this.internal.updateRegister.remove(callback)
   }
 
   onActivate(callback: TickCallback): DestroyableObject {
     this.requestActivation()
-    this.internal.activationListeners.add(0, callback)
+    this.internal.activationRegister.add(0, callback)
     const destroy = () => {
-      this.internal.activationListeners.remove(callback)
+      this.internal.activationRegister.remove(callback)
     }
     return { destroy, value: this }
   }
 
   onDeactivate(callback: TickCallback): DestroyableObject {
-    this.internal.deactivationListeners.add(0, callback)
+    this.internal.deactivationRegister.add(0, callback)
     const destroy = () => {
-      this.internal.deactivationListeners.remove(callback)
+      this.internal.deactivationRegister.remove(callback)
     }
     return { destroy, value: this }
   }
@@ -529,7 +577,7 @@ export class Ticker implements DestroyableObject {
    */
   requestAnimationFrame = (callback: (ms: number) => void, { order = 0 } = {}): number => {
     this.requestActivation() // Request activation to ensure the callback is called.
-    const { updateListeners } = this.internal
+    const { updateRegister: updateListeners } = this.internal
     const listener = updateListeners.add(order, tick => {
       updateListeners.removeById(listener.id)
       callback(tick.time * 1e3)
@@ -543,7 +591,7 @@ export class Ticker implements DestroyableObject {
    * See {@link Ticker.requestAnimationFrame}
    */
   cancelAnimationFrame(id: number): boolean {
-    const { updateListeners } = this.internal
+    const { updateRegister: updateListeners } = this.internal
     return updateListeners.removeById(id)
   }
 
@@ -605,7 +653,7 @@ export class Ticker implements DestroyableObject {
     }
 
     try {
-      this.internal.updateListeners.call(this.tick)
+      this.internal.updateRegister.call(this.tick)
     } catch (error) {
       console.error(`Error in Ticker "${this.name}"`)
       console.error(this.tick.toString())
@@ -615,7 +663,7 @@ export class Ticker implements DestroyableObject {
 
     if (activeTimeScale === 0) {
       this.internal.active = false
-      this.internal.deactivationListeners.call(this.tick)
+      this.internal.deactivationRegister.call(this.tick)
     }
 
     return this
