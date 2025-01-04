@@ -1,4 +1,4 @@
-import { comparePaths, deepAssign, deepClone, deepGet, Path } from '../object/deep'
+import { comparePaths, deepAssign, deepClone, deepGet, deepWalk, Path } from '../object/deep'
 import { deepDiff, DeepDiffResult } from '../object/deep/diff'
 import { DeepPartial } from '../types'
 
@@ -7,12 +7,18 @@ import { Observable, SetValueOptions } from './observable'
 type PartialChangeCallback<T> =
   (partialValue: any, info: { partialValueOld: any, observable: ObservableTree<T>, path: Path }) => void
 
-function wrap(path: Path, value: any) {
-  const obj = {} as any
-  for (const key of path.slice(0, -1)) {
-    obj[key] = {}
+function wrap(path: string | Path, value: any) {
+  if (typeof path === 'string') {
+    path = path.split('.')
   }
-  obj[path[path.length - 1]] = value
+  const obj = {} as any
+  let scope = obj
+  for (const key of path.slice(0, -1)) {
+    scope[key] = {}
+    scope = scope[key]
+  }
+  scope[path[path.length - 1]] = value
+  return obj
 }
 
 /**
@@ -54,15 +60,37 @@ function wrap(path: Path, value: any) {
 export class ObservableTree<T> extends Observable<T> {
   diff: null | DeepDiffResult = null
 
-  private _pendingMutations = {} as DeepPartial<T>
+  private _pendingMutations = null as null | DeepPartial<T>
 
-  setMutation(mutation: DeepPartial<T> | [path: Path, value: any], options?: SetValueOptions): boolean {
-    const newValue = deepClone(this.value)
-    deepAssign(newValue, Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation)
-    this.diff = deepDiff(this.value, newValue)
-    if (this.diff.totalChangeCount === 0) {
+  // Short syntax:
+  mutate: (typeof this)['setMutation'] = this.setMutation.bind(this)
+
+  setMutation(mutation: DeepPartial<T> | [path: string | Path, value: any], options?: SetValueOptions): boolean {
+    const { value: currentValue } = this
+    const mutationObject = Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation
+
+    // Check if the mutation is really mutating the tree.
+    let doReallyMutate = false
+    deepWalk(mutationObject, {
+      treatConstructedObjectAsValue: false, // F***ing important! Since we are comparing the final primitive values.
+      onValue(mutationValue, path) {
+        const { value: existingValue, exists } = deepGet(currentValue, path)
+        if (!exists || mutationValue !== existingValue) {
+          console.log({ path, mutationValue, existingValue })
+          doReallyMutate = true
+          return 'break'
+        }
+      },
+    })
+    if (!doReallyMutate) {
       return false
     }
+
+    // Deep clone the current value and apply the mutation.
+    const newValue = deepClone(currentValue)
+    deepAssign(newValue, mutationObject)
+    this.diff = deepDiff(currentValue, newValue)
+
     return super.setValue(newValue, options)
   }
 
@@ -70,6 +98,7 @@ export class ObservableTree<T> extends Observable<T> {
    * Enqueue a partial value to be set later.
    */
   enqueueMutation(mutation: DeepPartial<T> | [path: Path, value: any]): this {
+    this._pendingMutations ??= {} as DeepPartial<T>
     deepAssign(this._pendingMutations, Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation)
     return this
   }
@@ -78,7 +107,12 @@ export class ObservableTree<T> extends Observable<T> {
    * Flush all pending mutations.
    */
   flushMutations(options?: SetValueOptions): boolean {
-    return this.setMutation(this._pendingMutations, options)
+    if (!this._pendingMutations) {
+      return false
+    }
+    const hasChanged = this.setMutation(this._pendingMutations, options)
+    this._pendingMutations = null
+    return hasChanged
   }
 
   override setValue(incomingValue: T, options?: SetValueOptions): boolean {
