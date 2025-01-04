@@ -156,30 +156,47 @@ const deepWalkOptions = {
   ascendants: <any[] | undefined>undefined,
   dateAsValue: true,
   /**
-   * If true, any object with a constructor that is not Object or Array will be treated as a value.
+   * If true, the function will treat constructed objects as values.
+   * 
+   * Constructed objects are objects created with a constructor function.
+   * For example, if `true`, the function will treat `new MyClass()` as a value.
+   * 
+   * Default: `true`.
    */
-  withConstructorAsValue: true,
-  onValue: <((value: any, path: Path, ascendants: any[]) => void) | null>null,
-  onObject: <((value: any, path: Path, ascendants: any[]) => void) | null>null,
+  treatConstructedObjectAsValue: true,
+  onValue: <((value: any, path: Path, ascendants: any[]) => void | 'break') | null>null,
+  onObject: <((value: any, path: Path, ascendants: any[]) => void | 'break') | null>null,
 }
 /**
  * Walks through the target object deeply and invokes the specified callbacks.
+ * 
+ * NOTE: If the `onValue` callback returns `'break'`, the function will stop walking.
+ * Use this to break the loop early.
  */
 export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> = {}) {
   const {
     path = [],
     ascendants = [],
     dateAsValue: dateAsValue = deepWalkOptions.dateAsValue,
-    withConstructorAsValue = deepWalkOptions.withConstructorAsValue,
+    treatConstructedObjectAsValue: withConstructorAsValue = deepWalkOptions.treatConstructedObjectAsValue,
   } = options
   if (dateAsValue && target instanceof Date) {
-    options.onValue?.(target, path, ascendants)
+    const result = options.onValue?.(target, path, ascendants)
+    if (result === 'break') {
+      return
+    }
   }
   else if (isObject(target) === false) {
-    options.onValue?.(target, path, ascendants)
+    const result = options.onValue?.(target, path, ascendants)
+    if (result === 'break') {
+      return
+    }
   }
   else if (withConstructorAsValue && target.constructor !== Object && target.constructor !== Array) {
-    options.onValue?.(target, path, ascendants)
+    const result = options.onValue?.(target, path, ascendants)
+    if (result === 'break') {
+      return
+    }
   }
   else {
     options.onObject?.(target, path, ascendants)
