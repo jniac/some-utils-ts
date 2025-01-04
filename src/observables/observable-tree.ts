@@ -5,7 +5,7 @@ import { DeepPartial } from '../types'
 import { Observable, SetValueOptions } from './observable'
 
 type PartialChangeCallback<T> =
-  (partialValue: any, info: { partialValueOld: any, observable: ObservableRecord<T>, path: Path }) => void
+  (partialValue: any, info: { partialValueOld: any, observable: ObservableTree<T>, path: Path }) => void
 
 function wrap(path: Path, value: any) {
   const obj = {} as any
@@ -20,7 +20,7 @@ function wrap(path: Path, value: any) {
  * 
  * Usage: 
  * ```
- * const o = new ObservableRecord({ foo: { bar: 2, qux: 3 } })
+ * const o = new ObservableTree({ foo: { bar: 2, qux: 3 } })
  * o.onMutation('foo', (v, { partialValueOld, path }) => {
  *   console.log(path.join('.'), v, partialValueOld)
  * })
@@ -38,7 +38,7 @@ function wrap(path: Path, value: any) {
  * and `flushMutations` instead.
  * 
  * ```
- * const o = new ObservableRecord({ foo: { bar: 2, qux: 3 } })
+ * const o = new ObservableTree({ foo: { bar: 2, qux: 3 } })
  * o.onMutation('foo', (v, { partialValueOld, path }) => {
  *   console.log(path.join('.'), v, partialValueOld)
  * })
@@ -51,7 +51,7 @@ function wrap(path: Path, value: any) {
  * o.flushMutations() // only triggers one deep diff and one deep clone
  * ```
  */
-export class ObservableRecord<T> extends Observable<T> {
+export class ObservableTree<T> extends Observable<T> {
   diff: null | DeepDiffResult = null
 
   private _pendingMutations = {} as DeepPartial<T>
