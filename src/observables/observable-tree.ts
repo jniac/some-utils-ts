@@ -4,8 +4,8 @@ import { DeepPartial } from '../types'
 
 import { Observable, SetValueOptions } from './observable'
 
-type PartialChangeCallback<T> =
-  (partialValue: any, info: { partialValueOld: any, observable: ObservableTree<T>, path: Path }) => void
+type PartialChangeCallback<T, SubType> =
+  (partialValue: SubType, info: { partialValueOld: SubType, observable: ObservableTree<T>, path: Path }) => void
 
 function wrap(path: string | Path, value: any) {
   if (typeof path === 'string') {
@@ -58,7 +58,7 @@ function wrap(path: string | Path, value: any) {
  * ```
  */
 export class ObservableTree<T> extends Observable<T> {
-  diff: null | DeepDiffResult = null
+  diff: DeepDiffResult = new DeepDiffResult({}, {})
 
   private _pendingMutations = null as null | DeepPartial<T>
 
@@ -76,7 +76,6 @@ export class ObservableTree<T> extends Observable<T> {
       onValue(mutationValue, path) {
         const { value: existingValue, exists } = deepGet(currentValue, path)
         if (!exists || mutationValue !== existingValue) {
-          console.log({ path, mutationValue, existingValue })
           doReallyMutate = true
           return 'break'
         }
@@ -119,21 +118,23 @@ export class ObservableTree<T> extends Observable<T> {
     return this.setMutation(incomingValue as any, options)
   }
 
-  onMutation(path: string | Path, callback: PartialChangeCallback<T>) {
+  onMutation<SubType = any>(path: string | Path, callback: PartialChangeCallback<T, SubType>) {
     const pathArray = Array.isArray(path) ? path : path.split('.')
     const pathLength = pathArray.length
     this.onChange((value, { valueOld }) => {
+      let hasChanged = false
       let path = null as null | Path
       for (const [diffPath] of this.diff!.bothChanges) {
         if (comparePaths(diffPath, pathArray, { maxLength: pathLength })) {
+          hasChanged = true
           path = diffPath.slice(0, pathLength)
           break
         }
       }
-      if (path) {
+      if (hasChanged) {
         const partialValue = deepGet(value, pathArray).value
         const partialValueOld = deepGet(valueOld, pathArray).value
-        callback(partialValue, { partialValueOld, observable: this, path })
+        callback(partialValue, { partialValueOld, observable: this, path: path! })
       }
     })
   }
