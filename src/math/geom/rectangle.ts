@@ -546,6 +546,13 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  /**
+   * Inflates the rectangle by the given padding (use negative values to shrink).
+   */
+  inflate(padding: PaddingDeclaration): this {
+    return this.applyPadding(padding, 'grow')
+  }
+
   relativeTranslate(x: number, y: number): this {
     this.x += this.width * x
     this.y += this.height * y
