@@ -90,6 +90,20 @@ class AnimationInstance implements DestroyableObject {
     return this
   }
 
+  /**
+   * Execute the callback when the animation starts (progress === 0).
+   */
+  onStart(callback: Callback): this {
+    return this.onUpdate(({ progress }) => {
+      if (progress === 0) {
+        callback(this)
+      }
+    })
+  }
+
+  /**
+   * Execute the callback when the animation completes (progress === 1).
+   */
   onComplete(callback: Callback): this {
     return this.onUpdate(() => {
       if (this.progress === 1) {
