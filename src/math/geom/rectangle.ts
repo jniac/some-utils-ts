@@ -863,6 +863,15 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     console.warn('Use `svg.toViewBox()` instead.')
     return SvgUtils.setScope(this).toViewBox()
   }
+
+  toCSS() {
+    return {
+      left: `${this.x}px`,
+      top: `${this.y}px`,
+      width: `${this.width}px`,
+      height: `${this.height}px`,
+    }
+  }
 }
 
 const _rect = new Rectangle()
