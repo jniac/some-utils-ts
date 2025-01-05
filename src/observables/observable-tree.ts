@@ -5,7 +5,7 @@ import { DeepPartial } from '../types'
 import { Observable, SetValueOptions } from './observable'
 
 type PartialChangeCallback<T, SubType> =
-  (partialValue: SubType, info: { partialValueOld: SubType, observable: ObservableTree<T>, path: Path }) => void
+  (partialValue: SubType, partialValueOld: SubType, info: { observable: ObservableTree<T>, path: Path }) => void
 
 function wrap(path: string | Path, value: any) {
   if (typeof path === 'string') {
@@ -134,7 +134,7 @@ export class ObservableTree<T> extends Observable<T> {
       if (hasChanged) {
         const partialValue = deepGet(value, pathArray).value
         const partialValueOld = deepGet(valueOld, pathArray).value
-        callback(partialValue, { partialValueOld, observable: this, path: path! })
+        callback(partialValue, partialValueOld, { observable: this, path: path! })
       }
     })
   }
