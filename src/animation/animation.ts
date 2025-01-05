@@ -637,7 +637,8 @@ const AnimationModule = {
 
 export type {
   Callback as AnimationCallback,
-  TweenArg as AnimationTweenArg
+  TweenArg as AnimationTweenArg,
+  TweenInstance as AnimationTweenInstance
 }
 
 export {
