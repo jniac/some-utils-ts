@@ -66,6 +66,10 @@ export class ObservableTree<T> extends Observable<T> {
   mutate: (typeof this)['setMutation'] = this.setMutation.bind(this)
 
   setMutation(mutation: DeepPartial<T> | [path: string | Path, value: any], options?: SetValueOptions): boolean {
+    if (!mutation || typeof mutation !== 'object') {
+      throw new Error('Mutation must be an object.')
+    }
+
     const { value: currentValue } = this
     const mutationObject = Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation
 
