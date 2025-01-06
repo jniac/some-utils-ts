@@ -125,7 +125,7 @@ export class ObservableTree<T> extends Observable<T> {
   onMutation<SubType = any>(path: string | Path, callback: PartialChangeCallback<T, SubType>) {
     const pathArray = Array.isArray(path) ? path : path.split('.')
     const pathLength = pathArray.length
-    this.onChange((value, { valueOld }) => {
+    return this.onChange((value, { valueOld }) => {
       let hasChanged = false
       let path = null as null | Path
       for (const [diffPath] of this.diff!.bothChanges) {
