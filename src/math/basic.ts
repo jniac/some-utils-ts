@@ -81,6 +81,12 @@ export function sin01(x: number) {
   return .5 + .5 * Math.sin(x * Math.PI)
 }
 
+export function euclideanDivision(n: number, d: number): [integer: number, rest: number] {
+  const i = Math.floor(n / d)
+  const r = n - d * i
+  return [i, r]
+}
+
 /**
  * Returns the "positive" modulo of "x".
  * ```

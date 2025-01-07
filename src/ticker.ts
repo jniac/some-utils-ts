@@ -1,4 +1,5 @@
 import { clamp01, lerp } from './math/basic'
+import { Memorization } from './observables/memorization'
 import { DestroyableObject } from './types'
 
 let globalTime = 0
@@ -364,6 +365,7 @@ export class Ticker implements DestroyableObject {
     caughtErrors: false,
     timeScale: 1,
     activeLastRequest: 0,
+    memorization: new Memorization(60, 0),
 
     updateRegister: new ListenerRegister(),
     deactivationRegister: new ListenerRegister(),
@@ -373,6 +375,7 @@ export class Ticker implements DestroyableObject {
   tick = new Tick()
 
   // Accessors:
+  get frame() { return this.tick.frame }
   get time() { return this.tick.time }
   get deltaTime() { return this.tick.deltaTime }
   get timeScale() { return this.internal.timeScale }
@@ -627,6 +630,8 @@ export class Ticker implements DestroyableObject {
     const time = previousTick.time + deltaTime
     const unscaledTime = previousTick.unscaledTime + unscaledDeltaTime
 
+    this.internal.memorization.setValue(deltaTime, true)
+
     this.tick = new Tick(
       previousTick,
       frame,
@@ -667,6 +672,13 @@ export class Ticker implements DestroyableObject {
     }
 
     return this
+  }
+
+  /**
+   * Returns the average deltaTime of the last ticks (the last 60 ticks by default).
+   */
+  getAverageDeltaTime() {
+    return this.internal.memorization.average
   }
 }
 
