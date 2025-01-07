@@ -351,9 +351,13 @@ const updateInstances = (deltaTime: number) => {
     instance.timeOld = instance.time
     instance.time = clamp(instance.unclampedTime, 0, instance.duration)
 
-    instance.progress = Number.isFinite(instance.duration)
-      ? clamp01(instance.time / instance.duration)
-      : 0 // progress is zero on infinite animation.
+    const isZeroDuration = instance.duration === 0
+
+    instance.progress = isZeroDuration
+      ? 1 // progress is one on zero duration (instant animation).
+      : Number.isFinite(instance.duration)
+        ? clamp01(instance.time / instance.duration)
+        : 0 // progress is zero on infinite animation.
 
     const hasChanged =
       // Check if the unclamped time has changed is not enough, because the time
@@ -368,7 +372,8 @@ const updateInstances = (deltaTime: number) => {
       )
 
     const isPreRunning = instance.frame === 0 && instance.prerun
-    if (hasChanged || isPreRunning) {
+
+    if (hasChanged || isPreRunning || isZeroDuration) {
       for (const callback of onUpdate.get(instance.id)) {
         const returnedValue = callback(instance)
         switch (returnedValue) {
