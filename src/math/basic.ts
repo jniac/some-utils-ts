@@ -112,6 +112,25 @@ export function middleModulo(x: number, modulo: number) {
 }
 
 /**
+ * Returns the shortest signed distance between two values.
+ * ```
+ * moduloDistance(10, 350, 360) // -> -20
+ * moduloDistance(350, 10, 360) // -> 20
+ * ```
+ * NOTE: The order of the arguments matters:
+ * ```
+ * moduloShortestSignedDistance(a, b, cycle) !== moduloShortestSignedDistance(b, a, cycle)
+ * ```
+ */
+export function moduloShortestSignedDistance(start: number, end: number, mod: number) {
+  const d = (end - start) % mod
+  const s = Math.sign(d)
+  return s * d > mod / 2
+    ? d - s * mod
+    : d
+}
+
+/**
  * Clamps a value with progressive limit. Useful for user "drag" feedbacks.
  * https://www.desmos.com/calculator/vssiyqze6q
  */
