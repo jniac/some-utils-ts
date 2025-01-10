@@ -61,6 +61,20 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
   const { align, ...restDeclaration } = declaration
   const { x: ax, y: ay } = solveAlignDeclaration(align ?? 0)
 
+  // Check for "undestructurable" objects
+  if (Object.keys(restDeclaration).length === 0) {
+    // DOMRect for example can't be destructured, so we need to check for empty 
+    // object with still a valid declaration to detect "Rectangle-like" objects 
+    // that do not support destructuration.
+    if (isRectangleLike(declaration)) {
+      return out.copy(declaration)
+    } else {
+      console.warn('Empty rectangle declaration. Using default values.')
+      return out.set(0, 0, 1, 1)
+    }
+  }
+
+  console.log(restDeclaration, isRectangleLike(restDeclaration))
   if (isRectangleLike(restDeclaration)) {
     return out
       .copy(restDeclaration)
