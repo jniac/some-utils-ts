@@ -72,6 +72,7 @@ class AnimationInstance implements DestroyableObject {
   get complete() { return this.progress === 1 }
   get delayed() { return this.unclampedTime < 0 }
   get deltaTime() { return this.time - this.timeOld }
+  get direction() { return this.progress >= this.progressOld ? 'forward' : 'backward' }
 
   constructor(duration: number, delay: number, timeScale: number, target: any, autoDestroy: boolean, prerun: boolean | undefined) {
     this.duration = duration
@@ -91,11 +92,12 @@ class AnimationInstance implements DestroyableObject {
   }
 
   /**
-   * Execute the callback when the animation starts (progress === 0).
+   * Execute the callback when the animation starts (progress > 0 && progressOld === 0).
+   * @deprecated Deprecated for now, not sure to have all the use cases covered (reverse playing etc.). Use `onPass(0, () => ...)` instead.
    */
   onStart(callback: Callback): this {
-    return this.onUpdate(({ progress }) => {
-      if (progress === 0) {
+    return this.onUpdate(({ progress, progressOld }) => {
+      if (progress > 0 && progressOld === 0) {
         callback(this)
       }
     })
@@ -110,6 +112,47 @@ class AnimationInstance implements DestroyableObject {
         callback(this)
       }
     })
+  }
+
+  onThreshold({
+    /**
+     * The threshold value.
+     */
+    threshold = .5,
+
+    /**
+     * The direction to check.
+     */
+    direction = 'both' as 'forward' | 'backward' | 'both',
+
+    /**
+     * The mode to trigger the callback.
+     * - 'reach': the callback is triggered when the progress reaches the threshold (is on the exact value or on the other side).
+     * - 'pass': the callback is triggered when the progress passes the threshold (is on the other side).
+     */
+    mode = 'reach' as 'reach' | 'pass',
+  }, callback: Callback) {
+    return this.onUpdate(({ progress, progressOld }) => {
+      if (direction === 'both' || this.direction === direction) {
+        const above = mode === 'reach'
+          ? progress >= threshold && progressOld < threshold
+          : progress > threshold && progressOld <= threshold
+        const below = mode === 'reach'
+          ? progress <= threshold && progressOld > threshold
+          : progress < threshold && progressOld >= threshold
+        if (above || below) {
+          callback(this)
+        }
+      }
+    })
+  }
+
+  onPass(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, mode: 'pass' }, callback)
+  }
+
+  onReach(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, mode: 'reach' }, callback)
   }
 
   onDestroy(callback: Callback): this {
