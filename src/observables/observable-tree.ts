@@ -100,7 +100,7 @@ export class ObservableTree<T> extends Observable<T> {
   /**
    * Enqueue a partial value to be set later.
    */
-  enqueueMutation(mutation: DeepPartial<T> | [path: Path, value: any]): this {
+  enqueueMutation(mutation: DeepPartial<T> | [path: string | Path, value: any]): this {
     this._pendingMutations ??= {} as DeepPartial<T>
     deepAssign(this._pendingMutations, Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation)
     return this

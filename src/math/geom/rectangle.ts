@@ -344,10 +344,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return out
   }
 
-  setCenter(point: Vector2Like): this {
+  setCenter(point: Vector2Declaration): this {
+    const { x, y } = fromVector2Declaration(point)
     return (this
-      .setCenterX(point.x)
-      .setCenterY(point.y))
+      .setCenterX(x)
+      .setCenterY(y))
   }
 
   getMinX() {
