@@ -376,6 +376,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  incrementMinX(value: number): this {
+    return this.setMinX(this.getMinX() + value)
+  }
+
   getMaxX() {
     return this.x + this.width
   }
@@ -398,6 +402,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       }
     }
     return this
+  }
+
+  incrementMaxX(value: number): this {
+    return this.setMaxX(this.getMaxX() + value)
   }
 
   getMinY() {
@@ -425,6 +433,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  incrementMinY(value: number): this {
+    return this.setMinY(this.getMinY() + value)
+  }
+
   getMaxY() {
     return this.y + this.height
   }
@@ -447,6 +459,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       }
     }
     return this
+  }
+
+  incrementMaxY(value: number): this {
+    return this.setMaxY(this.getMaxY() + value)
   }
 
   translate(deltaX: number, deltaY: number): this
