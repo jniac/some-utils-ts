@@ -16,7 +16,7 @@ const safewords = ['pause', 'destroy'] as const
 
 type Safeword = typeof safewords[number]
 
-type Callback = (animation: AnimationInstance) => void | Safeword
+type Callback = (animation: AnimationInstance) => void | Safeword | any
 
 class MultiValueMap<K, V> {
   static empty = [][Symbol.iterator]()
