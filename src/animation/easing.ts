@@ -45,10 +45,12 @@ function isElasticInPlaceEasingDeclaration(arg: string): arg is ElasticInPlaceEa
 }
 
 type EaseDeclaration =
+  | ((t: number) => number)
   | SimpleEasingDeclaration
   | CubicBezierEasingDeclaration
   | CustomInOutEasingDeclaration
   | ElasticInPlaceEasingDeclaration
+
 
 const easeCache = new Map<string, (x: number) => number>()
 
@@ -85,7 +87,10 @@ function cacheElasticInPlace(declaration: string) {
   return ease
 }
 
-function parseEase(declaration: EaseDeclaration): (value: number) => number {
+function fromEaseDeclaration(declaration: EaseDeclaration): (value: number) => number {
+  if (typeof declaration === 'function') {
+    return declaration
+  }
   if (isSimpleEasingDeclaration(declaration)) {
     return simple[declaration]
   }
@@ -111,7 +116,7 @@ function remap(
 ) {
   const t = (x - inMin) / (inMax - inMin)
   const tClamped = t < 0 ? 0 : t > 1 ? 1 : t
-  const fn = typeof easeArg === 'function' ? easeArg : parseEase(easeArg)
+  const fn = typeof easeArg === 'function' ? easeArg : fromEaseDeclaration(easeArg)
   const y = fn(tClamped)
   return outMin + (outMax - outMin) * y
 }
@@ -122,12 +127,18 @@ export type {
 }
 
 /**
- * @deprecated Use `parseEase` instead
+ * @deprecated Use `fromEaseDeclaration` instead
  */
-const easing = parseEase
+const easing = fromEaseDeclaration
+
+/**
+ * @deprecated Use `fromEaseDeclaration` instead
+ */
+const parseEase = fromEaseDeclaration
 
 export {
   easing,
+  fromEaseDeclaration,
   parseEase,
   remap
 }
