@@ -560,7 +560,7 @@ function during(arg: DuringArg | number): AnimationInstance {
 
 const defaultTweenArg = {
   ...omit(defaultDuringArg, 'target'),
-  ease: <EaseDeclaration | ((x: number) => number)>'inOut2',
+  ease: <EaseDeclaration>'inOut2',
 }
 
 type TweenEntry = {
