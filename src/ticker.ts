@@ -439,8 +439,8 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  toggle(): this {
-    return this.stopped ? this.start() : this.stop()
+  toggle(start = this.internal.stopped): this {
+    return start ? this.start() : this.stop()
   }
 
   /**
