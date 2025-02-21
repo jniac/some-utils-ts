@@ -1,0 +1,583 @@
+import { MultiKeyWeakMap } from '../collection/multi-key-map';
+import { clamp, clamp01 } from '../math/basic';
+import { isObject } from '../object/common';
+import { expandObject } from '../object/expand';
+import { omit } from '../object/misc';
+import { parseEase, remap } from './easing';
+/**
+ * The safeword, when returned by a callback, stops the animation.
+ *
+ * Sometimes it's “red”, sometimes “yellow”, but here it's simply "pause" or "destroy".
+ */
+const safewords = ['pause', 'destroy'];
+class MultiValueMap {
+    static empty = [][Symbol.iterator]();
+    map = new Map();
+    add(key, value) {
+        const create = (key) => {
+            const set = new Set();
+            this.map.set(key, set);
+            return set;
+        };
+        const set = this.map.get(key) ?? create(key);
+        set.add(value);
+    }
+    clear(key) {
+        this.map.get(key)?.clear();
+    }
+    get(key) {
+        return this.map.get(key)?.[Symbol.iterator]() ?? MultiValueMap.empty;
+    }
+}
+const onUpdate = new MultiValueMap();
+const onDestroy = new MultiValueMap();
+const instanceMultiKeyWeakMap = new MultiKeyWeakMap();
+let animationInstanceCounter = 0;
+class AnimationInstance {
+    id = animationInstanceCounter++;
+    duration;
+    delay;
+    target;
+    prerun;
+    autoDestroy;
+    destroyHasBeenRequested = false;
+    unclampedTime;
+    unclampedTimeOld;
+    frame;
+    timeScale;
+    paused = false;
+    // Computed "user-destinated" values.
+    time = 0;
+    timeOld = 0;
+    progress = 0;
+    // Accessors:
+    get progressOld() { return this.timeOld / this.duration; }
+    get complete() { return this.progress === 1; }
+    get delayed() { return this.unclampedTime < 0; }
+    get deltaTime() { return this.time - this.timeOld; }
+    get direction() { return this.progress >= this.progressOld ? 'forward' : 'backward'; }
+    constructor(duration, delay, timeScale, target, autoDestroy, prerun) {
+        this.duration = duration;
+        this.delay = delay;
+        this.frame = 0;
+        this.timeScale = timeScale;
+        this.unclampedTimeOld =
+            this.unclampedTime = -delay;
+        this.target = target;
+        this.autoDestroy = autoDestroy;
+        this.prerun = prerun ?? delay > 0; // prerun if delay is set.
+    }
+    onUpdate(callback) {
+        onUpdate.add(this.id, callback);
+        return this;
+    }
+    /**
+     * Execute the callback when the animation starts (progress > 0 && progressOld === 0).
+     * @deprecated Deprecated for now, not sure to have all the use cases covered (reverse playing etc.). Use `onPass(0, () => ...)` instead.
+     */
+    onStart(callback) {
+        return this.onUpdate(({ progress, progressOld }) => {
+            if (progress > 0 && progressOld === 0) {
+                callback(this);
+            }
+        });
+    }
+    /**
+     * Execute the callback when the animation completes (progress === 1).
+     */
+    onComplete(callback) {
+        return this.onUpdate(() => {
+            if (this.progress === 1) {
+                callback(this);
+            }
+        });
+    }
+    onThreshold({ 
+    /**
+     * The threshold value.
+     */
+    threshold = .5, 
+    /**
+     * The direction to check.
+     */
+    direction = 'both', 
+    /**
+     * The mode to trigger the callback.
+     * - 'reach': the callback is triggered when the progress reaches the threshold (is on the exact value or on the other side).
+     * - 'pass': the callback is triggered when the progress passes the threshold (is on the other side).
+     */
+    mode = 'reach', }, callback) {
+        return this.onUpdate(({ progress, progressOld }) => {
+            if (direction === 'both' || this.direction === direction) {
+                const above = mode === 'reach'
+                    ? progress >= threshold && progressOld < threshold
+                    : progress > threshold && progressOld <= threshold;
+                const below = mode === 'reach'
+                    ? progress <= threshold && progressOld > threshold
+                    : progress < threshold && progressOld >= threshold;
+                if (above || below) {
+                    callback(this);
+                }
+            }
+        });
+    }
+    onPass(threshold, callback) {
+        return this.onThreshold({ threshold, mode: 'pass' }, callback);
+    }
+    onReach(threshold, callback) {
+        return this.onThreshold({ threshold, mode: 'reach' }, callback);
+    }
+    onDestroy(callback) {
+        onDestroy.add(this.id, callback);
+        return this;
+    }
+    /**
+     * Request the instance to be destroyed.
+     *
+     * NOTE: The instance is not destroyed immediately, it will be destroyed:
+     * - at the end of the current update loop (if inside an update loop)
+     * - at the end of the next update loop (if outside an update loop, callbacks will be ignored)
+     */
+    requestDestroy() {
+        this.destroyHasBeenRequested = true;
+    }
+    /**
+     * Call internally the `requestDestroy` method. Here to implement the `DestroyableObject` interface.
+     *
+     * NOTE: The instance is not destroyed immediately, it will be destroyed as soon as possible, callbacks will be ignored.
+     */
+    destroy = () => this.requestDestroy();
+    // Facilitators:
+    /**
+     * Lerps the current progress value.
+     *
+     * Usage:
+     * ```
+     * Animation
+     *   .during(1)
+     *   .onUpdate(({ progressLerp }) => {
+     *     const alpha = progressLerp(.75, 1, 'cubic-bezier(.33, 0, .66, 1)')
+     *   })
+     * ```
+     */
+    progressLerp = (from, to, ease = 'linear') => {
+        const alpha = parseEase(ease)(this.progress);
+        return from + (to - from) * alpha;
+    };
+    set({ paused, time, progress, timeScale, delay } = {}) {
+        if (progress !== undefined && Number.isFinite(progress)) {
+            time = progress * this.duration;
+        }
+        if (time !== undefined && Number.isFinite(time)) {
+            this.unclampedTime = time;
+        }
+        if (paused !== undefined) {
+            this.paused = paused;
+        }
+        if (timeScale !== undefined) {
+            this.timeScale = timeScale;
+        }
+        // NOTE: Order matters, `delay` must be applied after `timeScale`.
+        if (delay !== undefined) {
+            this.applyDelay(delay);
+        }
+        return this;
+    }
+    /**
+     * Applies a delay to the instance. Quite tricky.
+     *
+     * Delay is handled by setting the `unclampedTime` value out of the bounds of
+     * the duration. If the time scale is positive, the time is set to `-delay`,
+     * if the time scale is negative, the time is set to `duration + delay`.
+     */
+    applyDelay(value) {
+        if (this.timeScale > 0) {
+            this.unclampedTime = -value;
+        }
+        else {
+            this.unclampedTime = this.duration + value;
+        }
+        return this;
+    }
+    /**
+     * Pauses the instance.
+     *
+     * Convenient method to set `paused` to `true`, equivalent to:
+     * ```
+     * instance.set({ paused: true })
+     * ```
+     */
+    pause(props) {
+        if (typeof props === 'number') {
+            props = { time: props };
+        }
+        return this.set({ ...props, paused: true });
+    }
+    /**
+     * Resumes the instance.
+     *
+     * Convenient method to set `paused` to `false`, equivalent to:
+     * ```
+     * instance.set({ paused: false })
+     * ```
+     */
+    play(props) {
+        if (typeof props === 'number') {
+            props = { time: props };
+        }
+        return this.set({ ...props, paused: false });
+    }
+    reverse(props) {
+        if (typeof props === 'number') {
+            props = { time: props };
+        }
+        return this.set({ ...props, timeScale: -this.timeScale });
+    }
+    /**
+     * By design, to avoid conflicts between "above" and "below" methods:
+     * - "above" is true when the time/progress is above or equal to the given value.
+     * - "below" is true when the time/progress is strictly below the given value.
+     */
+    didPassAbove(props) {
+        const { time, progress } = props;
+        if (time !== undefined) {
+            return this.timeOld < time && this.time >= time;
+        }
+        if (progress !== undefined) {
+            return this.progressOld < progress && this.progress >= progress;
+        }
+        return false;
+    }
+    /**
+     * By design, to avoid conflicts between "above" and "below" methods:
+     * - "above" is true when the time/progress is above or equal to the given value.
+     * - "below" is true when the time/progress is strictly below the given value.
+     */
+    didPassBelow(props) {
+        const { time, progress } = props;
+        if (time !== undefined) {
+            return this.timeOld >= time && this.time < time;
+        }
+        if (progress !== undefined) {
+            return this.progressOld >= progress && this.progress < progress;
+        }
+        return false;
+    }
+    didPass(props) {
+        return this.didPassAbove(props) || this.didPassBelow(props);
+    }
+}
+let instances = [];
+const destroyInstance = (instance) => {
+    for (const callback of onDestroy.get(instance.id)) {
+        callback(instance);
+    }
+    onUpdate.clear(instance.id);
+    onDestroy.clear(instance.id);
+    releaseInstanceFromTarget(instance);
+};
+const clearExistingInstancesForTarget = (target) => {
+    const targetInstances = instanceMultiKeyWeakMap.get(target);
+    if (targetInstances) {
+        for (const instance of targetInstances) {
+            instance.requestDestroy();
+        }
+    }
+};
+function releaseInstanceFromTarget(instance) {
+    const { target } = instance;
+    if (target !== undefined) {
+        const targetInstances = instanceMultiKeyWeakMap.get(target);
+        if (targetInstances) {
+            targetInstances.delete(instance);
+            if (targetInstances.size === 0) {
+                instanceMultiKeyWeakMap.delete(target);
+            }
+        }
+    }
+}
+function associateInstanceWithTarget(instance) {
+    const { target } = instance;
+    if (target !== undefined) {
+        let targetInstances = instanceMultiKeyWeakMap.get(target);
+        if (targetInstances === undefined) {
+            targetInstances = new Set();
+            instanceMultiKeyWeakMap.set(target, targetInstances);
+        }
+        targetInstances.add(instance);
+    }
+}
+const registerInstance = (clearExistingInstances, instance) => {
+    ensureAnimationLoop();
+    const { target } = instance;
+    if (target !== undefined) {
+        if (clearExistingInstances) {
+            clearExistingInstancesForTarget(target);
+        }
+        associateInstanceWithTarget(instance);
+    }
+    instances.push(instance);
+    return instance;
+};
+const updateInstances = (deltaTime) => {
+    for (let i = 0, max = instances.length; i < max; i++) {
+        const instance = instances[i];
+        // Skip destroyed instances.
+        if (instance.destroyHasBeenRequested) {
+            continue;
+        }
+        const requireTimeUpdate = instance.paused === false
+            && (instance.timeScale > 0 ? instance.unclampedTime < instance.duration : instance.unclampedTime > 0);
+        if (requireTimeUpdate) {
+            instance.unclampedTime += deltaTime * instance.timeScale;
+        }
+        instance.timeOld = instance.time;
+        instance.time = clamp(instance.unclampedTime, 0, instance.duration);
+        const isZeroDuration = instance.duration === 0;
+        instance.progress = isZeroDuration
+            ? 1 // progress is one on zero duration (instant animation).
+            : Number.isFinite(instance.duration)
+                ? clamp01(instance.time / instance.duration)
+                : 0; // progress is zero on infinite animation.
+        const hasChanged = 
+        // Check if the unclamped time has changed is not enough, because the time
+        // can be outside the bounds of the duration (negative or above)...
+        instance.unclampedTime !== instance.unclampedTimeOld && (
+        // ... we must also check if the time is within the bounds of the duration.
+        // The old and the current value must be tested both:
+        // - old: to ensure the instance is updated at least once when the bounds are reached (progress === 0 or 1)
+        // - current: to ensure the instance is updated when "seek" occurs.
+        (instance.unclampedTimeOld >= 0 && instance.unclampedTimeOld <= instance.duration)
+            || (instance.unclampedTime >= 0 && instance.unclampedTime <= instance.duration));
+        const isPreRunning = instance.frame === 0 && instance.prerun;
+        if (hasChanged || isPreRunning || isZeroDuration) {
+            for (const callback of onUpdate.get(instance.id)) {
+                const returnedValue = callback(instance);
+                switch (returnedValue) {
+                    case 'pause':
+                        instance.pause();
+                        break;
+                    case 'destroy':
+                        instance.requestDestroy();
+                        break;
+                }
+                instance.frame++;
+            }
+        }
+        instance.unclampedTimeOld = instance.unclampedTime;
+    }
+    const instancesToBeDestroyed = new Set();
+    instances = instances.filter(instance => {
+        if (instance.destroyHasBeenRequested || (instance.autoDestroy && instance.complete)) {
+            instancesToBeDestroyed.add(instance);
+            return false;
+        }
+        return true;
+    });
+    for (const instance of instancesToBeDestroyed) {
+        destroyInstance(instance);
+    }
+};
+let loopId = -1;
+let animationLoopStarted = false;
+function ensureAnimationLoop() {
+    if (animationLoopStarted === false) {
+        startAnimationLoop();
+    }
+}
+function startAnimationLoop() {
+    animationLoopStarted = true;
+    let msOld = window.performance.now();
+    const loop = (ms) => {
+        loopId = window.requestAnimationFrame(loop);
+        const deltaTime = (-msOld + (msOld = ms)) / 1e3;
+        updateInstances(deltaTime);
+    };
+    loopId = window.requestAnimationFrame(loop);
+}
+function stopAnimationLoop() {
+    window.cancelAnimationFrame(loopId);
+}
+// The public API:
+// --------------[  Get  ]--------------- //
+function existing(...targets) {
+    const result = [];
+    for (const target of targets) {
+        const targetInstances = instanceMultiKeyWeakMap.get(target);
+        if (targetInstances) {
+            result.push(...targetInstances);
+        }
+    }
+    return result;
+}
+// --------------[ Clear ]--------------- //
+function clear(...targets) {
+    for (const target of targets) {
+        clearExistingInstancesForTarget(target);
+    }
+    return AnimationModule;
+}
+// --------------[ During ]--------------- //
+const defaultDuringArg = {
+    /**
+     * Duration in seconds.
+     */
+    duration: 1,
+    /**
+     * Delay in seconds.
+     */
+    delay: 0,
+    /**
+     * Time scale.
+     */
+    timeScale: 1,
+    /**
+     * Target, if an instance is associated with a target, it will be destroyed
+     * when a new instance is created for the same target.
+     *
+     * Target can be any value or a combination of values:
+     * - `[myObject, 'myProperty']` won't conflict with `[myObject, 'myOtherProperty']`
+     */
+    target: undefined,
+    /**
+     * If true, any previous instance associated with the target will be destroyed.
+     *
+     * Defaults to `false`.
+     */
+    clear: false,
+    /**
+     * If true, the instance will be destroyed when it completes.
+     *
+     * If the animation is meant to be played again, set this to `false`.
+     *
+     * Defaults to `true`.
+     */
+    autoDestroy: true,
+    /**
+     * If true, the instance will be updated on the first frame.
+     *
+     * Defaults to the delay value (if any delay is set prerun will be set to true, otherwise it will be false).
+     */
+    prerun: undefined,
+};
+/**
+ *
+ * @param duration duration in seconds
+ */
+function during(arg) {
+    if (typeof arg === 'number') {
+        arg = { duration: arg };
+    }
+    const { clear, duration, delay, timeScale, target, autoDestroy, prerun } = { ...defaultDuringArg, ...arg };
+    return registerInstance(clear, new AnimationInstance(duration, delay, timeScale, target, autoDestroy, prerun));
+}
+// --------------[ Tween ]--------------- //
+const defaultTweenArg = {
+    ...omit(defaultDuringArg, 'target'),
+    ease: 'inOut2',
+};
+function createTweenEntries(target, from, to, entries = []) {
+    if (Array.isArray(target)) {
+        for (let index = 0, length = target.length; index < length; index++) {
+            createTweenEntries(target[index], from, to, entries);
+        }
+        return entries;
+    }
+    if (isObject(target) === false || isObject(from ?? to) === false) {
+        // No possible tween, just ignore.
+        return entries;
+    }
+    for (const key in (from ?? to)) {
+        const valueFrom = (from ?? target)[key];
+        const valueTo = (to ?? target)[key];
+        if (isObject(valueTo)) {
+            if (isObject(valueFrom) === false) {
+                throw new Error(`Tween from/to pair association error!`);
+            }
+            else {
+                createTweenEntries(target[key], from && valueFrom, to && valueTo, entries);
+            }
+        }
+        else {
+            entries.push({ from: valueFrom, to: valueTo, key, target });
+        }
+    }
+    return entries;
+}
+class TweenInstance extends AnimationInstance {
+    entries = [];
+    add(arg) {
+        const array = Array.isArray(arg) ? arg : [arg];
+        for (const item of array) {
+            createTweenEntries(item.target, expandObject(item.from), expandObject(item.to), this.entries);
+        }
+        return this;
+    }
+}
+/**
+ * Usage:
+ * ```
+ * Animation.tween({
+ *   target: myVector,
+ *   to: { x: 1 },
+ *   duration: 1,
+ *   ease: 'inOut3',
+ * })
+ */
+function tween(arg) {
+    const { clear, duration, delay, timeScale, ease, autoDestroy, prerun, target, from, to, } = { ...defaultTweenArg, ...arg };
+    const instance = registerInstance(clear, new TweenInstance(duration, delay, timeScale, target, autoDestroy, prerun));
+    if (from ?? to) {
+        instance.add({ target, from, to });
+    }
+    const easingFunction = typeof ease === 'function' ? ease : parseEase(ease);
+    instance
+        .onUpdate(({ progress }) => {
+        const alpha = easingFunction(progress);
+        const { entries } = instance;
+        for (let index = 0, length = entries.length; index < length; index++) {
+            const { target, key, from, to } = entries[index];
+            target[key] = from + (to - from) * alpha;
+        }
+    });
+    return instance;
+}
+/**
+ * Low-level animation utility.
+ *
+ * Usage:
+ * ```ts
+ * Animation
+ *   .during({ duration: 1, delay: .4, target: 'foo' })
+ *   .onUpdate(({ progress }) => { })
+ *
+ * Animation
+ *   .during(1)
+ *   .onUpdate(({ progress }) => {
+ *   })
+ * ```
+ */
+const AnimationModule = {
+    // easing:
+    remap,
+    ease: parseEase,
+    // animation:
+    during,
+    tween,
+    existing,
+    clear,
+    safewords,
+    core: {
+        instancesCount: () => instances.length,
+        instances: () => [...instances],
+        updateInstances,
+        startAnimationLoop,
+        stopAnimationLoop,
+    },
+};
+export { AnimationModule as Animation, 
+// re-export easing functions:
+parseEase, remap };
+// if (typeof window !== 'undefined') {
+//   Object.assign(window, { Animation: AnimationBundle })
+// }
