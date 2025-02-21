@@ -1,4 +1,4 @@
-// https://github.com/jniac/some-utils-ts/edit/main/scripts/post-build.mjs
+// https://github.com/jniac/some-utils-ts/blob/main/scripts/post-build.mjs
 
 import fs from 'fs/promises'
 import path from 'path'
