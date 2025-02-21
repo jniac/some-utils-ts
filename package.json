@@ -14,15 +14,17 @@
     "typescript": "^5.5.4"
   },
   "exports": {
-    "./js/*": {
-      "default": "./dist/*.js"
+    "./ts/*": {
+      "default": "./src/*.ts"
     },
     "./*": {
-      "default": "./src/*.ts"
+      "default": "./dist/*.js",
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     }
   },
   "files": [
-    "dist",
-    "src"
+    "src",
+    "dist"
   ]
 }
