@@ -1,8 +1,8 @@
-import { split } from '../../../iteration/high-order';
-import { Padding } from '../../../math/geom/padding';
-import { Rectangle } from '../../../math/geom/rectangle';
-import { ScalarType } from './Scalar';
-import { Direction, Positioning } from './types';
+import { split } from '../../../iteration/high-order.js';
+import { Padding } from '../../../math/geom/padding.js';
+import { Rectangle } from '../../../math/geom/rectangle.js';
+import { ScalarType } from './Scalar.js';
+import { Direction, Positioning } from './types.js';
 export function computeRootRect(space) {
     const { offsetX, offsetY, sizeX, sizeY } = space;
     {

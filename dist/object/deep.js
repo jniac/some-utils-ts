@@ -1,1 +1,1 @@
-export * from './deep/deep';
+export * from './deep/deep.js';

@@ -1,4 +1,4 @@
-import { toff } from '../math/basic';
+import { toff } from '../math/basic.js';
 /**
  * Convenient function to convert a color (or a vector 3) to a vec3 string.
  */

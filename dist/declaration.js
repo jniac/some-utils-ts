@@ -1,4 +1,4 @@
-import { formatNumber } from './string/number';
+import { formatNumber } from './string/number.js';
 export const angleUnits = ['rad', 'deg', 'turn'];
 export const angleScalars = {
     rad: 1,

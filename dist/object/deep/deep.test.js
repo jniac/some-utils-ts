@@ -1,5 +1,5 @@
-import { deepSet } from './deep';
-import { deepDiff } from './diff';
+import { deepSet } from './deep.js';
+import { deepDiff } from './diff.js';
 /**
  * Deep tests.
  *

@@ -1,5 +1,5 @@
-import { lerp, toff } from './basic';
-import webColors from './web-colors.json';
+import { lerp, toff } from './basic.js';
+import webColors from './web-colors.json.js';
 export function isColor4Like(arg) {
     return typeof arg === 'object' && 'r' in arg && 'g' in arg && 'b' in arg && 'a' in arg;
 }

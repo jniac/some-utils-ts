@@ -1,4 +1,4 @@
-import { deepGet, deepSet, deepWalk } from './deep';
+import { deepGet, deepSet, deepWalk } from './deep.js';
 export class DeepDiffResult {
     objectA;
     objectB;

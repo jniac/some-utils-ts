@@ -1,4 +1,4 @@
-import { formatNumber } from '../../string/number';
+import { formatNumber } from '../../string/number.js';
 let scope;
 export class SvgUtils {
     static setScope(rectangle) {

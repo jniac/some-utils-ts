@@ -1,5 +1,5 @@
-import { Animation } from '../animation';
-import { Color4 } from '../math/color';
+import { Animation } from '../animation.js';
+import { Color4 } from '../math/color.js';
 const defaultOptions = {
     ease: 'out2',
     subdivisions: 5,

@@ -1,4 +1,4 @@
-import { Observable } from './observable';
+import { Observable } from './observable.js';
 /**
  * ObservableSet is a set that can be observed for changes. Among other things,
  * it can be used to track entering and leaving items.

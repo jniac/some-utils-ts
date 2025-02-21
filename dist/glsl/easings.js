@@ -1,4 +1,4 @@
-import { glsl_basic } from './basic';
+import { glsl_basic } from './basic.js';
 export const easingsNames = [
     'linear',
 ];

@@ -1,6 +1,6 @@
-import { comparePaths, deepAssign, deepClone, deepGet, deepWalk } from '../object/deep';
-import { deepDiff, DeepDiffResult } from '../object/deep/diff';
-import { Observable } from './observable';
+import { comparePaths, deepAssign, deepClone, deepGet, deepWalk } from '../object/deep.js';
+import { deepDiff, DeepDiffResult } from '../object/deep/diff.js';
+import { Observable } from './observable.js';
 function wrap(path, value) {
     if (typeof path === 'string') {
         path = path.split('.');

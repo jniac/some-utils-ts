@@ -1,4 +1,4 @@
-import { generics } from './tools/generics';
+import { generics } from './tools/generics.js';
 /**
  * Adapted from:
  * https://stegu.github.io/webgl-noise/webdemo/

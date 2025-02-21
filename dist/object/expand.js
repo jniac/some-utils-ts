@@ -1,4 +1,4 @@
-import { isObject } from './common';
+import { isObject } from './common.js';
 function _deepClone(src) {
     if (Array.isArray(src)) {
         const length = src.length;

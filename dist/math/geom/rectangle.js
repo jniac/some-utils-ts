@@ -1,8 +1,8 @@
-import { fromVector2Declaration } from '../../declaration';
-import { isRectangleLike } from '../../types/is';
-import { Padding } from './padding';
-import { Ray2 } from './ray2';
-import { SvgUtils } from './rectangle.svg';
+import { fromVector2Declaration } from '../../declaration.js';
+import { isRectangleLike } from '../../types/is.js';
+import { Padding } from './padding.js';
+import { Ray2 } from './ray2.js';
+import { SvgUtils } from './rectangle.svg.js';
 const alignOptions = {
     'top-left': { x: 0, y: 0 },
     'top-center': { x: .5, y: 0 },

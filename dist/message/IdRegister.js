@@ -1,4 +1,4 @@
-import { Hash } from '../hash';
+import { Hash } from '../hash.js';
 function isPrimitive(value) {
     if (value === null || value === undefined) {
         return true;

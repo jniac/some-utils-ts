@@ -1,5 +1,5 @@
-import { glsl_easings } from './easings';
-import { generics } from './tools/generics';
+import { glsl_easings } from './easings.js';
+import { generics } from './tools/generics.js';
 const ramp = /* glsl */ `
 
 struct FloatRamp {

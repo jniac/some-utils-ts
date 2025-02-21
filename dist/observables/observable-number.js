@@ -1,6 +1,6 @@
-import { calculateExponentialDecay } from '../math/misc/exponential-decay';
-import { Memorization } from './memorization';
-import { Observable } from './observable';
+import { calculateExponentialDecay } from '../math/misc/exponential-decay.js';
+import { Memorization } from './memorization.js';
+import { Observable } from './observable.js';
 const passModeValues = ['above', 'below', 'through'];
 function clamp(x, min, max) {
     return x < min ? min : x > max ? max : x;

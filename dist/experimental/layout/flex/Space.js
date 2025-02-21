@@ -1,8 +1,8 @@
-import { fromVector2Declaration } from '../../../declaration';
-import { Rectangle } from '../../../math/geom/rectangle';
-import { Scalar, ScalarType } from './Scalar';
-import { computeChildrenRect, computeRootRect } from './Space.layout';
-import { Direction, parseDirection, parsePositioning, Positioning } from './types';
+import { fromVector2Declaration } from '../../../declaration.js';
+import { Rectangle } from '../../../math/geom/rectangle.js';
+import { Scalar, ScalarType } from './Scalar.js';
+import { computeChildrenRect, computeRootRect } from './Space.layout.js';
+import { Direction, parseDirection, parsePositioning, Positioning } from './types.js';
 export function fromScalar2Declaration(arg, outX, outY) {
     if (Array.isArray(arg)) {
         const [x, y] = arg;

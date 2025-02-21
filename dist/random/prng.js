@@ -1,4 +1,4 @@
-import { DEFAULT_SEED, MAX, init as _init, map as _map, next as _next } from './algorithm/parkmiller-c-iso';
+import { DEFAULT_SEED, MAX, init as _init, map as _map, next as _next } from './algorithm/parkmiller-c-iso.js';
 const identity = (x) => x;
 const defaultPickOptions = {
     /**

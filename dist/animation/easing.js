@@ -1,6 +1,6 @@
-import { bump } from '../math/easing/bump';
-import { solveCubicEase } from '../math/easing/cubic-bezier';
-import { transition } from '../math/easing/transition';
+import { bump } from '../math/easing/bump.js';
+import { solveCubicEase } from '../math/easing/cubic-bezier.js';
+import { transition } from '../math/easing/transition.js';
 const simple = {
     linear: transition.linear,
     in1: transition.in1,

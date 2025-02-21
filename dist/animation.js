@@ -1,1 +1,1 @@
-export * from './animation/animation';
+export * from './animation/animation.js';

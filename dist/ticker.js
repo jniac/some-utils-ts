@@ -1,5 +1,5 @@
-import { clamp01, lerp } from './math/basic';
-import { Memorization } from './observables/memorization';
+import { clamp01, lerp } from './math/basic.js';
+import { Memorization } from './observables/memorization.js';
 let globalTime = 0;
 let globalDeltaTime = 0;
 let globalFrame = 0;

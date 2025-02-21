@@ -1,4 +1,4 @@
-import { IdRegister } from './IdRegister';
+import { IdRegister } from './IdRegister.js';
 class Listener {
     filter;
     callback;

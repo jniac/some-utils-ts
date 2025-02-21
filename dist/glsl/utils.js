@@ -1,5 +1,5 @@
-import { glsl_basic } from './basic';
-import { generics } from './tools/generics';
+import { glsl_basic } from './basic.js';
+import { generics } from './tools/generics.js';
 export const glsl_utils = /* glsl */ `
   ${glsl_basic}
 

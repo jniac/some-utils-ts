@@ -1,9 +1,9 @@
-import { MultiKeyWeakMap } from '../collection/multi-key-map';
-import { clamp, clamp01 } from '../math/basic';
-import { isObject } from '../object/common';
-import { expandObject } from '../object/expand';
-import { omit } from '../object/misc';
-import { parseEase, remap } from './easing';
+import { MultiKeyWeakMap } from '../collection/multi-key-map.js';
+import { clamp, clamp01 } from '../math/basic.js';
+import { isObject } from '../object/common.js';
+import { expandObject } from '../object/expand.js';
+import { omit } from '../object/misc.js';
+import { parseEase, remap } from './easing.js';
 /**
  * The safeword, when returned by a callback, stops the animation.
  *

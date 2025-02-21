@@ -1,3 +1,3 @@
-export { Scalar, ScalarType } from './Scalar';
-export { Space } from './Space';
-export * from './types';
+export { Scalar, ScalarType } from './Scalar.js';
+export { Space } from './Space.js';
+export * from './types.js';

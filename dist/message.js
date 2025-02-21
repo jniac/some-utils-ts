@@ -1,1 +1,1 @@
-export * from './message/index';
+export * from './message/index.js';

@@ -1,4 +1,4 @@
-import { clearDelay, withDelay } from './delay';
+import { clearDelay, withDelay } from './delay.js';
 let observableNextId = 0;
 /**
  * Observable is a very simple wrapper around a value (any kind) that makes it
