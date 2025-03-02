@@ -74,7 +74,6 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
     }
   }
 
-  console.log(restDeclaration, isRectangleLike(restDeclaration))
   if (isRectangleLike(restDeclaration)) {
     return out
       .copy(restDeclaration)
