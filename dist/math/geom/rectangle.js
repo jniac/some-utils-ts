@@ -50,7 +50,6 @@ export function fromRectangleDeclaration(declaration, out = new Rectangle()) {
             return out.set(0, 0, 1, 1);
         }
     }
-    console.log(restDeclaration, isRectangleLike(restDeclaration));
     if (isRectangleLike(restDeclaration)) {
         return out
             .copy(restDeclaration)
