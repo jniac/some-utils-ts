@@ -183,6 +183,7 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     relativeTo(other: RectangleLike): this;
     lerpRectangles(a: RectangleLike, b: RectangleLike, t: number): this;
     lerp(other: RectangleLike, t: number): this;
+    intersectsRect(other: RectangleLike): boolean;
     containsXY(x: number, y: number): boolean;
     containsPoint(point: Vector2Like): boolean;
     containsRect(other: RectangleLike): boolean;

@@ -529,6 +529,12 @@ export class Rectangle {
     lerp(other, t) {
         return this.lerpRectangles(this, other, t);
     }
+    intersectsRect(other) {
+        return this.x < other.x + other.width
+            && this.x + this.width > other.x
+            && this.y < other.y + other.height
+            && this.y + this.height > other.y;
+    }
     containsXY(x, y) {
         return x >= this.x
             && x < this.x + this.width
