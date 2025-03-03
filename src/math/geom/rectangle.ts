@@ -667,6 +667,13 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.lerpRectangles(this, other, t)
   }
 
+  intersectsRect(other: RectangleLike): boolean {
+    return this.x < other.x + other.width
+      && this.x + this.width > other.x
+      && this.y < other.y + other.height
+      && this.y + this.height > other.y
+  }
+
   containsXY(x: number, y: number): boolean {
     return x >= this.x
       && x < this.x + this.width
