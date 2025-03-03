@@ -225,6 +225,10 @@ export class Rectangle {
         }
         throw new Error('Oops. Wrong parameters here.');
     }
+    fromDeclaration(declaration) {
+        fromRectangleDeclaration(declaration, this);
+        return this;
+    }
     fromRelativePoint(...args) {
         if (typeof args[0] === 'number' && typeof args[1] === 'number') {
             const [alignX, alignY, out = { x: 0, y: 0 }] = args;

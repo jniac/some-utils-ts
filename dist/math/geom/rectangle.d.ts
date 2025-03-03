@@ -106,6 +106,7 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     set(width: number, height: number): this;
     set(x: number, y: number, width: number, height: number): this;
     set(other: Rectangle): this;
+    fromDeclaration(declaration: RectangleDeclaration): this;
     /**
      * Converts a point relative to the rectangle to an absolute point.
      *

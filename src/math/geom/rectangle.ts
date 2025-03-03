@@ -287,6 +287,11 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  fromDeclaration(declaration: RectangleDeclaration): this {
+    fromRectangleDeclaration(declaration, this)
+    return this
+  }
+
   /**
    * Converts a point relative to the rectangle to an absolute point.
    * 
