@@ -5,22 +5,24 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsc -w",
-    "build": "tsc && node scripts/post-build.mjs"
+    "build": "tsc && node scripts/post-build.mjs",
+    "test": "vitest"
   },
   "keywords": [],
   "author": "jniac",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^3.0.8"
   },
   "exports": {
     "./ts/*": {
       "default": "./src/*.ts"
     },
     "./*": {
-      "default": "./dist/*.js",
       "import": "./dist/*.js",
-      "types": "./dist/*.d.ts"
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
     }
   },
   "files": [
