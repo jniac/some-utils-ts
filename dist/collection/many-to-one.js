@@ -2,7 +2,7 @@ export class ManyToOne {
     #keyToValue = new Map();
     #valueToKeys;
     enableReverseMapping;
-    constructor(enableReverseMapping = true) {
+    constructor(enableReverseMapping = false) {
         this.enableReverseMapping = enableReverseMapping;
         if (enableReverseMapping) {
             this.#valueToKeys = new Map();
