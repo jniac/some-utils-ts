@@ -29,6 +29,22 @@ export function inverseLerpUnclamped(a: number, b: number, x: number) {
   return (x - a) / (b - a)
 }
 
+export function exponentialLerp(a: number, b: number, t: number) {
+  return a * Math.pow(b / a, clamp01(t))
+}
+
+export function exponentialLerpUnclamped(a: number, b: number, t: number) {
+  return a * Math.pow(b / a, t)
+}
+
+export function inverseExponentialLerp(a: number, b: number, x: number) {
+  return clamp01(Math.log(x / a) / Math.log(b / a))
+}
+
+export function inverseExponentialLerpUnclamped(a: number, b: number, x: number) {
+  return Math.log(x / a) / Math.log(b / a)
+}
+
 export function remap(x: number, inMin: number, inMax: number, outMin: number, outMax: number) {
   return lerpUnclamped(outMin, outMax, inverseLerp(inMin, inMax, x))
 }
