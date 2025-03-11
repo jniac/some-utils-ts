@@ -156,13 +156,24 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     setDiagonal(value: number, align?: Vector2Like): this;
     setAspect(aspect: number, align?: Vector2Like): this;
     setDiagonalAndAspect(diagonal: number, aspect: number, align?: Vector2Like): this;
-    applyPadding(padding: PaddingDeclaration, mode?: "shrink" | "grow"): this;
+    static applyPaddingDefaultOptions: {
+        mode: "shrink" | "grow";
+        /**
+         * How to handle negative size values when shrinking the rectangle beyond its limits.
+         * By default, the rectangle will collapse to a point (center).
+         */
+        safeMode: "collapse" | "flip" | "none";
+    };
+    applyPadding(padding: PaddingDeclaration, options?: Partial<typeof Rectangle.applyPaddingDefaultOptions>): this;
+    applyPadding(padding: PaddingDeclaration, mode: 'shrink' | 'grow'): this;
     /**
      * Inflates the rectangle by the given padding (use negative values to shrink).
      */
-    inflate(padding: PaddingDeclaration): this;
+    inflate(padding: PaddingDeclaration, options?: Partial<Omit<typeof Rectangle.applyPaddingDefaultOptions, 'mode'>>): this;
     toBoundingInt(): this;
+    innerBoundingPositionInt<T extends Vector2Like>(out?: T): Generator<T>;
     toContainedInt(): this;
+    innerContainedPositionInt<T extends Vector2Like>(out?: T): Generator<T>;
     relativeTranslate(x: number, y: number): this;
     /**
      * Less useful method than `flipY()`, but still useful for flipping the x-axis.

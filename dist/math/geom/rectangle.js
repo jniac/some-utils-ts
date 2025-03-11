@@ -147,6 +147,58 @@ export function innerRectangle(out, outerRect, innerAspect, sizeMode, alignX, al
     out.width = innerWidth;
     out.height = innerHeight;
 }
+function safeCollapse(rect, out) {
+    const { x, y, width, height } = rect;
+    if (width < 0) {
+        out.x = x + width / 2;
+        out.width = 0;
+    }
+    if (height < 0) {
+        out.y = y + height / 2;
+        out.height = 0;
+    }
+    return out;
+}
+function safeFlip(rect, out) {
+    const { x, y, width, height } = rect;
+    if (width < 0) {
+        out.x = x + width;
+        out.width = -width;
+    }
+    if (height < 0) {
+        out.y = y + height;
+        out.height = -height;
+    }
+    return out;
+}
+function toBoundingInt(rect, out) {
+    const { x, y, width, height } = rect;
+    const maxX = Math.ceil(x + width);
+    const maxY = Math.ceil(y + height);
+    out.x = Math.floor(x);
+    out.y = Math.floor(y);
+    out.width = maxX - out.x;
+    out.height = maxY - out.y;
+    return out;
+}
+function toContainedInt(rect, out) {
+    const { x, y, width, height } = rect;
+    const minX = Math.ceil(x);
+    const minY = Math.ceil(y);
+    let maxX = Math.floor(x + width);
+    let maxY = Math.floor(y + height);
+    if (maxX < minX) {
+        maxX = minX;
+    }
+    if (maxY < minY) {
+        maxY = minY;
+    }
+    out.x = minX;
+    out.y = minY;
+    out.width = maxX - minX;
+    out.height = maxY - minY;
+    return out;
+}
 class RectangleCastResult {
     ray;
     intersects;
@@ -476,7 +528,19 @@ export class Rectangle {
         const width = height * aspect;
         return this.setSize(width, height, align);
     }
-    applyPadding(padding, mode = 'shrink') {
+    static applyPaddingDefaultOptions = {
+        mode: 'shrink',
+        /**
+         * How to handle negative size values when shrinking the rectangle beyond its limits.
+         * By default, the rectangle will collapse to a point (center).
+         */
+        safeMode: 'collapse',
+    };
+    applyPadding(padding, options) {
+        const { mode, safeMode } = {
+            ...Rectangle.applyPaddingDefaultOptions,
+            ...(typeof options === 'object' ? options : { mode: options })
+        };
         const { top, right, bottom, left } = Padding.ensure(padding);
         if (mode === 'shrink') {
             this.x += left;
@@ -490,41 +554,60 @@ export class Rectangle {
             this.width += left + right;
             this.height += top + bottom;
         }
+        switch (safeMode) {
+            case 'collapse': {
+                safeCollapse(this, this);
+                break;
+            }
+            case 'flip': {
+                safeFlip(this, this);
+                break;
+            }
+        }
         return this;
     }
     /**
      * Inflates the rectangle by the given padding (use negative values to shrink).
      */
-    inflate(padding) {
-        return this.applyPadding(padding, 'grow');
+    inflate(padding, options) {
+        return this.applyPadding(padding, {
+            mode: 'grow',
+            ...options,
+        });
     }
     toBoundingInt() {
-        const { x, y, width, height } = this;
-        const maxX = Math.ceil(x + width);
-        const maxY = Math.ceil(y + height);
-        this.x = Math.floor(x);
-        this.y = Math.floor(y);
-        this.width = maxX - this.x;
-        this.height = maxY - this.y;
+        toBoundingInt(this, this);
         return this;
     }
+    *innerBoundingPositionInt(out) {
+        out ??= { x: 0, y: 0 };
+        const { x: minX, y: minY, width, height } = toBoundingInt(this, _rect);
+        const maxX = minX + width;
+        const maxY = minY + height;
+        for (let x = minX; x < maxX; x++) {
+            for (let y = minY; y < maxY; y++) {
+                out.x = x;
+                out.y = y;
+                yield out;
+            }
+        }
+    }
     toContainedInt() {
-        const { x, y, width, height } = this;
-        const minX = Math.ceil(x);
-        const minY = Math.ceil(y);
-        let maxX = Math.floor(x + width);
-        let maxY = Math.floor(y + height);
-        if (maxX < minX) {
-            maxX = minX;
-        }
-        if (maxY < minY) {
-            maxY = minY;
-        }
-        this.x = minX;
-        this.y = minY;
-        this.width = maxX - minX;
-        this.height = maxY - minY;
+        toContainedInt(this, this);
         return this;
+    }
+    *innerContainedPositionInt(out) {
+        out ??= { x: 0, y: 0 };
+        const { x: minX, y: minY, width, height } = toContainedInt(this, _rect);
+        const maxX = minX + width;
+        const maxY = minY + height;
+        for (let x = minX; x < maxX; x++) {
+            for (let y = minY; y < maxY; y++) {
+                out.x = x;
+                out.y = y;
+                yield out;
+            }
+        }
     }
     relativeTranslate(x, y) {
         this.x += this.width * x;
