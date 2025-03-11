@@ -231,6 +231,15 @@ function toBoundingInt<T extends RectangleLike>(rect: RectangleLike, out: T): T 
   return out
 }
 
+function toFloorInt<T extends RectangleLike>(rect: RectangleLike, out: T): T {
+  const { x, y, width, height } = rect
+  out.x = Math.floor(x)
+  out.y = Math.floor(y)
+  out.width = Math.floor(x + width) - out.x
+  out.height = Math.floor(y + height) - out.y
+  return out
+}
+
 function toContainedInt<T extends RectangleLike>(rect: RectangleLike, out: T): T {
   const { x, y, width, height } = rect
   const minX = Math.ceil(x)
@@ -548,6 +557,20 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.setMaxY(this.getMaxY() + value)
   }
 
+  getMin<T extends Vector2Like>(out?: T) {
+    out ??= { x: 0, y: 0 } as T
+    out.x = this.x
+    out.y = this.y
+    return out
+  }
+
+  getMax<T extends Vector2Like>(out?: T) {
+    out ??= { x: 0, y: 0 } as T
+    out.x = this.x + this.width
+    out.y = this.y + this.height
+    return out
+  }
+
   translate(deltaX: number, deltaY: number): this
   translate(delta: Vector2Declaration): this
   translate(...args: [number, number] | [Vector2Declaration]): this {
@@ -702,6 +725,25 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   *innerBoundingPositionInt<T extends Vector2Like>(out?: T): Generator<T> {
     out ??= { x: 0, y: 0 } as T
     const { x: minX, y: minY, width, height } = toBoundingInt(this, _rect)
+    const maxX = minX + width
+    const maxY = minY + height
+    for (let x = minX; x < maxX; x++) {
+      for (let y = minY; y < maxY; y++) {
+        out.x = x
+        out.y = y
+        yield out
+      }
+    }
+  }
+
+  toFloorInt(): this {
+    toFloorInt(this, this)
+    return this
+  }
+
+  *innerFloorPositionInt<T extends Vector2Like>(out?: T): Generator<T> {
+    out ??= { x: 0, y: 0 } as T
+    const { x: minX, y: minY, width, height } = toFloorInt(this, _rect)
     const maxX = minX + width
     const maxY = minY + height
     for (let x = minX; x < maxX; x++) {
@@ -968,12 +1010,18 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   set minX(value: number) {
     this.setMinX(value)
   }
+  get min() {
+    return this.getMin()
+  }
 
   get maxX() {
     return this.getMaxX()
   }
   set maxX(value: number) {
     this.setMaxX(value)
+  }
+  get max() {
+    return this.getMax()
   }
 
   get minY() {

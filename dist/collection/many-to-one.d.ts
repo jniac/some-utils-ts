@@ -10,7 +10,7 @@ export declare class ManyToOne<K, V> {
     /**
      * Get the value associated with a key.
      */
-    getValue(key: K): V | undefined;
+    get(key: K): V | undefined;
     /**
      * Get all keys associated with a value.
      */
@@ -18,7 +18,7 @@ export declare class ManyToOne<K, V> {
     /**
      * Delete a specific key and its relation.
      */
-    deleteKey(key: K): boolean;
+    delete(key: K): boolean;
     /**
      * Delete all keys associated with a given value.
      */
@@ -26,7 +26,7 @@ export declare class ManyToOne<K, V> {
     /**
      * Check if a key exists.
      */
-    hasKey(key: K): boolean;
+    has(key: K): boolean;
     /**
      * Check if a value exists.
      */

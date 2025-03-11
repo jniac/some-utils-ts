@@ -139,6 +139,8 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     getMaxY(): number;
     setMaxY(value: number, mode?: 'resize' | 'translate'): this;
     incrementMaxY(value: number): this;
+    getMin<T extends Vector2Like>(out?: T): T;
+    getMax<T extends Vector2Like>(out?: T): T;
     translate(deltaX: number, deltaY: number): this;
     translate(delta: Vector2Declaration): this;
     multiplyScalar(scalar: number): this;
@@ -172,6 +174,8 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     inflate(padding: PaddingDeclaration, options?: Partial<Omit<typeof Rectangle.applyPaddingDefaultOptions, 'mode'>>): this;
     toBoundingInt(): this;
     innerBoundingPositionInt<T extends Vector2Like>(out?: T): Generator<T>;
+    toFloorInt(): this;
+    innerFloorPositionInt<T extends Vector2Like>(out?: T): Generator<T>;
     toContainedInt(): this;
     innerContainedPositionInt<T extends Vector2Like>(out?: T): Generator<T>;
     relativeTranslate(x: number, y: number): this;
@@ -233,8 +237,10 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     set center(point: Vector2Like);
     get minX(): number;
     set minX(value: number);
+    get min(): Vector2Like;
     get maxX(): number;
     set maxX(value: number);
+    get max(): Vector2Like;
     get minY(): number;
     set minY(value: number);
     get maxY(): number;

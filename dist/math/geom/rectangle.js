@@ -181,6 +181,14 @@ function toBoundingInt(rect, out) {
     out.height = maxY - out.y;
     return out;
 }
+function toFloorInt(rect, out) {
+    const { x, y, width, height } = rect;
+    out.x = Math.floor(x);
+    out.y = Math.floor(y);
+    out.width = Math.floor(x + width) - out.x;
+    out.height = Math.floor(y + height) - out.y;
+    return out;
+}
 function toContainedInt(rect, out) {
     const { x, y, width, height } = rect;
     const minX = Math.ceil(x);
@@ -448,6 +456,18 @@ export class Rectangle {
     incrementMaxY(value) {
         return this.setMaxY(this.getMaxY() + value);
     }
+    getMin(out) {
+        out ??= { x: 0, y: 0 };
+        out.x = this.x;
+        out.y = this.y;
+        return out;
+    }
+    getMax(out) {
+        out ??= { x: 0, y: 0 };
+        out.x = this.x + this.width;
+        out.y = this.y + this.height;
+        return out;
+    }
     translate(...args) {
         const { x, y } = fromVector2Declaration(args.length === 1 ? args[0] : args);
         this.x += x;
@@ -582,6 +602,23 @@ export class Rectangle {
     *innerBoundingPositionInt(out) {
         out ??= { x: 0, y: 0 };
         const { x: minX, y: minY, width, height } = toBoundingInt(this, _rect);
+        const maxX = minX + width;
+        const maxY = minY + height;
+        for (let x = minX; x < maxX; x++) {
+            for (let y = minY; y < maxY; y++) {
+                out.x = x;
+                out.y = y;
+                yield out;
+            }
+        }
+    }
+    toFloorInt() {
+        toFloorInt(this, this);
+        return this;
+    }
+    *innerFloorPositionInt(out) {
+        out ??= { x: 0, y: 0 };
+        const { x: minX, y: minY, width, height } = toFloorInt(this, _rect);
         const maxX = minX + width;
         const maxY = minY + height;
         for (let x = minX; x < maxX; x++) {
@@ -792,11 +829,17 @@ export class Rectangle {
     set minX(value) {
         this.setMinX(value);
     }
+    get min() {
+        return this.getMin();
+    }
     get maxX() {
         return this.getMaxX();
     }
     set maxX(value) {
         this.setMaxX(value);
+    }
+    get max() {
+        return this.getMax();
     }
     get minY() {
         return this.getMinY();

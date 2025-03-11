@@ -13,7 +13,7 @@ export class ManyToOne {
      * If the key was already assigned to another value, the old relation is removed.
      */
     set(key, value) {
-        this.deleteKey(key); // Remove any previous mapping for this key
+        this.delete(key); // Remove any previous mapping for this key
         // Add key -> value
         this.#keyToValue.set(key, value);
         if (this.enableReverseMapping) {
@@ -27,7 +27,7 @@ export class ManyToOne {
     /**
      * Get the value associated with a key.
      */
-    getValue(key) {
+    get(key) {
         return this.#keyToValue.get(key);
     }
     /**
@@ -51,7 +51,7 @@ export class ManyToOne {
     /**
      * Delete a specific key and its relation.
      */
-    deleteKey(key) {
+    delete(key) {
         if (!this.#keyToValue.has(key)) {
             return false;
         }
@@ -104,7 +104,7 @@ export class ManyToOne {
     /**
      * Check if a key exists.
      */
-    hasKey(key) {
+    has(key) {
         return this.#keyToValue.has(key);
     }
     /**
