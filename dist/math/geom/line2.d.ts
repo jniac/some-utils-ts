@@ -22,6 +22,8 @@ declare class Line2 implements Line2Like {
     vx: number;
     vy: number;
     set(ox: number, oy: number, vx: number, vy: number): this;
+    copy(value: Line2Like): this;
+    clone(): Line2;
     from(...args: [Line2Declaration] | PointDeclarationArray): Line2;
     fromStartEnd(...args: [PointDeclarationArray] | PointDeclarationArray): Line2;
     pointAt<T extends Vector2Like>(t: number, { out, }?: {

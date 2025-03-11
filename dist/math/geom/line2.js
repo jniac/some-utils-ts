@@ -66,6 +66,16 @@ class Line2 {
         this.vy = vy;
         return this;
     }
+    copy(value) {
+        this.ox = value.ox;
+        this.oy = value.oy;
+        this.vx = value.vx;
+        this.vy = value.vy;
+        return this;
+    }
+    clone() {
+        return new Line2().copy(this);
+    }
     from(...args) {
         return args.length === 1
             ? from(this, args[0])

@@ -59,6 +59,7 @@ export type RectangleDeclaration = [x: number, y: number, width: number, height:
 export declare const defaultRectangleDeclaration: RectangleDeclaration;
 export declare function fromRectangleDeclaration(declaration: RectangleDeclaration, out?: Rectangle): Rectangle;
 export declare function union<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void;
+export declare function intersection<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void;
 export declare function innerRectangle<T extends RectangleLike>(out: T, outerRect: RectangleLike, innerAspect: number, sizeMode: "contain" | "cover", alignX: number, alignY: number): void;
 declare class RectangleCastResult {
     ray: Ray2Like;
@@ -93,6 +94,7 @@ declare class RectangleCastResult {
  * - contains methods
  */
 export declare class Rectangle implements RectangleLike, Iterable<number> {
+    #private;
     static from(source?: RectangleDeclaration): Rectangle;
     x: number;
     y: number;
@@ -170,6 +172,8 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     flipY(): this;
     union(other: RectangleLike): this;
     unionRectangles(a: RectangleLike, b: RectangleLike): this;
+    intersection(other: RectangleLike): this;
+    intersectionRectangles(a: RectangleLike, b: RectangleLike): this;
     innerRectangle({ aspect, sizeMode, alignX, alignY, padding, }: Partial<{
         aspect: number;
         sizeMode: "contain" | "cover";
@@ -202,6 +206,11 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     uv<T extends Vector2Like = Vector2Like>({ x, y }: T, out?: T): T;
     linecast(...ray2Args: Ray2Args): RectangleCastResult;
     raycast(...ray2Args: Ray2Args): RectangleCastResult;
+    /**
+     * Iterates over the sides of the rectangle in clockwise order.
+     *
+     * NOTE: The same Line2 instance is reused for performance reasons. Clone it if needed.
+     */
     sides(): Generator<Line2>;
     get centerX(): number;
     set centerX(value: number);

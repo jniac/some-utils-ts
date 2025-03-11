@@ -94,6 +94,25 @@ export function union(out, a, b) {
     out.width = right - x;
     out.height = bottom - y;
 }
+export function intersection(out, a, b) {
+    let x = Math.max(a.x, b.x);
+    let y = Math.max(a.y, b.y);
+    let right = Math.min(a.x + a.width, b.x + b.width);
+    let bottom = Math.min(a.y + a.height, b.y + b.height);
+    // Collapse rectangle if intersection is empty
+    if (right < x) {
+        x = (x + right) / 2;
+        right = x;
+    }
+    if (bottom < y) {
+        y = (y + bottom) / 2;
+        bottom = y;
+    }
+    out.x = x;
+    out.y = y;
+    out.width = right - x;
+    out.height = bottom - y;
+}
 export function innerRectangle(out, outerRect, innerAspect, sizeMode, alignX, alignY) {
     let innerWidth = 0;
     let innerHeight = 0;
@@ -506,6 +525,14 @@ export class Rectangle {
         union(this, a, b);
         return this;
     }
+    intersection(other) {
+        intersection(this, other, this);
+        return this;
+    }
+    intersectionRectangles(a, b) {
+        intersection(this, a, b);
+        return this;
+    }
     innerRectangle({ aspect = 1, sizeMode = 'contain', alignX = .5, alignY = .5, padding = 0, }, out = new Rectangle()) {
         innerRectangle(out, _rect.copy(this).applyPadding(padding), aspect, sizeMode, alignX, alignY);
         return out;
@@ -615,9 +642,15 @@ export class Rectangle {
         tmin = tmin < 0 ? tmax : tmin;
         return new RectangleCastResult(result.ray, intersects, tmin, tmax);
     }
+    static #side = { side: new Line2() };
+    /**
+     * Iterates over the sides of the rectangle in clockwise order.
+     *
+     * NOTE: The same Line2 instance is reused for performance reasons. Clone it if needed.
+     */
     *sides() {
         const { x, y, width, height } = this;
-        const side = new Line2();
+        const { side } = Rectangle.#side;
         yield side.fromStartEnd(x, y, x + width, y);
         yield side.fromStartEnd(x + width, y, x + width, y + height);
         yield side.fromStartEnd(x + width, y + height, x, y + height);

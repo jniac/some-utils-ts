@@ -93,6 +93,18 @@ class Line2 implements Line2Like {
     return this
   }
 
+  copy(value: Line2Like): this {
+    this.ox = value.ox
+    this.oy = value.oy
+    this.vx = value.vx
+    this.vy = value.vy
+    return this
+  }
+
+  clone(): Line2 {
+    return new Line2().copy(this)
+  }
+
   from(...args: [Line2Declaration] | PointDeclarationArray): Line2 {
     return args.length === 1
       ? from(this, args[0])
