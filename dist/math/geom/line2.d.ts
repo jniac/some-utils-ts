@@ -27,8 +27,10 @@ declare class Line2 implements Line2Like {
     pointAt<T extends Vector2Like>(t: number, { out, }?: {
         out?: T | null | undefined;
     }): T;
-    p0<T extends Vector2Like>(out: T): T;
-    p1<T extends Vector2Like>(out: T): T;
+    p0<T extends Vector2Like>(out?: T | null): T;
+    p1<T extends Vector2Like>(out?: T | null): T;
+    vector<T extends Vector2Like>(out?: T | null): T;
+    orthogonal<T extends Vector2Like>(out?: T | null): T;
     computeT(point: Vector2Declaration): number;
     project<T extends Vector2Like>(point: Vector2Declaration, { out, }?: {
         out?: T | null | undefined;
@@ -36,7 +38,7 @@ declare class Line2 implements Line2Like {
     side(point: Vector2Declaration, { epsilon, }?: {
         epsilon?: number | undefined;
     }): Line2Side;
-    start: <T extends Vector2Like>(out: T) => T;
-    end: <T extends Vector2Like>(out: T) => T;
+    start: <T extends Vector2Like>(out?: T | null) => T;
+    end: <T extends Vector2Like>(out?: T | null) => T;
 }
 export { Line2, Line2Declaration, Line2Like, Line2Side };

@@ -33,9 +33,7 @@ function from(out, value) {
 }
 function fromStartEnd(out, value) {
     if (value.length === 4) {
-        const [start, end] = value;
-        const { x: x1, y: y1 } = fromVector2Declaration(start);
-        const { x: x2, y: y2 } = fromVector2Declaration(end);
+        const [x1, y1, x2, y2] = value;
         return out.set(x1, y1, x2 - x1, y2 - y1);
     }
     if (value.length === 2) {
@@ -85,14 +83,28 @@ class Line2 {
         out.y = oy + t * vy;
         return out;
     }
-    p0(out) {
+    p0(out = null) {
+        out ??= { x: 0, y: 0 };
         out.x = this.ox;
         out.y = this.oy;
         return out;
     }
-    p1(out) {
+    p1(out = null) {
+        out ??= { x: 0, y: 0 };
         out.x = this.ox + this.vx;
         out.y = this.oy + this.vy;
+        return out;
+    }
+    vector(out = null) {
+        out ??= { x: 0, y: 0 };
+        out.x = this.vx;
+        out.y = this.vy;
+        return out;
+    }
+    orthogonal(out = null) {
+        out ??= { x: 0, y: 0 };
+        out.x = -this.vy;
+        out.y = this.vx;
         return out;
     }
     computeT(point) {
