@@ -611,6 +611,36 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.applyPadding(padding, 'grow')
   }
 
+  toBoundingInt(): this {
+    const { x, y, width, height } = this
+    const maxX = Math.ceil(x + width)
+    const maxY = Math.ceil(y + height)
+    this.x = Math.floor(x)
+    this.y = Math.floor(y)
+    this.width = maxX - this.x
+    this.height = maxY - this.y
+    return this
+  }
+
+  toContainedInt(): this {
+    const { x, y, width, height } = this
+    const minX = Math.ceil(x)
+    const minY = Math.ceil(y)
+    let maxX = Math.floor(x + width)
+    let maxY = Math.floor(y + height)
+    if (maxX < minX) {
+      maxX = minX
+    }
+    if (maxY < minY) {
+      maxY = minY
+    }
+    this.x = minX
+    this.y = minY
+    this.width = maxX - minX
+    this.height = maxY - minY
+    return this
+  }
+
   relativeTranslate(x: number, y: number): this {
     this.x += this.width * x
     this.y += this.height * y
@@ -810,7 +840,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
    * 
    * NOTE: The same Line2 instance is reused for performance reasons. Clone it if needed.
    */
-  * sides(): Generator<Line2> {
+  *sides(): Generator<Line2> {
     const { x, y, width, height } = this
     const { side } = Rectangle.#side
     yield side.fromStartEnd(x, y, x + width, y)

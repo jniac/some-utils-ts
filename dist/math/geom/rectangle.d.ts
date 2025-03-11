@@ -161,6 +161,8 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
      * Inflates the rectangle by the given padding (use negative values to shrink).
      */
     inflate(padding: PaddingDeclaration): this;
+    toBoundingInt(): this;
+    toContainedInt(): this;
     relativeTranslate(x: number, y: number): this;
     /**
      * Less useful method than `flipY()`, but still useful for flipping the x-axis.

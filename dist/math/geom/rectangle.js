@@ -498,6 +498,34 @@ export class Rectangle {
     inflate(padding) {
         return this.applyPadding(padding, 'grow');
     }
+    toBoundingInt() {
+        const { x, y, width, height } = this;
+        const maxX = Math.ceil(x + width);
+        const maxY = Math.ceil(y + height);
+        this.x = Math.floor(x);
+        this.y = Math.floor(y);
+        this.width = maxX - this.x;
+        this.height = maxY - this.y;
+        return this;
+    }
+    toContainedInt() {
+        const { x, y, width, height } = this;
+        const minX = Math.ceil(x);
+        const minY = Math.ceil(y);
+        let maxX = Math.floor(x + width);
+        let maxY = Math.floor(y + height);
+        if (maxX < minX) {
+            maxX = minX;
+        }
+        if (maxY < minY) {
+            maxY = minY;
+        }
+        this.x = minX;
+        this.y = minY;
+        this.width = maxX - minX;
+        this.height = maxY - minY;
+        return this;
+    }
     relativeTranslate(x, y) {
         this.x += this.width * x;
         this.y += this.height * y;
