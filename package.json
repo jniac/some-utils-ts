@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "tsc -w",
+    "dev": "tsc-watch --onSuccess \"node scripts/post-build.mjs\"",
     "build": "tsc && node scripts/post-build.mjs",
     "test": "vitest"
   },
@@ -12,6 +12,7 @@
   "author": "jniac",
   "license": "ISC",
   "devDependencies": {
+    "tsc-watch": "^6.2.1",
     "typescript": "^5.5.4",
     "vitest": "^3.0.8"
   },

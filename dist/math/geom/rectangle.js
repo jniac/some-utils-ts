@@ -1,5 +1,6 @@
 import { fromVector2Declaration } from '../../declaration.js';
 import { isRectangleLike } from '../../types/is.js';
+import { Line2 } from './line2.js';
 import { Padding } from './padding.js';
 import { Ray2 } from './ray2.js';
 import { SvgUtils } from './rectangle.svg.js';
@@ -613,6 +614,14 @@ export class Rectangle {
         }
         tmin = tmin < 0 ? tmax : tmin;
         return new RectangleCastResult(result.ray, intersects, tmin, tmax);
+    }
+    *sides() {
+        const { x, y, width, height } = this;
+        const side = new Line2();
+        yield side.fromStartEnd(x, y, x + width, y);
+        yield side.fromStartEnd(x + width, y, x + width, y + height);
+        yield side.fromStartEnd(x + width, y + height, x, y + height);
+        yield side.fromStartEnd(x, y + height, x, y);
     }
     // Sugar:
     get centerX() {

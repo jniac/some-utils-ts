@@ -1,5 +1,6 @@
 import { Vector2Declaration } from '../../declaration';
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types';
+import { Line2 } from './line2';
 import { PaddingDeclaration } from './padding';
 import { Ray2Args } from './ray2';
 import { SvgUtils } from './rectangle.svg';
@@ -201,6 +202,7 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     uv<T extends Vector2Like = Vector2Like>({ x, y }: T, out?: T): T;
     linecast(...ray2Args: Ray2Args): RectangleCastResult;
     raycast(...ray2Args: Ray2Args): RectangleCastResult;
+    sides(): Generator<Line2>;
     get centerX(): number;
     set centerX(value: number);
     get centerY(): number;
