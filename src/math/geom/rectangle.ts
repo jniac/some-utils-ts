@@ -1,6 +1,7 @@
 import { fromVector2Declaration, Vector2Declaration } from '../../declaration'
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
+import { Line2 } from './line2'
 import { Padding, PaddingDeclaration } from './padding'
 import { Ray2, Ray2Args } from './ray2'
 import { SvgUtils } from './rectangle.svg'
@@ -769,6 +770,15 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     }
     tmin = tmin < 0 ? tmax : tmin
     return new RectangleCastResult(result.ray, intersects, tmin, tmax)
+  }
+
+  *sides(): Generator<Line2> {
+    const { x, y, width, height } = this
+    const side = new Line2()
+    yield side.fromStartEnd(x, y, x + width, y)
+    yield side.fromStartEnd(x + width, y, x + width, y + height)
+    yield side.fromStartEnd(x + width, y + height, x, y + height)
+    yield side.fromStartEnd(x, y + height, x, y)
   }
 
   // Sugar:
