@@ -54,9 +54,7 @@ function from<T extends Line2>(out: T, value: Line2Declaration): T {
 
 function fromStartEnd<T extends Line2>(out: T, value: PointDeclarationArray): T {
   if (value.length === 4) {
-    const [start, end] = value
-    const { x: x1, y: y1 } = fromVector2Declaration(start)
-    const { x: x2, y: y2 } = fromVector2Declaration(end)
+    const [x1, y1, x2, y2] = value
     return out.set(x1, y1, x2 - x1, y2 - y1)
   }
   if (value.length === 2) {
@@ -108,7 +106,7 @@ class Line2 implements Line2Like {
   }
 
   pointAt<T extends Vector2Like>(t: number, {
-    out = null as null | T,
+    out = null as T | null,
   } = {}): T {
     out ??= { x: 0, y: 0 } as T
     const { ox, oy, vx, vy } = this
@@ -117,15 +115,31 @@ class Line2 implements Line2Like {
     return out
   }
 
-  p0<T extends Vector2Like>(out: T): T {
+  p0<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
     out.x = this.ox
     out.y = this.oy
     return out
   }
 
-  p1<T extends Vector2Like>(out: T): T {
+  p1<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
     out.x = this.ox + this.vx
     out.y = this.oy + this.vy
+    return out
+  }
+
+  vector<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
+    out.x = this.vx
+    out.y = this.vy
+    return out
+  }
+
+  orthogonal<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
+    out.x = -this.vy
+    out.y = this.vx
     return out
   }
 
