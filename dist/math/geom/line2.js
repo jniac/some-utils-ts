@@ -111,11 +111,30 @@ class Line2 {
         out.y = this.vy;
         return out;
     }
+    normalizedVector(out = null) {
+        out ??= { x: 0, y: 0 };
+        const { vx, vy } = this;
+        const length = Math.hypot(vx, vy);
+        out.x = vx / length;
+        out.y = vy / length;
+        return out;
+    }
     orthogonal(out = null) {
         out ??= { x: 0, y: 0 };
         out.x = -this.vy;
         out.y = this.vx;
         return out;
+    }
+    normalizedOrthogonal(out = null) {
+        out ??= { x: 0, y: 0 };
+        const { vx, vy } = this;
+        const length = Math.hypot(vx, vy);
+        out.x = -vy / length;
+        out.y = vx / length;
+        return out;
+    }
+    angle() {
+        return Math.atan2(this.vy, this.vx);
     }
     computeT(point) {
         const { ox, oy, vx, vy } = this;
@@ -130,11 +149,41 @@ class Line2 {
         out.y = oy + t * vy;
         return out;
     }
+    /**
+     * Determine the side of a point relative to the line.
+     *
+     * NOTE: The point can be "on" the line.
+     */
     side(point, { epsilon = .000001, } = {}) {
         const { ox, oy, vx, vy } = this;
         const { x, y } = fromVector2Declaration(point);
         const cross = (x - ox) * vy - (y - oy) * vx;
         return cross < -epsilon ? Line2Side.Left : cross > epsilon ? Line2Side.Right : Line2Side.On;
+    }
+    /**
+     * Offset the line by a distance.
+     */
+    offset(distance) {
+        const { vx, vy } = this;
+        const length = Math.hypot(vx, vy);
+        const x = vy / length * distance;
+        const y = -vx / length * distance;
+        this.ox += x;
+        this.oy += y;
+        return this;
+    }
+    intersection(line, { out = null, } = {}) {
+        out ??= { x: 0, y: 0 };
+        const { ox: ox1, oy: oy1, vx: vx1, vy: vy1 } = this;
+        const { ox: ox2, oy: oy2, vx: vx2, vy: vy2 } = line;
+        const det = vx1 * vy2 - vy1 * vx2;
+        if (Math.abs(det) < 1e-6) {
+            return null;
+        }
+        const t = ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det;
+        out.x = ox1 + t * vx1;
+        out.y = oy1 + t * vy1;
+        return out;
     }
     // Sugar:
     start = this.p0;

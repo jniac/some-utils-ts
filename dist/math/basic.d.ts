@@ -69,3 +69,4 @@ export declare function distance2(x: number, y: number): number;
 export declare function distance3(x: number, y: number, z: number): number;
 export declare function distance(a: Vector2Like | Vector3Like, b: Vector2Like | Vector3Like): number;
 export declare function distance(x: number, y: number, z: number): number;
+export declare function normalize<T extends Vector2Like | Vector3Like>(v: T): T;

@@ -199,3 +199,17 @@ export function distance(...args: any[]) {
     ? distance3(x.x, x.y, x.z)
     : distance2(x, y))
 }
+
+export function normalize<T extends Vector2Like | Vector3Like>(v: T): T {
+  if ('z' in v) {
+    const n = distance3(v.x, v.y, v.z)
+    v.x /= n
+    v.y /= n
+    v.z /= n
+    return v
+  }
+  const n = distance2(v.x, v.y)
+  v.x /= n
+  v.y /= n
+  return v
+}

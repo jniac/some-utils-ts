@@ -16,7 +16,7 @@ const alignOptions = {
     'bottom-right': { x: 1, y: 1 },
 };
 function solveAlignDeclaration(declaration) {
-    return typeof declaration === 'string'
+    return typeof declaration === 'string' && declaration in alignOptions
         ? alignOptions[declaration]
         : fromVector2Declaration(declaration);
 }

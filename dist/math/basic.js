@@ -159,3 +159,16 @@ export function distance(...args) {
         ? distance3(x.x, x.y, x.z)
         : distance2(x, y));
 }
+export function normalize(v) {
+    if ('z' in v) {
+        const n = distance3(v.x, v.y, v.z);
+        v.x /= n;
+        v.y /= n;
+        v.z /= n;
+        return v;
+    }
+    const n = distance2(v.x, v.y);
+    v.x /= n;
+    v.y /= n;
+    return v;
+}

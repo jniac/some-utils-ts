@@ -23,8 +23,8 @@ type AlignDeclaration =
   | keyof typeof alignOptions
 
 function solveAlignDeclaration(declaration: AlignDeclaration): Vector2Like {
-  return typeof declaration === 'string'
-    ? alignOptions[declaration]
+  return typeof declaration === 'string' && declaration in alignOptions
+    ? alignOptions[declaration as keyof typeof alignOptions]
     : fromVector2Declaration(declaration)
 }
 

@@ -32,14 +32,29 @@ declare class Line2 implements Line2Like {
     p0<T extends Vector2Like>(out?: T | null): T;
     p1<T extends Vector2Like>(out?: T | null): T;
     vector<T extends Vector2Like>(out?: T | null): T;
+    normalizedVector<T extends Vector2Like>(out?: T | null): T;
     orthogonal<T extends Vector2Like>(out?: T | null): T;
+    normalizedOrthogonal<T extends Vector2Like>(out?: T | null): T;
+    angle(): number;
     computeT(point: Vector2Declaration): number;
     project<T extends Vector2Like>(point: Vector2Declaration, { out, }?: {
         out?: T | null | undefined;
     }): T;
+    /**
+     * Determine the side of a point relative to the line.
+     *
+     * NOTE: The point can be "on" the line.
+     */
     side(point: Vector2Declaration, { epsilon, }?: {
         epsilon?: number | undefined;
     }): Line2Side;
+    /**
+     * Offset the line by a distance.
+     */
+    offset(distance: number): this;
+    intersection<T extends Vector2Like>(line: Line2, { out, }?: {
+        out?: T | null | undefined;
+    }): T | null;
     start: <T extends Vector2Like>(out?: T | null) => T;
     end: <T extends Vector2Like>(out?: T | null) => T;
 }

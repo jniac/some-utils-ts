@@ -1,4 +1,7 @@
 import { formatNumber } from './string/number.js';
+const vector2DeclarationStrings = ['x', 'y'];
+const vector3DeclarationStrings = ['x', 'y', 'z'];
+const vector4DeclarationStrings = ['x', 'y', 'z', 'w'];
 export const angleUnits = ['rad', 'deg', 'turn'];
 export const angleScalars = {
     rad: 1,
@@ -42,13 +45,19 @@ function isNumber(v) {
 export function isVector2Declaration(arg, isBaseType = (isNumber)) {
     if (isBaseType(arg))
         return true;
+    if (typeof arg === 'string')
+        return arg === 'x' || arg === 'y';
     if (Array.isArray(arg))
-        return arg.length >= 2 && arg.length <= 3 && arg.every(v => isBaseType(v));
+        return (arg.length >= 2
+            && isBaseType(arg[0])
+            && isBaseType(arg[1]));
     if (typeof arg === 'object') {
-        if ('x' in arg && 'y' in arg)
-            return isBaseType(arg.x) && isBaseType(arg.y);
-        if ('width' in arg && 'height' in arg)
-            return isBaseType(arg.width) && isBaseType(arg.height);
+        if ('x' in arg && isBaseType(arg.x)
+            && 'y' in arg && isBaseType(arg.y))
+            return true;
+        if ('width' in arg && isBaseType(arg.width)
+            && 'height' in arg && isBaseType(arg.height))
+            return true;
     }
     return false;
 }
@@ -58,6 +67,20 @@ export function fromVector2Declaration(arg, out, defaultValue, isBaseType) {
     out ??= { x: defaultValue, y: defaultValue };
     if (arg === undefined || arg === null) {
         return out;
+    }
+    if (typeof arg === 'string') {
+        switch (arg) {
+            case 'x':
+                out.x = 1;
+                out.y = 0;
+                return out;
+            case 'y':
+                out.x = 0;
+                out.y = 1;
+                return out;
+            default:
+                throw new Error(`Invalid vector2 declaration: ${arg}`);
+        }
     }
     if (isBaseType(arg)) {
         out.x = arg;
@@ -86,7 +109,26 @@ export function toVector2Declaration(arg) {
     return [x, y];
 }
 export function isVector3Declaration(arg, isBaseType = (isNumber)) {
-    return isVector2Declaration(arg, isBaseType);
+    if (isBaseType(arg))
+        return true;
+    if (typeof arg === 'string')
+        return arg === 'x' || arg === 'y' || arg === 'z';
+    if (Array.isArray(arg))
+        return (arg.length >= 2
+            && isBaseType(arg[0])
+            && isBaseType(arg[1])
+            && (arg[2] === undefined || isBaseType(arg[2])));
+    if (typeof arg === 'object') {
+        if ('x' in arg && isBaseType(arg.x)
+            && 'y' in arg && isBaseType(arg.y)
+            && ('z' in arg ? isBaseType(arg.z) : true))
+            return true;
+        if ('width' in arg && isBaseType(arg.width)
+            && 'height' in arg && isBaseType(arg.height)
+            && ('depth' in arg ? isBaseType(arg.depth) : true))
+            return true;
+    }
+    return false;
 }
 export function fromVector3Declaration(arg, out, defaultValue, isBaseType) {
     isBaseType ??= isNumber;
@@ -94,6 +136,27 @@ export function fromVector3Declaration(arg, out, defaultValue, isBaseType) {
     out ??= { x: defaultValue, y: defaultValue, z: defaultValue };
     if (arg === undefined || arg === null) {
         return out;
+    }
+    if (typeof arg === 'string') {
+        switch (arg) {
+            case 'x':
+                out.x = 1;
+                out.y = 0;
+                out.z = 0;
+                return out;
+            case 'y':
+                out.x = 0;
+                out.y = 1;
+                out.z = 0;
+                return out;
+            case 'z':
+                out.x = 0;
+                out.y = 0;
+                out.z = 1;
+                return out;
+            default:
+                throw new Error(`Invalid vector2 declaration: ${arg}`);
+        }
     }
     if (isBaseType(arg)) {
         out.x = arg;
@@ -126,8 +189,27 @@ export function toVector3Declaration(arg) {
     return [x, y, z];
 }
 export function isVector4Declaration(arg, isBaseType = (isNumber)) {
-    return (isVector2Declaration(arg, isBaseType)
-        || (typeof arg === 'object' && isBaseType(arg.x) && isBaseType(arg.y) && isBaseType(arg.z) && isBaseType(arg.w)));
+    if (isBaseType(arg))
+        return true;
+    if (typeof arg === 'string')
+        return arg === 'x' || arg === 'y' || arg === 'z' || arg === 'w';
+    if (Array.isArray(arg))
+        return (arg.length >= 2
+            && isBaseType(arg[0])
+            && isBaseType(arg[1])
+            && (arg[2] === undefined || isBaseType(arg[2]))
+            && (arg[3] === undefined || isBaseType(arg[3])));
+    if (typeof arg === 'object') {
+        if ('x' in arg && isBaseType(arg.x)
+            && 'y' in arg && isBaseType(arg.y)
+            && ('z' in arg ? isBaseType(arg.z) : true))
+            return true;
+        if ('width' in arg && isBaseType(arg.width)
+            && 'height' in arg && isBaseType(arg.height)
+            && ('depth' in arg ? isBaseType(arg.depth) : true))
+            return true;
+    }
+    return false;
 }
 export function fromVector4Declaration(arg, out, defaultValue, isBaseType) {
     isBaseType ??= isNumber;
@@ -135,6 +217,36 @@ export function fromVector4Declaration(arg, out, defaultValue, isBaseType) {
     out ??= { x: defaultValue, y: defaultValue, z: defaultValue, w: defaultValue };
     if (arg === undefined || arg === null) {
         return out;
+    }
+    if (typeof arg === 'string') {
+        switch (arg) {
+            case 'x':
+                out.x = 1;
+                out.y = 0;
+                out.z = 0;
+                out.w = 0;
+                return out;
+            case 'y':
+                out.x = 0;
+                out.y = 1;
+                out.z = 0;
+                out.w = 0;
+                return out;
+            case 'z':
+                out.x = 0;
+                out.y = 0;
+                out.z = 1;
+                out.w = 0;
+                return out;
+            case 'w':
+                out.x = 0;
+                out.y = 0;
+                out.z = 0;
+                out.w = 1;
+                return out;
+            default:
+                throw new Error(`Invalid vector2 declaration: ${arg}`);
+        }
     }
     if (isBaseType(arg)) {
         out.x = arg;
