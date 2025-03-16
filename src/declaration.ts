@@ -6,7 +6,10 @@ import { Vector2Like, Vector3Like, Vector4Like } from './types'
  */
 type ReadonlyOrNot<T> = T | Readonly<T>
 
+const vector2DeclarationStrings = ['x', 'y'] as const
+type Vector2DeclarationString = typeof vector2DeclarationStrings[number]
 type Vector2DeclarationBase<T> =
+  | Vector2DeclarationString
   | T
   | [x: T, y: T]
   | { x: T; y: T }
@@ -14,7 +17,10 @@ type Vector2DeclarationBase<T> =
 
 export type Vector2Declaration<T = number> = ReadonlyOrNot<Vector2DeclarationBase<T>>
 
+const vector3DeclarationStrings = ['x', 'y', 'z'] as const
+type Vector3DeclarationString = typeof vector3DeclarationStrings[number]
 type Vector3DeclarationBase<T> =
+  | Vector3DeclarationString
   | T
   | [x: T, y: T, z?: T]
   | { x: T; y: T; z?: T }
@@ -22,7 +28,10 @@ type Vector3DeclarationBase<T> =
 
 export type Vector3Declaration<T = number> = ReadonlyOrNot<Vector3DeclarationBase<T>>
 
+const vector4DeclarationStrings = ['x', 'y', 'z', 'w'] as const
+type Vector4DeclarationString = typeof vector4DeclarationStrings[number]
 type Vector4DeclarationBase<T> =
+  | Vector4DeclarationString
   | T
   | [x: T, y: T, z?: T, w?: T]
   | { x: T; y: T; z?: T, w?: T }
@@ -79,12 +88,28 @@ function isNumber<T>(v: any): v is T {
 }
 
 export function isVector2Declaration<BaseType = number>(arg: any, isBaseType = isNumber<BaseType>): arg is Vector2Declaration<BaseType> {
-  if (isBaseType(arg)) return true
-  if (Array.isArray(arg)) return arg.length >= 2 && arg.length <= 3 && arg.every(v => isBaseType(v))
+  if (isBaseType(arg))
+    return true
+
+  if (typeof arg === 'string')
+    return arg === 'x' || arg === 'y'
+
+  if (Array.isArray(arg))
+    return (
+      arg.length >= 2
+      && isBaseType(arg[0])
+      && isBaseType(arg[1]))
+
   if (typeof arg === 'object') {
-    if ('x' in arg && 'y' in arg) return isBaseType(arg.x) && isBaseType(arg.y)
-    if ('width' in arg && 'height' in arg) return isBaseType(arg.width) && isBaseType(arg.height)
+    if ('x' in arg && isBaseType(arg.x)
+      && 'y' in arg && isBaseType(arg.y))
+      return true
+
+    if ('width' in arg && isBaseType(arg.width)
+      && 'height' in arg && isBaseType(arg.height))
+      return true
   }
+
   return false
 }
 
@@ -99,6 +124,20 @@ export function fromVector2Declaration<BaseType = number, T extends Vector2Like<
   out ??= { x: defaultValue, y: defaultValue } as T
   if (arg === undefined || arg === null) {
     return out
+  }
+  if (typeof arg === 'string') {
+    switch (arg) {
+      case 'x':
+        out.x = 1 as BaseType
+        out.y = 0 as BaseType
+        return out
+      case 'y':
+        out.x = 0 as BaseType
+        out.y = 1 as BaseType
+        return out
+      default:
+        throw new Error(`Invalid vector2 declaration: ${arg}`)
+    }
   }
   if (isBaseType(arg)) {
     out.x = arg
@@ -128,9 +167,35 @@ export function toVector2Declaration<BaseType = number>(arg: Vector2Declaration<
   return [x, y]
 }
 
-export function isVector3Declaration<BaseType = number>(arg: any, isBaseType = isNumber<BaseType>): arg is Vector3Declaration<BaseType> {
-  return isVector2Declaration(arg, isBaseType)
+export function isVector3Declaration<BaseType = number>(arg: any, isBaseType = isNumber<BaseType>): arg is Vector2Declaration<BaseType> {
+  if (isBaseType(arg))
+    return true
+
+  if (typeof arg === 'string')
+    return arg === 'x' || arg === 'y' || arg === 'z'
+
+  if (Array.isArray(arg))
+    return (
+      arg.length >= 2
+      && isBaseType(arg[0])
+      && isBaseType(arg[1])
+      && (arg[2] === undefined || isBaseType(arg[2])))
+
+  if (typeof arg === 'object') {
+    if ('x' in arg && isBaseType(arg.x)
+      && 'y' in arg && isBaseType(arg.y)
+      && ('z' in arg ? isBaseType(arg.z) : true))
+      return true
+
+    if ('width' in arg && isBaseType(arg.width)
+      && 'height' in arg && isBaseType(arg.height)
+      && ('depth' in arg ? isBaseType(arg.depth) : true))
+      return true
+  }
+
+  return false
 }
+
 
 export function fromVector3Declaration<BaseType = number, T extends Vector3Like<BaseType> = Vector3Like<BaseType>>(
   arg: Vector3Declaration<BaseType>,
@@ -143,6 +208,27 @@ export function fromVector3Declaration<BaseType = number, T extends Vector3Like<
   out ??= { x: defaultValue, y: defaultValue, z: defaultValue } as T
   if (arg === undefined || arg === null) {
     return out
+  }
+  if (typeof arg === 'string') {
+    switch (arg) {
+      case 'x':
+        out.x = 1 as BaseType
+        out.y = 0 as BaseType
+        out.z = 0 as BaseType
+        return out
+      case 'y':
+        out.x = 0 as BaseType
+        out.y = 1 as BaseType
+        out.z = 0 as BaseType
+        return out
+      case 'z':
+        out.x = 0 as BaseType
+        out.y = 0 as BaseType
+        out.z = 1 as BaseType
+        return out
+      default:
+        throw new Error(`Invalid vector2 declaration: ${arg}`)
+    }
   }
   if (isBaseType(arg)) {
     out.x = arg as BaseType
@@ -176,11 +262,34 @@ export function toVector3Declaration<BaseType = number>(arg: Vector3Declaration<
   return [x, y, z]
 }
 
-export function isVector4Declaration<BaseType = number>(arg: any, isBaseType = isNumber<BaseType>): arg is Vector4Declaration<BaseType> {
-  return (
-    isVector2Declaration(arg, isBaseType)
-    || (typeof arg === 'object' && isBaseType(arg.x) && isBaseType(arg.y) && isBaseType(arg.z) && isBaseType(arg.w))
-  )
+export function isVector4Declaration<BaseType = number>(arg: any, isBaseType = isNumber<BaseType>): arg is Vector2Declaration<BaseType> {
+  if (isBaseType(arg))
+    return true
+
+  if (typeof arg === 'string')
+    return arg === 'x' || arg === 'y' || arg === 'z' || arg === 'w'
+
+  if (Array.isArray(arg))
+    return (
+      arg.length >= 2
+      && isBaseType(arg[0])
+      && isBaseType(arg[1])
+      && (arg[2] === undefined || isBaseType(arg[2]))
+      && (arg[3] === undefined || isBaseType(arg[3])))
+
+  if (typeof arg === 'object') {
+    if ('x' in arg && isBaseType(arg.x)
+      && 'y' in arg && isBaseType(arg.y)
+      && ('z' in arg ? isBaseType(arg.z) : true))
+      return true
+
+    if ('width' in arg && isBaseType(arg.width)
+      && 'height' in arg && isBaseType(arg.height)
+      && ('depth' in arg ? isBaseType(arg.depth) : true))
+      return true
+  }
+
+  return false
 }
 
 export function fromVector4Declaration<BaseType = number, T extends Vector4Like<BaseType> = Vector4Like<BaseType>>(
@@ -194,6 +303,36 @@ export function fromVector4Declaration<BaseType = number, T extends Vector4Like<
   out ??= { x: defaultValue, y: defaultValue, z: defaultValue, w: defaultValue } as T
   if (arg === undefined || arg === null) {
     return out
+  }
+  if (typeof arg === 'string') {
+    switch (arg) {
+      case 'x':
+        out.x = 1 as BaseType
+        out.y = 0 as BaseType
+        out.z = 0 as BaseType
+        out.w = 0 as BaseType
+        return out
+      case 'y':
+        out.x = 0 as BaseType
+        out.y = 1 as BaseType
+        out.z = 0 as BaseType
+        out.w = 0 as BaseType
+        return out
+      case 'z':
+        out.x = 0 as BaseType
+        out.y = 0 as BaseType
+        out.z = 1 as BaseType
+        out.w = 0 as BaseType
+        return out
+      case 'w':
+        out.x = 0 as BaseType
+        out.y = 0 as BaseType
+        out.z = 0 as BaseType
+        out.w = 1 as BaseType
+        return out
+      default:
+        throw new Error(`Invalid vector2 declaration: ${arg}`)
+    }
   }
   if (isBaseType(arg)) {
     out.x = arg

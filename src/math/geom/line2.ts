@@ -148,11 +148,33 @@ class Line2 implements Line2Like {
     return out
   }
 
+  normalizedVector<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
+    const { vx, vy } = this
+    const length = Math.hypot(vx, vy)
+    out.x = vx / length
+    out.y = vy / length
+    return out
+  }
+
   orthogonal<T extends Vector2Like>(out: T | null = null): T {
     out ??= { x: 0, y: 0 } as T
     out.x = -this.vy
     out.y = this.vx
     return out
+  }
+
+  normalizedOrthogonal<T extends Vector2Like>(out: T | null = null): T {
+    out ??= { x: 0, y: 0 } as T
+    const { vx, vy } = this
+    const length = Math.hypot(vx, vy)
+    out.x = -vy / length
+    out.y = vx / length
+    return out
+  }
+
+  angle(): number {
+    return Math.atan2(this.vy, this.vx)
   }
 
   computeT(point: Vector2Declaration): number {
@@ -172,6 +194,11 @@ class Line2 implements Line2Like {
     return out
   }
 
+  /**
+   * Determine the side of a point relative to the line.
+   * 
+   * NOTE: The point can be "on" the line.
+   */
   side(point: Vector2Declaration, {
     epsilon = .000001,
   } = {}): Line2Side {
@@ -179,6 +206,35 @@ class Line2 implements Line2Like {
     const { x, y } = fromVector2Declaration(point)
     const cross = (x - ox) * vy - (y - oy) * vx
     return cross < -epsilon ? Line2Side.Left : cross > epsilon ? Line2Side.Right : Line2Side.On
+  }
+
+  /**
+   * Offset the line by a distance.
+   */
+  offset(distance: number): this {
+    const { vx, vy } = this
+    const length = Math.hypot(vx, vy)
+    const x = vy / length * distance
+    const y = -vx / length * distance
+    this.ox += x
+    this.oy += y
+    return this
+  }
+
+  intersection<T extends Vector2Like>(line: Line2, {
+    out = null as T | null,
+  } = {}): T | null {
+    out ??= { x: 0, y: 0 } as T
+    const { ox: ox1, oy: oy1, vx: vx1, vy: vy1 } = this
+    const { ox: ox2, oy: oy2, vx: vx2, vy: vy2 } = line
+    const det = vx1 * vy2 - vy1 * vx2
+    if (Math.abs(det) < 1e-6) {
+      return null
+    }
+    const t = ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det
+    out.x = ox1 + t * vx1
+    out.y = oy1 + t * vy1
+    return out
   }
 
   // Sugar:
