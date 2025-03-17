@@ -112,31 +112,48 @@ function roundCorner<T extends Vector2Like>(points: T[], radius: number, tension
     const a = points[(i + n - 1) % n]
     const b = points[i]
     const c = points[(i + 1) % n]
-    line1.fromStartEnd(a, b).offset(-radius)
-    line2.fromStartEnd(b, c).offset(-radius)
-    if (line1.intersection(line2, { out: p }) === null) {
-      // parallel / collinear
+    line1.fromStartEnd(a, b)
+    line2.fromStartEnd(b, c)
+    const cross = line1.cross(line2)
+
+    if (Math.abs(cross) < 1e-6) {
+      // collinear
       const p = new constructor()
       p.x = b.x
       p.y = b.y
       result.push(p)
+      continue
+    }
+
+    const offset = cross > 0 ? -radius : radius
+    line1.offset(offset)
+    line2.offset(offset)
+
+    line1.intersection(line2, { out: p })
+
+    let a1, a2
+    if (cross > 0) {
+      a1 = line1.angle() - Math.PI / 2
+      a2 = line2.angle() - Math.PI / 2
     } else {
-      let a1 = line1.angle() - Math.PI / 2
-      let a2 = line2.angle() - Math.PI / 2
-      if (Math.abs(a1 - a2) > Math.PI) {
-        if (a1 < a2) {
-          a1 += Math.PI * 2
-        } else {
-          a2 += Math.PI * 2
-        }
+      a1 = line1.angle() + Math.PI / 2
+      a2 = line2.angle() + Math.PI / 2
+    }
+    if (Math.abs(a1 - a2) > Math.PI) {
+      if (a1 < a2) {
+        a1 += Math.PI * 2
+      } else {
+        a2 += Math.PI * 2
       }
-      const arc = a2 - a1
-      const count = Math.ceil(Math.abs(arc) / Math.PI * resolution)
-      cubicBezierArcControlPoints(p, radius, a1, a2, tension, cp)
-      for (let j = 0; j < count; j++) {
-        const t = j / (count - 1)
-        result.push(bezier2(cp, t))
-      }
+    }
+
+    const arc = a2 - a1
+    const count = Math.ceil(Math.abs(arc) / Math.PI * resolution)
+    cubicBezierArcControlPoints(p, radius, a1, a2, tension, cp)
+
+    for (let j = 0; j < count; j++) {
+      const t = j / (count - 1)
+      result.push(bezier2(cp, t))
     }
   }
   return result
