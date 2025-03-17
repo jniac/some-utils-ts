@@ -92,6 +92,13 @@ function offset<T extends Vector2Like>(points: T[], amount: number): T[] {
   return result
 }
 
+const roundCornerOptionsDefaults = {
+  tension: 1,
+  resolution: 32,
+  radius: .1,
+}
+type RoundCornerOptions = Partial<typeof roundCornerOptionsDefaults>
+type RoundCornerDelegate = (info: { point: Vector2Like, cross: number, line1: Line2, line2: Line2 }) => RoundCornerOptions
 /**
  * 
  * @param points Points of the polygon
@@ -100,7 +107,7 @@ function offset<T extends Vector2Like>(points: T[], amount: number): T[] {
  * @param resolution The number of segments for Math.PI arc.
  * @returns 
  */
-function roundCorner<T extends Vector2Like>(points: T[], radius: number, tension: number, resolution: number): T[] {
+function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDelegate): T[] {
   const constructor = points[0].constructor as { new(): T }
   const result: T[] = []
   const n = points.length
@@ -115,6 +122,15 @@ function roundCorner<T extends Vector2Like>(points: T[], radius: number, tension
     line1.fromStartEnd(a, b)
     line2.fromStartEnd(b, c)
     const cross = line1.cross(line2)
+
+    const {
+      radius,
+      tension,
+      resolution,
+    } = {
+      ...roundCornerOptionsDefaults,
+      ...delegate({ point: b, cross, line1, line2 }),
+    }
 
     if (Math.abs(cross) < 1e-6) {
       // collinear
@@ -187,6 +203,34 @@ export class Path2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
+  clean({ threshold = 1e-4 } = {}): this {
+    this.points = this.points
+      // Remove duplicate points
+      .filter((p, i, points) => {
+        const { x: x0, y: y0 } = points[i === 0 ? points.length - 1 : i - 1]
+        const { x: x1, y: y1 } = p
+
+        return Math.abs(x1 - x0) > threshold || Math.abs(y1 - y0) > threshold
+      })
+      // Remove collinear points
+      .filter((p, i, points) => {
+        if (i === 0 || i === points.length - 1)
+          return true
+
+        const { x: x0, y: y0 } = points[i - 1]
+        const { x: x1, y: y1 } = p
+        const { x: x2, y: y2 } = points[i + 1]
+
+        const dx1 = x1 - x0
+        const dy1 = y1 - y0
+        const dx2 = x2 - x1
+        const dy2 = y2 - y1
+
+        return Math.abs(dx1 * dy2 - dx2 * dy1) > threshold
+      })
+    return this
+  }
+
   offset(amount: number): this {
     this.points = offset(this.points, amount)
     return this
@@ -199,8 +243,12 @@ export class Path2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  roundCorner(radius: number, { tension = 1, resolution = 32 } = {}): this {
-    this.points = roundCorner(this.points, radius, tension, resolution)
+  roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions): this {
+    const delegate =
+      typeof options === 'function' ? options :
+        typeof options === 'number' ? () => ({ radius: options }) :
+          () => options
+    this.points = roundCorner(this.points, delegate)
     return this
   }
 }
