@@ -177,6 +177,14 @@ class Line2 implements Line2Like {
     return Math.atan2(this.vy, this.vx)
   }
 
+  dot(line: Line2): number {
+    return this.vx * line.vx + this.vy * line.vy
+  }
+
+  cross(line: Line2): number {
+    return this.vx * line.vy - this.vy * line.vx
+  }
+
   computeT(point: Vector2Declaration): number {
     const { ox, oy, vx, vy } = this
     const { x, y } = fromVector2Declaration(point)

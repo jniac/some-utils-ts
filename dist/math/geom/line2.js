@@ -136,6 +136,12 @@ class Line2 {
     angle() {
         return Math.atan2(this.vy, this.vx);
     }
+    dot(line) {
+        return this.vx * line.vx + this.vy * line.vy;
+    }
+    cross(line) {
+        return this.vx * line.vy - this.vy * line.vx;
+    }
     computeT(point) {
         const { ox, oy, vx, vy } = this;
         const { x, y } = fromVector2Declaration(point);
