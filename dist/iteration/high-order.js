@@ -39,3 +39,22 @@ export function split(array, predicate, count) {
     }
     return result;
 }
+/**
+ * Allows you to iterate over pairs of values in an iterable.
+ *
+ * Usage:
+ * ```
+ * for (const [a, b] of pairwise([1, 2, 3, 4])) {
+ *   console.log(a, b) // 1 2, 2 3, 3 4
+ * }
+ * ```
+ */
+export function* pairwise(values) {
+    let prev = undefined;
+    for (const value of values) {
+        if (prev !== undefined) {
+            yield [prev, value];
+        }
+        prev = value;
+    }
+}

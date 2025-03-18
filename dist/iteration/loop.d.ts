@@ -13,6 +13,10 @@ export type LoopResult = {
      */
     p: number;
     /**
+     * The size of the loop.
+     */
+    size: number;
+    /**
      * Clone the current yield object (save the reference).
      */
     clone(): LoopResult;
@@ -71,6 +75,14 @@ export type Loop2Result = {
      */
     py: number;
     /**
+     * The x size of the loop.
+     */
+    sizeX: number;
+    /**
+     * The y size of the loop.
+     */
+    sizeY: number;
+    /**
      * Clone the current yield object (save the reference).
      */
     clone(): Loop2Result;
@@ -99,8 +111,8 @@ export declare function loop2(size: Vector2Like | [number, number]): Generator<L
  * const results = loop2Array(10, 10)
  * ```
  */
-export declare function loop2Array(width: number, height: number): Loop2Result[];
-export declare function loop2Array(size: Vector2Like | [number, number]): Loop2Result[];
+export declare function loop2Array<T = Loop2Result>(width: number, height: number, map?: (it: Loop2Result) => T): T[];
+export declare function loop2Array<T = Loop2Result>(size: Vector2Like | [number, number], map?: (it: Loop2Result) => T): T[];
 export type Loop3Result = {
     /**
      * The current iteration index.

@@ -18,3 +18,14 @@ export declare function every<T>(values: Iterable<T>, predicate: (value: T) => b
  */
 export declare function split<T>(array: T[], predicate: (value: T) => number): (T[] | undefined)[];
 export declare function split<T>(array: T[], predicate: (value: T) => number, count: number): T[][];
+/**
+ * Allows you to iterate over pairs of values in an iterable.
+ *
+ * Usage:
+ * ```
+ * for (const [a, b] of pairwise([1, 2, 3, 4])) {
+ *   console.log(a, b) // 1 2, 2 3, 3 4
+ * }
+ * ```
+ */
+export declare function pairwise<T>(values: Iterable<T>): Generator<[T, T]>;

@@ -18,6 +18,7 @@ export function* loop(size) {
         get i() { return i; },
         get t() { return i / size; },
         get p() { return i / (size - 1); },
+        get size() { return size; },
         clone() { return { ...this }; }
     };
     for (i = 0; i < size; i++) {
@@ -68,6 +69,8 @@ export function* loop2(...args) {
         get ty() { return y / sy; },
         get px() { return x / (sx - 1); },
         get py() { return y / (sy - 1); },
+        get sizeX() { return sx; },
+        get sizeY() { return sy; },
         clone() { return { ...this }; }
     };
     for (y = 0; y < sy; y++) {
@@ -78,10 +81,29 @@ export function* loop2(...args) {
     }
 }
 export function loop2Array(...args) {
+    let width = 0, height = 0;
+    let map;
+    if (typeof args[0] === 'number') {
+        width = args[0];
+        height = args[1];
+        map = args[2];
+    }
+    else {
+        if (Array.isArray(args[0])) {
+            width = args[0][0];
+            height = args[0][1];
+        }
+        else {
+            width = args[0].x;
+            height = args[0].y;
+        }
+        map = args[1];
+    }
     const out = [];
     // @ts-ignore
-    for (const item of loop2(...args)) {
-        out.push(item.clone());
+    for (const item of loop2(width, height)) {
+        const it = item.clone();
+        out.push(map ? map(it) : it);
     }
     return out;
 }
