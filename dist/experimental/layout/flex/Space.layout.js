@@ -1,4 +1,4 @@
-import { split } from '../../../iteration/high-order.js';
+import { distribute } from '../../../iteration/utils.js';
 import { Padding } from '../../../math/geom/padding.js';
 import { Rectangle } from '../../../math/geom/rectangle.js';
 import { ScalarType } from './Scalar.js';
@@ -93,7 +93,7 @@ const _innerRect = new Rectangle();
  */
 export function computeChildrenRect(space) {
     const { direction, alignChildrenX, alignChildrenY } = space;
-    const [enabledChildren, disabledChildren] = split(space.children, child => child.enabled ? 0 : 1);
+    const [enabledChildren, disabledChildren] = distribute(space.children, child => child.enabled ? 0 : 1);
     if (disabledChildren) {
         for (const child of disabledChildren) {
             // Do not forget to reset the rect of all descendants (and not only the child itself).

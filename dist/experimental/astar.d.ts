@@ -49,11 +49,17 @@ heuristic, }?: {
         b: Node;
         cost: number;
     }>;
+    getNeighbors: (node: Node) => Generator<{
+        node: Node;
+        cost: number;
+    }>;
+    heuristic: (a: Node, b: Node) => number;
     findLink: (a: Node, b: Node) => {
         a: Node;
         b: Node;
         cost: number;
     } | undefined;
-    find: (start: Node, goal: Node) => Node[];
+    findPath: (start: Node, goal: Node) => Node[];
+    pathIsValid: (path: Node[]) => boolean;
 };
 export {};

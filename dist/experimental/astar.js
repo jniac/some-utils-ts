@@ -1,3 +1,4 @@
+import { pairwise } from '../iteration/utils.js';
 import { distance2, manhattanDistance2 } from '../math/geom/geom2.js';
 /**
  * Definitively generic A* pathfinding algorithm:
@@ -77,6 +78,7 @@ heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
                 const cost = heuristic(node, other);
                 const link = { a: node, b: other, cost };
                 map.get(node).add(link);
+                map.get(other).add(link);
                 links.add(link);
             }
         }
@@ -95,6 +97,8 @@ heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
         get nodeCount() { return map.size; },
         get linkCount() { return links.size; },
         links: () => links.values(),
+        getNeighbors,
+        heuristic,
         findLink: (a, b) => {
             const links = map.get(a);
             if (!links)
@@ -105,11 +109,21 @@ heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
                 }
             }
         },
-        find: (start, goal) => aStar({
+        findPath: (start, goal) => aStar({
             start,
             goal,
             getNeighbors,
             heuristic,
-        })
+        }),
+        pathIsValid: (path) => {
+            for (const [a, b] of pairwise(path)) {
+                const links = map.get(a);
+                if (!links)
+                    return false;
+                if (![...links].some(link => link.a === b || link.b === b))
+                    return false;
+            }
+            return true;
+        }
     };
 }
