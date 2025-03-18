@@ -14,6 +14,10 @@ export type LoopResult = {
    */
   p: number
   /**
+   * The size of the loop.
+   */
+  size: number
+  /**
    * Clone the current yield object (save the reference).
    */
   clone(): LoopResult
@@ -39,6 +43,7 @@ export function* loop(size: number): Generator<LoopResult> {
     get i() { return i },
     get t() { return i / size },
     get p() { return i / (size - 1) },
+    get size() { return size },
     clone() { return { ...this } }
   }
   for (i = 0; i < size; i++) {
@@ -94,6 +99,14 @@ export type Loop2Result = {
    */
   py: number
   /**
+   * The x size of the loop.
+   */
+  sizeX: number
+  /**
+   * The y size of the loop.
+   */
+  sizeY: number
+  /**
    * Clone the current yield object (save the reference).
    */
   clone(): Loop2Result
@@ -140,6 +153,8 @@ export function* loop2(...args: any[]) {
     get ty() { return y / sy },
     get px() { return x / (sx - 1) },
     get py() { return y / (sy - 1) },
+    get sizeX() { return sx },
+    get sizeY() { return sy },
     clone() { return { ...this } }
   }
   for (y = 0; y < sy; y++) {
@@ -158,13 +173,30 @@ export function* loop2(...args: any[]) {
  * const results = loop2Array(10, 10)
  * ```
  */
-export function loop2Array(width: number, height: number): Loop2Result[]
-export function loop2Array(size: Vector2Like | [number, number]): Loop2Result[]
+export function loop2Array<T = Loop2Result>(width: number, height: number, map?: (it: Loop2Result) => T): T[]
+export function loop2Array<T = Loop2Result>(size: Vector2Like | [number, number], map?: (it: Loop2Result) => T): T[]
 export function loop2Array(...args: any[]) {
+  let width = 0, height = 0
+  let map: (it: Loop2Result) => any
+  if (typeof args[0] === 'number') {
+    width = args[0]
+    height = args[1]
+    map = args[2]
+  } else {
+    if (Array.isArray(args[0])) {
+      width = args[0][0]
+      height = args[0][1]
+    } else {
+      width = args[0].x
+      height = args[0].y
+    }
+    map = args[1]
+  }
   const out: Loop2Result[] = []
   // @ts-ignore
-  for (const item of loop2(...args)) {
-    out.push(item.clone())
+  for (const item of loop2(width, height)) {
+    const it = item.clone()
+    out.push(map ? map(it) : it)
   }
   return out
 }

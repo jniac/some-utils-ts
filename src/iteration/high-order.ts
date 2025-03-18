@@ -53,3 +53,23 @@ export function split<T>(array: T[], predicate: (value: T) => number, count?: nu
   }
   return result
 }
+
+/**
+ * Allows you to iterate over pairs of values in an iterable.
+ * 
+ * Usage:
+ * ```
+ * for (const [a, b] of pairwise([1, 2, 3, 4])) {
+ *   console.log(a, b) // 1 2, 2 3, 3 4
+ * }
+ * ```
+ */
+export function* pairwise<T>(values: Iterable<T>): Generator<[T, T]> {
+  let prev: T | undefined = undefined
+  for (const value of values) {
+    if (prev !== undefined) {
+      yield [prev, value]
+    }
+    prev = value
+  }
+}
