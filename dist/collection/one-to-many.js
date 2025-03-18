@@ -27,7 +27,7 @@ export class OneToMany {
     /**
      * Get all values associated with a key.
      */
-    getValues(key) {
+    get(key) {
         return this.#keyToValues.get(key);
     }
     /**
@@ -51,7 +51,7 @@ export class OneToMany {
     /**
      * Remove a key and all its associated values.
      */
-    deleteKey(key) {
+    delete(key) {
         if (!this.#keyToValues.has(key)) {
             return false;
         }
@@ -107,7 +107,7 @@ export class OneToMany {
     /**
      * Check if a key exists.
      */
-    hasKey(key) {
+    has(key) {
         return this.#keyToValues.has(key);
     }
     /**

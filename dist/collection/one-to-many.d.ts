@@ -10,7 +10,7 @@ export declare class OneToMany<K, V> {
     /**
      * Get all values associated with a key.
      */
-    getValues(key: K): Set<V> | undefined;
+    get(key: K): Set<V> | undefined;
     /**
      * Get all keys associated with a value.
      */
@@ -18,7 +18,7 @@ export declare class OneToMany<K, V> {
     /**
      * Remove a key and all its associated values.
      */
-    deleteKey(key: K): boolean;
+    delete(key: K): boolean;
     /**
      * Remove a value from all associated keys.
      */
@@ -26,7 +26,7 @@ export declare class OneToMany<K, V> {
     /**
      * Check if a key exists.
      */
-    hasKey(key: K): boolean;
+    has(key: K): boolean;
     /**
      * Check if a value exists.
      */

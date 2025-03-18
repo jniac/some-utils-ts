@@ -111,6 +111,9 @@ class Line2 {
         out.y = this.vy;
         return out;
     }
+    vectorLength() {
+        return Math.hypot(this.vx, this.vy);
+    }
     normalizedVector(out = null) {
         out ??= { x: 0, y: 0 };
         const { vx, vy } = this;
@@ -127,10 +130,9 @@ class Line2 {
     }
     normalizedOrthogonal(out = null) {
         out ??= { x: 0, y: 0 };
-        const { vx, vy } = this;
-        const length = Math.hypot(vx, vy);
-        out.x = -vy / length;
-        out.y = vx / length;
+        const length = this.vectorLength();
+        out.x = -this.vy / length;
+        out.y = this.vx / length;
         return out;
     }
     angle() {
@@ -141,6 +143,9 @@ class Line2 {
     }
     cross(line) {
         return this.vx * line.vy - this.vy * line.vx;
+    }
+    angleTo(other) {
+        return Math.atan2(this.cross(other), this.dot(other));
     }
     computeT(point) {
         const { ox, oy, vx, vy } = this;

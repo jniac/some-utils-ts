@@ -148,6 +148,10 @@ class Line2 implements Line2Like {
     return out
   }
 
+  vectorLength(): number {
+    return Math.hypot(this.vx, this.vy)
+  }
+
   normalizedVector<T extends Vector2Like>(out: T | null = null): T {
     out ??= { x: 0, y: 0 } as T
     const { vx, vy } = this
@@ -166,10 +170,9 @@ class Line2 implements Line2Like {
 
   normalizedOrthogonal<T extends Vector2Like>(out: T | null = null): T {
     out ??= { x: 0, y: 0 } as T
-    const { vx, vy } = this
-    const length = Math.hypot(vx, vy)
-    out.x = -vy / length
-    out.y = vx / length
+    const length = this.vectorLength()
+    out.x = -this.vy / length
+    out.y = this.vx / length
     return out
   }
 
@@ -183,6 +186,10 @@ class Line2 implements Line2Like {
 
   cross(line: Line2): number {
     return this.vx * line.vy - this.vy * line.vx
+  }
+
+  angleTo(other: Line2): number {
+    return Math.atan2(this.cross(other), this.dot(other))
   }
 
   computeT(point: Vector2Declaration): number {

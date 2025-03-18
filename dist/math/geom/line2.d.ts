@@ -32,12 +32,14 @@ declare class Line2 implements Line2Like {
     p0<T extends Vector2Like>(out?: T | null): T;
     p1<T extends Vector2Like>(out?: T | null): T;
     vector<T extends Vector2Like>(out?: T | null): T;
+    vectorLength(): number;
     normalizedVector<T extends Vector2Like>(out?: T | null): T;
     orthogonal<T extends Vector2Like>(out?: T | null): T;
     normalizedOrthogonal<T extends Vector2Like>(out?: T | null): T;
     angle(): number;
     dot(line: Line2): number;
     cross(line: Line2): number;
+    angleTo(other: Line2): number;
     computeT(point: Vector2Declaration): number;
     project<T extends Vector2Like>(point: Vector2Declaration, { out, }?: {
         out?: T | null | undefined;
