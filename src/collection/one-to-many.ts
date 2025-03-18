@@ -32,7 +32,7 @@ export class OneToMany<K, V> {
   /**
    * Get all values associated with a key.
    */
-  getValues(key: K): Set<V> | undefined {
+  get(key: K): Set<V> | undefined {
     return this.#keyToValues.get(key)
   }
 
@@ -57,7 +57,7 @@ export class OneToMany<K, V> {
   /**
    * Remove a key and all its associated values.
    */
-  deleteKey(key: K): boolean {
+  delete(key: K): boolean {
     if (!this.#keyToValues.has(key)) {
       return false
     }
@@ -116,7 +116,7 @@ export class OneToMany<K, V> {
   /**
    * Check if a key exists.
    */
-  hasKey(key: K): boolean {
+  has(key: K): boolean {
     return this.#keyToValues.has(key)
   }
 
