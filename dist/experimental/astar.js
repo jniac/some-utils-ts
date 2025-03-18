@@ -48,82 +48,85 @@ function reconstructPath(cameFrom, current) {
     }
     return path.reverse();
 }
-export function createGraph2(nodes, { 
-/**
- * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
- * Default is 1.
- */
-gridStep = 1, 
-/**
- * Delegate to determine if two nodes are neighbors.
- * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
- */
-areNeighbors = (a, b) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001, 
-/**
- * Delegate to compute the cost of moving from node `a` to node `b`.
- * By default, it computes the euclidean distance between the two nodes.
- */
-heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
-    const map = new Map();
-    const links = new Set();
-    for (const node of nodes) {
-        map.set(node, new Set());
-    }
-    const processed = new Set();
-    for (const node of nodes) {
-        for (const other of nodes) {
-            if (node === other || processed.has(other))
-                continue;
-            if (areNeighbors(node, other)) {
-                const cost = heuristic(node, other);
-                const link = { a: node, b: other, cost };
-                map.get(node).add(link);
-                map.get(other).add(link);
-                links.add(link);
-            }
+export class Graph2 {
+    #map = new Map();
+    #links = new Set();
+    links = () => this.#links;
+    getNeighbors;
+    heuristic;
+    constructor(nodes, { 
+    /**
+     * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
+     * Default is 1.
+     */
+    gridStep = 1, 
+    /**
+     * Delegate to determine if two nodes are neighbors.
+     * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
+     */
+    areNeighbors = (a, b) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001, 
+    /**
+     * Delegate to compute the cost of moving from node `a` to node `b`.
+     * By default, it computes the euclidean distance between the two nodes.
+     */
+    heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
+        const map = this.#map;
+        const links = this.#links;
+        for (const node of nodes) {
+            map.set(node, new Set());
         }
-        processed.add(node);
-    }
-    function* getNeighbors(node) {
-        const links = map.get(node);
-        if (!links)
-            return;
-        for (const { a, b, cost } of links) {
-            yield a === node ? { node: b, cost } : { node: a, cost };
-        }
-    }
-    return {
-        map,
-        get nodeCount() { return map.size; },
-        get linkCount() { return links.size; },
-        links: () => links.values(),
-        getNeighbors,
-        heuristic,
-        findLink: (a, b) => {
-            const links = map.get(a);
-            if (!links)
-                return;
-            for (const link of links) {
-                if (link.a === b || link.b === b) {
-                    return link;
+        const processed = new Set();
+        for (const node of nodes) {
+            for (const other of nodes) {
+                if (node === other || processed.has(other))
+                    continue;
+                if (areNeighbors(node, other)) {
+                    const cost = heuristic(node, other);
+                    const link = { a: node, b: other, cost };
+                    map.get(node).add(link);
+                    map.get(other).add(link);
+                    links.add(link);
                 }
             }
-        },
-        findPath: (start, goal) => aStar({
+            processed.add(node);
+        }
+        this.getNeighbors = function* getNeighbors(node) {
+            const links = map.get(node);
+            if (!links)
+                return;
+            for (const { a, b, cost } of links) {
+                yield a === node ? { node: b, cost } : { node: a, cost };
+            }
+        };
+        this.heuristic = heuristic;
+    }
+    findLink(a, b) {
+        const links = this.#map.get(a);
+        if (!links)
+            return;
+        for (const link of links) {
+            if (link.a === b || link.b === b) {
+                return link;
+            }
+        }
+    }
+    findPath(start, goal) {
+        const { getNeighbors, heuristic } = this;
+        return aStar({
             start,
             goal,
             getNeighbors,
             heuristic,
-        }),
-        pathIsValid: (path) => {
-            for (const [a, b] of pairwise(path)) {
-                const links = map.get(a);
-                if (!links)
-                    return false;
-                if (![...links].some(link => link.a === b || link.b === b))
-                    return false;
-            }
-            return true;
+        });
+    }
+    pathIsValid(path) {
+        for (const [a, b] of pairwise(path)) {
+            const links = this.#map.get(a);
+            if (!links)
+                return false;
+            if (![...links].some(link => link.a === b || link.b === b))
+                return false;
         }
-    };
+        return true;
+    }
 }

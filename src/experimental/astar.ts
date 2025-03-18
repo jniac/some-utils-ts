@@ -53,10 +53,6 @@ export function aStar<Node>({ start, goal, getNeighbors, heuristic }: AStarParam
   return [] // No path found
 }
 
-type Graph2Node = {
-  getPosition(): Vector2Like
-}
-
 function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[] {
   const path = [current]
   while (cameFrom.has(current)) {
@@ -66,97 +62,112 @@ function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[]
   return path.reverse()
 }
 
-export function createGraph2<Node extends Graph2Node>(nodes: Iterable<Node>, {
-  /**
-   * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
-   * Default is 1.
-   */
-  gridStep = 1,
-  /**
-   * Delegate to determine if two nodes are neighbors.
-   * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
-   */
-  areNeighbors = (a: Node, b: Node) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001,
-  /**
-   * Delegate to compute the cost of moving from node `a` to node `b`.
-   * By default, it computes the euclidean distance between the two nodes.
-   */
-  heuristic = (a: Node, b: Node) => distance2(a.getPosition(), b.getPosition()),
-} = {}) {
-  type Link = {
-    a: Node
-    b: Node
-    cost: number
+type Link<Node> = {
+  a: Node
+  b: Node
+  cost: number
+}
 
-  }
-  const map = new Map<Node, Set<Link>>()
-  const links = new Set<Link>()
-  for (const node of nodes) {
-    map.set(node, new Set())
-  }
+type Graph<Node> = {
+  links(): Iterable<Link<Node>>
+  getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
+  heuristic: (a: Node, b: Node) => number
+  findPath(start: Node, goal: Node): Node[]
+  pathIsValid(path: Node[]): boolean
+}
 
-  const processed = new Set<Node>()
-  for (const node of nodes) {
-    for (const other of nodes) {
-      if (node === other || processed.has(other))
-        continue
+type Graph2Node = {
+  getPosition(): Vector2Like
+}
 
-      if (areNeighbors(node, other)) {
-        const cost = heuristic(node, other)
-        const link = { a: node, b: other, cost }
-        map.get(node)!.add(link)
-        map.get(other)!.add(link)
-        links.add(link)
-      }
+export class Graph2<Node extends Graph2Node> implements Graph<Node> {
+  #map = new Map<Node, Set<Link<Node>>>()
+  #links = new Set<Link<Node>>()
+
+  links = () => this.#links
+  getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
+  heuristic: (a: Node, b: Node) => number
+
+  constructor(nodes: Iterable<Node>, {
+    /**
+     * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
+     * Default is 1.
+     */
+    gridStep = 1,
+    /**
+     * Delegate to determine if two nodes are neighbors.
+     * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
+     */
+    areNeighbors = (a: Node, b: Node) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001,
+    /**
+     * Delegate to compute the cost of moving from node `a` to node `b`.
+     * By default, it computes the euclidean distance between the two nodes.
+     */
+    heuristic = (a: Node, b: Node) => distance2(a.getPosition(), b.getPosition()),
+  } = {}) {
+    const map = this.#map
+    const links = this.#links
+
+    for (const node of nodes) {
+      map.set(node, new Set())
     }
-    processed.add(node)
-  }
 
-  function* getNeighbors(node: Node): Generator<{ node: Node, cost: number }> {
-    const links = map.get(node)
-    if (!links) return
-    for (const { a, b, cost } of links) {
-      yield a === node ? { node: b, cost } : { node: a, cost }
-    }
-  }
+    const processed = new Set<Node>()
+    for (const node of nodes) {
+      for (const other of nodes) {
+        if (node === other || processed.has(other))
+          continue
 
-  return {
-    map,
-    get nodeCount() { return map.size },
-    get linkCount() { return links.size },
-
-    links: () => links.values(),
-
-    getNeighbors,
-
-    heuristic,
-
-    findLink: (a: Node, b: Node) => {
-      const links = map.get(a)
-      if (!links) return
-      for (const link of links) {
-        if (link.a === b || link.b === b) {
-          return link
+        if (areNeighbors(node, other)) {
+          const cost = heuristic(node, other)
+          const link = { a: node, b: other, cost }
+          map.get(node)!.add(link)
+          map.get(other)!.add(link)
+          links.add(link)
         }
       }
-    },
+      processed.add(node)
+    }
 
-    findPath: (start: Node, goal: Node) => aStar({
+    this.getNeighbors = function* getNeighbors(node: Node): Generator<{ node: Node, cost: number }> {
+      const links = map.get(node)
+      if (!links) return
+      for (const { a, b, cost } of links) {
+        yield a === node ? { node: b, cost } : { node: a, cost }
+      }
+    }
+
+    this.heuristic = heuristic
+  }
+
+  findLink(a: Node, b: Node) {
+    const links = this.#map.get(a)
+    if (!links) return
+    for (const link of links) {
+      if (link.a === b || link.b === b) {
+        return link
+      }
+    }
+  }
+
+  findPath(start: Node, goal: Node) {
+    const { getNeighbors, heuristic } = this
+    return aStar({
       start,
       goal,
       getNeighbors,
       heuristic,
-    }),
+    })
+  }
 
-    pathIsValid: (path: Node[]) => {
-      for (const [a, b] of pairwise(path)) {
-        const links = map.get(a)
-        if (!links)
-          return false
-        if (![...links].some(link => link.a === b || link.b === b))
-          return false
-      }
-      return true
+  pathIsValid(path: Node[]): boolean {
+    for (const [a, b] of pairwise(path)) {
+      const links = this.#map.get(a)
+      if (!links)
+        return false
+      if (![...links].some(link => link.a === b || link.b === b))
+        return false
     }
+    return true
   }
 }
