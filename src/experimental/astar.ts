@@ -1,3 +1,4 @@
+import { pairwise } from '../iteration/utils'
 import { distance2, manhattanDistance2 } from '../math/geom/geom2'
 import { Vector2Like } from '../types'
 
@@ -104,6 +105,7 @@ export function createGraph2<Node extends Graph2Node>(nodes: Iterable<Node>, {
         const cost = heuristic(node, other)
         const link = { a: node, b: other, cost }
         map.get(node)!.add(link)
+        map.get(other)!.add(link)
         links.add(link)
       }
     }
@@ -122,7 +124,13 @@ export function createGraph2<Node extends Graph2Node>(nodes: Iterable<Node>, {
     map,
     get nodeCount() { return map.size },
     get linkCount() { return links.size },
+
     links: () => links.values(),
+
+    getNeighbors,
+
+    heuristic,
+
     findLink: (a: Node, b: Node) => {
       const links = map.get(a)
       if (!links) return
@@ -132,11 +140,23 @@ export function createGraph2<Node extends Graph2Node>(nodes: Iterable<Node>, {
         }
       }
     },
-    find: (start: Node, goal: Node) => aStar({
+
+    findPath: (start: Node, goal: Node) => aStar({
       start,
       goal,
       getNeighbors,
       heuristic,
-    })
+    }),
+
+    pathIsValid: (path: Node[]) => {
+      for (const [a, b] of pairwise(path)) {
+        const links = map.get(a)
+        if (!links)
+          return false
+        if (![...links].some(link => link.a === b || link.b === b))
+          return false
+      }
+      return true
+    }
   }
 }

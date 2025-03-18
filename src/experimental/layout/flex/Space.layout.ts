@@ -1,4 +1,4 @@
-import { split } from '../../../iteration/high-order'
+import { distribute } from '../../../iteration/utils'
 import { Padding } from '../../../math/geom/padding'
 import { Rectangle } from '../../../math/geom/rectangle'
 import { ScalarType } from './Scalar'
@@ -111,7 +111,7 @@ const _innerRect = new Rectangle()
  */
 export function computeChildrenRect(space: Space) {
   const { direction, alignChildrenX, alignChildrenY } = space
-  const [enabledChildren, disabledChildren] = split(space.children, child => child.enabled ? 0 : 1)
+  const [enabledChildren, disabledChildren] = distribute(space.children, child => child.enabled ? 0 : 1)
 
   if (disabledChildren) {
     for (const child of disabledChildren) {
