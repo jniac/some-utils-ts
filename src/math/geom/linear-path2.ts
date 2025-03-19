@@ -185,7 +185,7 @@ const roundCornerOptionsDefaults = {
   radius: .1,
 }
 type RoundCornerOptions = Partial<typeof roundCornerOptionsDefaults>
-type RoundCornerDelegate = (info: { point: Vector2Like, cross: number, line1: Line2, line2: Line2 }) => RoundCornerOptions
+type RoundCornerDelegate = (info: { point: Vector2Like, angle: number, line1: Line2, line2: Line2 }) => RoundCornerOptions
 /**
  * 
  * @param points Points of the polygon
@@ -208,7 +208,7 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
     const c = points[(i + 1) % n]
     line1.fromStartEnd(a, b)
     line2.fromStartEnd(b, c)
-    const cross = line1.cross(line2)
+    const angle = line1.angleTo(line2)
 
     const {
       radius,
@@ -216,10 +216,10 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
       resolution,
     } = {
       ...roundCornerOptionsDefaults,
-      ...delegate({ point: b, cross, line1, line2 }),
+      ...delegate({ point: b, angle, line1, line2 }),
     }
 
-    if (Math.abs(cross) < 1e-6) {
+    if (Math.abs(angle) < 1e-6) {
       // collinear
       const p = new constructor()
       p.x = b.x
@@ -228,14 +228,14 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
       continue
     }
 
-    const offset = cross > 0 ? -radius : radius
+    const offset = angle > 0 ? -radius : radius
     line1.offset(offset)
     line2.offset(offset)
 
     line1.intersection(line2, { out: p })
 
     let a1, a2
-    if (cross > 0) {
+    if (angle > 0) {
       a1 = line1.angle() - Math.PI / 2
       a2 = line2.angle() - Math.PI / 2
     } else {
@@ -313,13 +313,42 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
   }
 
   outline(width: number): this {
-    if (this.closed === false)
-      throw new Error('Cannot outline an open path')
+    if (this.closed)
+      throw new Error('Cannot outline an closed path')
     this.points = [
       ...offsetOpenPath(this.points, width / 2),
       ...offsetOpenPath(this.points, -width / 2).reverse(),
     ]
-    this.closed = false
+    this.closed = true
+    return this
+  }
+
+  extend(amount: number): this {
+    if (this.closed)
+      throw new Error('Cannot extend a closed path')
+    const n = this.points.length
+    const { x: x0, y: y0 } = this.points[0]
+    const { x: x1, y: y1 } = this.points[1]
+    {
+      let dx = x1 - x0
+      let dy = y1 - y0
+      const l = Math.hypot(dx, dy)
+      dx /= l
+      dy /= l
+      this.points[0].x = x0 - dx * amount
+      this.points[0].y = y0 - dy * amount
+    }
+    {
+      const { x: x0, y: y0 } = this.points[n - 1]
+      const { x: x1, y: y1 } = this.points[n - 2]
+      let dx = x1 - x0 // reversed
+      let dy = y1 - y0 // reversed
+      const l = Math.hypot(dx, dy)
+      dx /= l
+      dy /= l
+      this.points[n - 1].x = x0 - dx * amount
+      this.points[n - 1].y = y0 - dy * amount
+    }
     return this
   }
 
