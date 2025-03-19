@@ -17,9 +17,11 @@ export declare function aStar<Node>({ start, goal, getNeighbors, heuristic }: AS
 type Link<Node> = {
     a: Node;
     b: Node;
-    cost: number;
+    costAB: number;
+    costBA: number;
 };
 type Graph<Node> = {
+    nodes(): Iterable<Node>;
     links(): Iterable<Link<Node>>;
     getNeighbors: (node: Node) => Iterable<{
         node: Node;
@@ -34,13 +36,25 @@ type Graph2Node = {
 };
 export declare class Graph2<Node extends Graph2Node> implements Graph<Node> {
     #private;
-    links: () => Set<Link<Node>>;
+    nodes: () => MapIterator<Node>;
+    links: () => SetIterator<Link<Node>>;
+    heuristic: (a: Node, b: Node) => number;
     getNeighbors: (node: Node) => Iterable<{
         node: Node;
         cost: number;
     }>;
-    heuristic: (a: Node, b: Node) => number;
     constructor(nodes: Iterable<Node>, { 
+    /**
+     * Delegate to compute the cost of moving from node `a` to node `b`.
+     * By default, it computes the euclidean distance between the two nodes.
+     *
+     * NOTE: The heuristic will be called twice for each link, once for `a` to `b`
+     * and once for `b` to `a`. Results may differ if the heuristic is not symmetric.
+     */
+    heuristic, }?: {
+        heuristic?: ((a: Node, b: Node) => number) | undefined;
+    });
+    computeLinks({ 
     /**
      * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
      * Default is 1.
@@ -50,17 +64,11 @@ export declare class Graph2<Node extends Graph2Node> implements Graph<Node> {
      * Delegate to determine if two nodes are neighbors.
      * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
      */
-    areNeighbors, 
-    /**
-     * Delegate to compute the cost of moving from node `a` to node `b`.
-     * By default, it computes the euclidean distance between the two nodes.
-     */
-    heuristic, }?: {
+    areNeighbors, }?: {
         gridStep?: number | undefined;
         areNeighbors?: ((a: Node, b: Node) => boolean) | undefined;
-        heuristic?: ((a: Node, b: Node) => number) | undefined;
-    });
-    findLink(a: Node, b: Node): Link<Node> | undefined;
+    }): this;
+    findLink(a: Node, b: Node): Link<Node> | null | undefined;
     findPath(start: Node, goal: Node): Node[];
     pathIsValid(path: Node[]): boolean;
 }

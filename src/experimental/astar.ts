@@ -65,10 +65,12 @@ function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[]
 type Link<Node> = {
   a: Node
   b: Node
-  cost: number
+  costAB: number
+  costBA: number
 }
 
 type Graph<Node> = {
+  nodes(): Iterable<Node>
   links(): Iterable<Link<Node>>
   getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
   heuristic: (a: Node, b: Node) => number
@@ -84,11 +86,43 @@ export class Graph2<Node extends Graph2Node> implements Graph<Node> {
   #map = new Map<Node, Set<Link<Node>>>()
   #links = new Set<Link<Node>>()
 
-  links = () => this.#links
-  getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
+  nodes = () => this.#map.keys()
+  links = () => this.#links.values()
+
   heuristic: (a: Node, b: Node) => number
+  getNeighbors: (node: Node) => Iterable<{ node: Node; cost: number }>
 
   constructor(nodes: Iterable<Node>, {
+    /**
+     * Delegate to compute the cost of moving from node `a` to node `b`.
+     * By default, it computes the euclidean distance between the two nodes.
+     * 
+     * NOTE: The heuristic will be called twice for each link, once for `a` to `b`
+     * and once for `b` to `a`. Results may differ if the heuristic is not symmetric.
+     */
+    heuristic = (a: Node, b: Node) => distance2(a.getPosition(), b.getPosition()),
+  } = {}) {
+    const map = this.#map
+    for (const node of nodes) {
+      map.set(node, new Set())
+    }
+
+    this.heuristic = heuristic
+
+    // To implement the Graph interface, getNeighbors must be binded to this instance
+    this.getNeighbors = function* (node: Node): Generator<{ node: Node, cost: number }> {
+      const links = map.get(node)
+      if (!links)
+        return
+      for (const { a, b, costAB, costBA } of links) {
+        yield a === node
+          ? { node: b, cost: costAB }
+          : { node: a, cost: costBA }
+      }
+    }
+  }
+
+  computeLinks({
     /**
      * The grid step used to determine if two nodes are neighbors (useless if `areNeighbors` is provided).
      * Default is 1.
@@ -99,54 +133,45 @@ export class Graph2<Node extends Graph2Node> implements Graph<Node> {
      * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
      */
     areNeighbors = (a: Node, b: Node) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001,
-    /**
-     * Delegate to compute the cost of moving from node `a` to node `b`.
-     * By default, it computes the euclidean distance between the two nodes.
-     */
-    heuristic = (a: Node, b: Node) => distance2(a.getPosition(), b.getPosition()),
   } = {}) {
     const map = this.#map
     const links = this.#links
+    const { heuristic } = this
 
-    for (const node of nodes) {
-      map.set(node, new Set())
+    for (const node of map.keys()) {
+      map.get(node)!.clear()
     }
 
     const processed = new Set<Node>()
-    for (const node of nodes) {
-      for (const other of nodes) {
+    for (const node of map.keys()) {
+      for (const other of map.keys()) {
         if (node === other || processed.has(other))
           continue
 
         if (areNeighbors(node, other)) {
-          const cost = heuristic(node, other)
-          const link = { a: node, b: other, cost }
-          map.get(node)!.add(link)
-          map.get(other)!.add(link)
+          const a = node
+          const b = other
+          const costAB = heuristic(a, b)
+          const costBA = heuristic(b, a)
+          const link = { a, b, costAB, costBA }
+          map.get(a)!.add(link)
+          map.get(b)!.add(link)
           links.add(link)
         }
       }
       processed.add(node)
     }
 
-    this.getNeighbors = function* getNeighbors(node: Node): Generator<{ node: Node, cost: number }> {
-      const links = map.get(node)
-      if (!links) return
-      for (const { a, b, cost } of links) {
-        yield a === node ? { node: b, cost } : { node: a, cost }
-      }
-    }
-
-    this.heuristic = heuristic
+    return this
   }
 
   findLink(a: Node, b: Node) {
     const links = this.#map.get(a)
-    if (!links) return
+    if (!links)
+      return null
     for (const link of links) {
-      if (link.a === b || link.b === b) {
+      if (link.a === b || link.b === b)
         return link
-      }
     }
   }
 
