@@ -20,7 +20,7 @@ declare const roundCornerOptionsDefaults: {
 type RoundCornerOptions = Partial<typeof roundCornerOptionsDefaults>;
 type RoundCornerDelegate = (info: {
     point: Vector2Like;
-    cross: number;
+    angle: number;
     line1: Line2;
     line2: Line2;
 }) => RoundCornerOptions;
@@ -40,6 +40,7 @@ export declare class LinearPath2<T extends Vector2Like = Vector2Like> {
     simplify(options?: Parameters<typeof simplify>[2]): this;
     offset(amount: number): this;
     outline(width: number): this;
+    extend(amount: number): this;
     transform(...values: Transform2Declaration[]): this;
     roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions): this;
 }
