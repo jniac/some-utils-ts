@@ -26,6 +26,21 @@ type AStarParams<Node> = {
  * - neighbors and heuristic cost are provided by delegates.
  */
 export declare function aStar<Node>(params: AStarParams<Node>): Node[];
+export declare class AStar<Node> implements AStarHookInfo<Node> {
+    openSet: Set<Node>;
+    cameFrom: Map<Node, Node>;
+    gScore: Map<Node, number>;
+    fScore: Map<Node, number>;
+    params: AStarParams<Node>;
+    start: Node;
+    goal: Node;
+    current: Node;
+    neighbor: Node;
+    wayback: (count?: number) => Generator<Node, any, any>;
+    constructor(params: AStarParams<Node>);
+    next(): Node[] | null;
+    solve(): Node[];
+}
 type Link<Node> = {
     a: Node;
     b: Node;

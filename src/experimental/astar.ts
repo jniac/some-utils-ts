@@ -113,6 +113,84 @@ function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[]
   return [...wayback(current, cameFrom)].reverse()
 }
 
+export class AStar<Node> implements AStarHookInfo<Node> {
+  openSet = new Set<Node>()
+  cameFrom = new Map<Node, Node>()
+  gScore = new Map<Node, number>()
+  fScore = new Map<Node, number>()
+
+  params: AStarParams<Node>
+
+  start: Node
+  goal: Node
+  current: Node
+  neighbor: Node
+  wayback: (count?: number) => Generator<Node, any, any>
+
+  constructor(params: AStarParams<Node>) {
+    this.params = params
+
+    const { start, goal, heuristic } = params
+    this.current = start
+    this.neighbor = start
+    this.openSet.add(start)
+    this.gScore.set(start, 0)
+    this.fScore.set(start, heuristic(start, goal))
+
+    this.start = start
+    this.goal = goal
+    this.wayback = (count = Infinity) => wayback(this.current, this.cameFrom, count)
+  }
+
+  next(): Node[] | null {
+    if (this.openSet.size === 0) return null
+
+    let lowest: Node | undefined = undefined
+    let currentFScore = Infinity
+
+    for (const node of this.openSet) {
+      const score = this.fScore.get(node) ?? Infinity
+      if (score < currentFScore) {
+        lowest = node
+        currentFScore = score
+      }
+    }
+
+    if (!lowest) return null
+    this.current = lowest
+
+    if (this.current === this.params.goal) {
+      return reconstructPath(this.cameFrom, this.current)
+    }
+
+    this.openSet.delete(this.current)
+    for (const { node, cost: defaultCost } of this.params.getNeighbors(this.current)) {
+      this.neighbor = node
+      const cost = this.params.customNeighborHeuristic?.(this) ?? defaultCost
+      const tentativeGScore = (this.gScore.get(this.current) ?? Infinity) + cost
+
+      if (tentativeGScore < (this.gScore.get(this.neighbor) ?? Infinity)) {
+        this.cameFrom.set(this.neighbor, this.current)
+        this.gScore.set(this.neighbor, tentativeGScore)
+        this.fScore.set(this.neighbor, tentativeGScore + this.params.heuristic(this.neighbor, this.params.goal))
+        this.openSet.add(this.neighbor)
+      }
+    }
+    return null
+  }
+
+  solve(): Node[] {
+    const { openSet } = this
+    while (openSet.size > 0) {
+      const path = this.next()
+      if (path)
+        return path
+    }
+    return []
+  }
+}
+
+
 type Link<Node> = {
   a: Node
   b: Node
@@ -224,13 +302,14 @@ export class Graph2<Node extends Vector2Like> implements Graph<Node> {
 
   findPath(start: Node, goal: Node, customNeighborHeuristic?: (info: AStarHookInfo<Node>) => number): Node[] {
     const { getNeighbors, heuristic } = this
-    return aStar({
+    const astar = new AStar({
       start,
       goal,
       getNeighbors,
       heuristic,
       customNeighborHeuristic,
     })
+    return astar.solve()
   }
 
   pathIsValid(path: Node[]): boolean {
