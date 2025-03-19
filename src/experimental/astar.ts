@@ -2,11 +2,25 @@ import { pairwise } from '../iteration/utils'
 import { distance2, manhattanDistance2 } from '../math/geom/geom2'
 import { Vector2Like } from '../types'
 
+type AStarHookInfo<Node> = {
+  neighbor: Node
+  start: Node
+  goal: Node
+  wayback: (count?: number) => Generator<Node>
+}
+
 type AStarParams<Node> = {
   start: Node
   goal: Node
   getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
   heuristic: (node: Node, goal: Node) => number
+
+  /**
+   * Custom hook to compute the heuristic cost of a neighbor.
+   * If provided, this hook will be called for each neighbor of the current node,
+   * and the result will be used instead of the default heuristic cost.
+   */
+  customNeighborHeuristic?: (info: AStarHookInfo<Node>) => number
 }
 
 /**
@@ -14,32 +28,59 @@ type AStarParams<Node> = {
  * - `Node` is the type of the nodes in the graph, could be anything.
  * - neighbors and heuristic cost are provided by delegates.
  */
-export function aStar<Node>({ start, goal, getNeighbors, heuristic }: AStarParams<Node>): Node[] {
+export function aStar<Node>(params: AStarParams<Node>): Node[] {
+  const { start, goal, getNeighbors, heuristic, customNeighborHeuristic } = params
   const openSet = new Set<Node>([start])
   const cameFrom = new Map<Node, Node>()
+
+  /**
+   * gScore = cost of the cheapest path from start to node
+   */
   const gScore = new Map<Node, number>()
   gScore.set(start, 0)
+
+  let current = start, neighbor = start
+  const info: AStarHookInfo<Node> = {
+    start,
+    goal,
+    get neighbor() { return neighbor },
+    wayback: (count = Infinity) => wayback(current, cameFrom, count),
+  }
+
+  /**
+   * fScore = gScore + heuristic
+   */
   const fScore = new Map<Node, number>()
   fScore.set(start, heuristic(start, goal))
 
   while (openSet.size > 0) {
-    let current: Node | undefined = undefined
+    let lowest: Node | undefined = undefined
     let currentFScore = Infinity
+
+    // Find the node in openSet having the lowest fScore
     for (const node of openSet) {
       const score = fScore.get(node) ?? Infinity
       if (score < currentFScore) {
-        current = node
+        lowest = node
         currentFScore = score
       }
     }
-    if (!current) break
 
-    if (current === goal) {
+    if (!lowest)
+      break
+
+    current = lowest
+
+    if (current === goal)
       return reconstructPath(cameFrom, current)
-    }
 
     openSet.delete(current)
-    for (const { node: neighbor, cost } of getNeighbors(current)) {
+    for (const { node, cost: defaultCost } of getNeighbors(current)) {
+      neighbor = node
+
+      // If a custom heuristic is provided, use it to compute the cost of moving to the neighbor
+      const cost = customNeighborHeuristic?.(info) ?? defaultCost
+
       const tentativeGScore = (gScore.get(current) ?? Infinity) + cost
       if (tentativeGScore < (gScore.get(neighbor) ?? Infinity)) {
         cameFrom.set(neighbor, current)
@@ -53,13 +94,23 @@ export function aStar<Node>({ start, goal, getNeighbors, heuristic }: AStarParam
   return [] // No path found
 }
 
-function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[] {
-  const path = [current]
-  while (cameFrom.has(current)) {
-    current = cameFrom.get(current)!
-    path.push(current)
+function* wayback<Node>(current: Node, cameFrom: Map<Node, Node>, countMax = Infinity): Generator<Node> {
+  let count = 0
+  while (count++ < countMax) {
+    yield current
+    const next = cameFrom.get(current)
+    if (next === undefined)
+      break
+    current = next
+    if (count > 1000) {
+      console.log(count)
+      throw new Error('Infinite loop?')
+    }
   }
-  return path.reverse()
+}
+
+function reconstructPath<Node>(cameFrom: Map<Node, Node>, current: Node): Node[] {
+  return [...wayback(current, cameFrom)].reverse()
 }
 
 type Link<Node> = {
@@ -171,13 +222,14 @@ export class Graph2<Node extends Vector2Like> implements Graph<Node> {
     }
   }
 
-  findPath(start: Node, goal: Node) {
+  findPath(start: Node, goal: Node, customNeighborHeuristic?: (info: AStarHookInfo<Node>) => number): Node[] {
     const { getNeighbors, heuristic } = this
     return aStar({
       start,
       goal,
       getNeighbors,
       heuristic,
+      customNeighborHeuristic,
     })
   }
 
