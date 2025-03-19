@@ -1,6 +1,12 @@
 import { fromAngleDeclaration, fromVector2Declaration } from '../../declaration.js';
 import { bezier2, cubicBezierArcControlPoints } from './bezier.js';
 import { Line2 } from './line2.js';
+function cloneVector2Like(p) {
+    const v = new p.constructor();
+    v.x = p.x;
+    v.y = p.y;
+    return v;
+}
 function fromTransform2Declaration(value, out = [0, 0, 0, 0, 0, 0, 0, 0, 0], rowMajor = true) {
     if (Array.isArray(value)) {
         if (value.length === 9 && value.every((v) => typeof v === 'number')) {
@@ -52,24 +58,95 @@ function transform(points, matrix3, rowMajor = true) {
         }
     }
 }
-function offset(points, amount) {
+const _p0 = { x: 0, y: 0 };
+const _p1 = { x: 0, y: 0 };
+const _line1 = new Line2();
+const _line2 = new Line2();
+function simplify(points, closed, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}) {
+    return points
+        // Remove duplicate points
+        .filter((p, i, points) => {
+        const { x: x0, y: y0 } = points[i === 0 ? points.length - 1 : i - 1];
+        const { x: x1, y: y1 } = p;
+        return Math.abs(x1 - x0) > distanceThresold || Math.abs(y1 - y0) > distanceThresold;
+    })
+        // Remove collinear points
+        .filter((p, i, points) => {
+        const n = points.length;
+        if (closed === false && (i === 0 || i === n - 1))
+            return true;
+        const p0 = points[(i + n - 1) % n];
+        const p1 = points[(i + 1) % n];
+        _line1.fromStartEnd(p0, p);
+        _line2.fromStartEnd(p, p1);
+        const angle = _line1.angleTo(_line2);
+        return Math.abs(angle) > angleThreshold;
+    });
+}
+function offsetClosedPath(points, amount) {
+    if (points.length < 2)
+        return points.map(cloneVector2Like);
     const constructor = points[0].constructor;
-    const result = [];
     const n = points.length;
-    const line1 = new Line2();
-    const line2 = new Line2();
+    const result = new Array(n);
     for (let i = 0; i < n; i++) {
         const p = new constructor();
-        result.push(p);
+        result[i] = p;
         const a = points[(i + n - 1) % n];
         const b = points[i];
         const c = points[(i + 1) % n];
-        line1.fromStartEnd(a, b).offset(amount);
-        line2.fromStartEnd(b, c).offset(amount);
-        if (line1.intersection(line2, { out: p }) === null) {
-            // parallel / collinear
-            p.x = line2.ox;
-            p.y = line2.oy;
+        _line1.fromStartEnd(a, b).offset(amount);
+        _line2.fromStartEnd(b, c).offset(amount);
+        if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
+            p.x = _line2.ox;
+            p.y = _line2.oy;
+        }
+    }
+    return result;
+}
+function offsetOpenPath(points, amount) {
+    if (points.length < 2)
+        return points.map(cloneVector2Like);
+    const constructor = points[0].constructor;
+    const n = points.length;
+    const result = new Array(n);
+    {
+        const { x: x0, y: y0 } = points[0];
+        const { x: x1, y: y1 } = points[1];
+        let dx = x1 - x0;
+        let dy = y1 - y0;
+        const l = Math.hypot(dx, dy);
+        dx /= l;
+        dy /= l;
+        const p = new constructor();
+        p.x = x0 + dy * amount;
+        p.y = y0 - dx * amount;
+        result[0] = p;
+    }
+    {
+        const { x: x0, y: y0 } = points[n - 1];
+        const { x: x1, y: y1 } = points[n - 2];
+        let dx = x0 - x1; // reversed
+        let dy = y0 - y1; // reversed
+        const l = Math.hypot(dx, dy);
+        dx /= l;
+        dy /= l;
+        const p = new constructor();
+        p.x = x0 + dy * amount;
+        p.y = y0 - dx * amount;
+        result[n - 1] = p;
+    }
+    for (let i = 1; i < n - 1; i++) {
+        const p = new constructor();
+        result[i] = p;
+        const a = points[(i + n - 1) % n];
+        const b = points[i];
+        const c = points[(i + 1) % n];
+        _line1.fromStartEnd(a, b).offset(amount);
+        _line2.fromStartEnd(b, c).offset(amount);
+        if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
+            p.x = _line2.ox;
+            p.y = _line2.oy;
         }
     }
     return result;
@@ -147,49 +224,53 @@ function roundCorner(points, delegate) {
 }
 export class LinearPath2 {
     points;
-    constructor(points = []) {
+    closed;
+    constructor(points = [], closed = true) {
         this.points = points;
+        this.closed = closed;
     }
-    from(points, { pointType = Object, } = {}) {
+    from(points, closed = this.closed, { pointType = Object, } = {}) {
         this.points = points.map(p => fromVector2Declaration(p, new pointType()));
+        this.closed = closed;
         return this;
     }
     copy(source) {
-        this.points = source.points.map(p => ({ ...p }));
+        this.points = source.points.map(cloneVector2Like);
+        this.closed = source.closed;
         return this;
     }
     clone() {
-        return new LinearPath2(this.points.map(p => ({ ...p })));
+        return new LinearPath2().copy(this);
     }
-    set(points) {
+    set(points, closed = this.closed) {
         this.points = points;
+        this.closed = closed;
         return this;
     }
-    clean({ threshold = 1e-4 } = {}) {
-        this.points = this.points
-            // Remove duplicate points
-            .filter((p, i, points) => {
-            const { x: x0, y: y0 } = points[i === 0 ? points.length - 1 : i - 1];
-            const { x: x1, y: y1 } = p;
-            return Math.abs(x1 - x0) > threshold || Math.abs(y1 - y0) > threshold;
-        })
-            // Remove collinear points
-            .filter((p, i, points) => {
-            if (i === 0 || i === points.length - 1)
-                return true;
-            const { x: x0, y: y0 } = points[i - 1];
-            const { x: x1, y: y1 } = p;
-            const { x: x2, y: y2 } = points[i + 1];
-            const dx1 = x1 - x0;
-            const dy1 = y1 - y0;
-            const dx2 = x2 - x1;
-            const dy2 = y2 - y1;
-            return Math.abs(dx1 * dy2 - dx2 * dy1) > threshold;
-        });
+    /**
+     * Removes duplicate and collinear points.
+     */
+    simplify(options) {
+        this.points = simplify(this.points, this.closed, options);
         return this;
     }
     offset(amount) {
-        this.points = offset(this.points, amount);
+        if (this.closed) {
+            this.points = offsetClosedPath(this.points, amount);
+        }
+        else {
+            this.points = offsetOpenPath(this.points, amount);
+        }
+        return this;
+    }
+    outline(width) {
+        if (this.closed === false)
+            throw new Error('Cannot outline an open path');
+        this.points = [
+            ...offsetOpenPath(this.points, width / 2),
+            ...offsetOpenPath(this.points, -width / 2).reverse(),
+        ];
+        this.closed = false;
         return this;
     }
     transform(...values) {

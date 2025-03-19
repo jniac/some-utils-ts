@@ -3,6 +3,13 @@ import { Vector2Like } from '../../types'
 import { bezier2, cubicBezierArcControlPoints } from './bezier'
 import { Line2 } from './line2'
 
+function cloneVector2Like<T extends Vector2Like>(p: T): T {
+  const v = new (p.constructor as { new(): T })()
+  v.x = p.x
+  v.y = p.y
+  return v
+}
+
 export type Transform2Declaration = number[] | Partial<{
   x: number
   y: number
@@ -68,25 +75,105 @@ function transform<T extends Vector2Like>(points: T[], matrix3: number[], rowMaj
   }
 }
 
-function offset<T extends Vector2Like>(points: T[], amount: number): T[] {
+const _p0: Vector2Like = { x: 0, y: 0 }
+const _p1: Vector2Like = { x: 0, y: 0 }
+const _line1 = new Line2()
+const _line2 = new Line2()
+
+function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}): T[] {
+  return points
+    // Remove duplicate points
+    .filter((p, i, points) => {
+      const { x: x0, y: y0 } = points[i === 0 ? points.length - 1 : i - 1]
+      const { x: x1, y: y1 } = p
+      return Math.abs(x1 - x0) > distanceThresold || Math.abs(y1 - y0) > distanceThresold
+    })
+    // Remove collinear points
+    .filter((p, i, points) => {
+      const n = points.length
+      if (closed === false && (i === 0 || i === n - 1))
+        return true
+
+      const p0 = points[(i + n - 1) % n]
+      const p1 = points[(i + 1) % n]
+
+      _line1.fromStartEnd(p0, p)
+      _line2.fromStartEnd(p, p1)
+      const angle = _line1.angleTo(_line2)
+      return Math.abs(angle) > angleThreshold
+    })
+}
+
+function offsetClosedPath<T extends Vector2Like>(points: T[], amount: number): T[] {
+  if (points.length < 2)
+    return points.map(cloneVector2Like)
+
   const constructor = points[0].constructor as { new(): T }
-  const result: T[] = []
   const n = points.length
-  const line1 = new Line2()
-  const line2 = new Line2()
+  const result: T[] = new Array(n)
   for (let i = 0; i < n; i++) {
     const p = new constructor()
-    result.push(p)
-
+    result[i] = p
     const a = points[(i + n - 1) % n]
     const b = points[i]
     const c = points[(i + 1) % n]
-    line1.fromStartEnd(a, b).offset(amount)
-    line2.fromStartEnd(b, c).offset(amount)
-    if (line1.intersection(line2, { out: p }) === null) {
-      // parallel / collinear
-      p.x = line2.ox
-      p.y = line2.oy
+    _line1.fromStartEnd(a, b).offset(amount)
+    _line2.fromStartEnd(b, c).offset(amount)
+    if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
+      p.x = _line2.ox
+      p.y = _line2.oy
+    }
+  }
+  return result
+}
+
+function offsetOpenPath<T extends Vector2Like>(points: T[], amount: number): T[] {
+  if (points.length < 2)
+    return points.map(cloneVector2Like)
+
+  const constructor = points[0].constructor as { new(): T }
+  const n = points.length
+  const result: T[] = new Array(n)
+
+  {
+    const { x: x0, y: y0 } = points[0]
+    const { x: x1, y: y1 } = points[1]
+    let dx = x1 - x0
+    let dy = y1 - y0
+    const l = Math.hypot(dx, dy)
+    dx /= l
+    dy /= l
+    const p = new constructor()
+    p.x = x0 + dy * amount
+    p.y = y0 - dx * amount
+    result[0] = p
+  }
+
+  {
+    const { x: x0, y: y0 } = points[n - 1]
+    const { x: x1, y: y1 } = points[n - 2]
+    let dx = x0 - x1 // reversed
+    let dy = y0 - y1 // reversed
+    const l = Math.hypot(dx, dy)
+    dx /= l
+    dy /= l
+    const p = new constructor()
+    p.x = x0 + dy * amount
+    p.y = y0 - dx * amount
+    result[n - 1] = p
+  }
+
+  for (let i = 1; i < n - 1; i++) {
+    const p = new constructor()
+    result[i] = p
+    const a = points[(i + n - 1) % n]
+    const b = points[i]
+    const c = points[(i + 1) % n]
+    _line1.fromStartEnd(a, b).offset(amount)
+    _line2.fromStartEnd(b, c).offset(amount)
+    if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
+      p.x = _line2.ox
+      p.y = _line2.oy
     }
   }
   return result
@@ -177,62 +264,62 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
 
 export class LinearPath2<T extends Vector2Like = Vector2Like> {
   points: T[]
+  closed: boolean
 
-  constructor(points: T[] = []) {
+  constructor(points: T[] = [], closed = true) {
     this.points = points
+    this.closed = closed
   }
 
-  from(points: Vector2Declaration[], {
+  from(points: Vector2Declaration[], closed = this.closed, {
     pointType = Object as unknown as { new(): Vector2Like },
   } = {}): this {
     this.points = points.map(p => fromVector2Declaration(p, new pointType()) as T)
+    this.closed = closed
     return this
   }
 
   copy(source: LinearPath2<T>): this {
-    this.points = source.points.map(p => ({ ...p }))
+    this.points = source.points.map(cloneVector2Like)
+    this.closed = source.closed
     return this
   }
 
   clone(): LinearPath2<T> {
-    return new LinearPath2(this.points.map(p => ({ ...p })))
+    return new LinearPath2<T>().copy(this)
   }
 
-  set(points: T[]): this {
+  set(points: T[], closed = this.closed): this {
     this.points = points
+    this.closed = closed
     return this
   }
 
-  clean({ threshold = 1e-4 } = {}): this {
-    this.points = this.points
-      // Remove duplicate points
-      .filter((p, i, points) => {
-        const { x: x0, y: y0 } = points[i === 0 ? points.length - 1 : i - 1]
-        const { x: x1, y: y1 } = p
-
-        return Math.abs(x1 - x0) > threshold || Math.abs(y1 - y0) > threshold
-      })
-      // Remove collinear points
-      .filter((p, i, points) => {
-        if (i === 0 || i === points.length - 1)
-          return true
-
-        const { x: x0, y: y0 } = points[i - 1]
-        const { x: x1, y: y1 } = p
-        const { x: x2, y: y2 } = points[i + 1]
-
-        const dx1 = x1 - x0
-        const dy1 = y1 - y0
-        const dx2 = x2 - x1
-        const dy2 = y2 - y1
-
-        return Math.abs(dx1 * dy2 - dx2 * dy1) > threshold
-      })
+  /**
+   * Removes duplicate and collinear points.
+   */
+  simplify(options?: Parameters<typeof simplify>[2]): this {
+    this.points = simplify(this.points, this.closed, options)
     return this
   }
 
   offset(amount: number): this {
-    this.points = offset(this.points, amount)
+    if (this.closed) {
+      this.points = offsetClosedPath(this.points, amount)
+    } else {
+      this.points = offsetOpenPath(this.points, amount)
+    }
+    return this
+  }
+
+  outline(width: number): this {
+    if (this.closed === false)
+      throw new Error('Cannot outline an open path')
+    this.points = [
+      ...offsetOpenPath(this.points, width / 2),
+      ...offsetOpenPath(this.points, -width / 2).reverse(),
+    ]
+    this.closed = false
     return this
   }
 

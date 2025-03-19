@@ -50,6 +50,9 @@ export type RectangleDeclaration = [x: number, y: number, width: number, height:
     aspect: number;
     diagonal: number;
 }> | WithAlignOption<{
+    center?: Vector2Declaration;
+    extent: number | Vector2Declaration;
+}> | WithAlignOption<{
     position?: Vector2Declaration;
     extent: number | Vector2Declaration;
 }> | WithAlignOption<{

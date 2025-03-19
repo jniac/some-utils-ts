@@ -8,6 +8,10 @@ export type Transform2Declaration = number[] | Partial<{
     scale: Vector2Declaration;
     rotation: AngleDeclaration;
 }>;
+declare function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold, angleThreshold }?: {
+    distanceThresold?: number | undefined;
+    angleThreshold?: number | undefined;
+}): T[];
 declare const roundCornerOptionsDefaults: {
     tension: number;
     resolution: number;
@@ -22,17 +26,20 @@ type RoundCornerDelegate = (info: {
 }) => RoundCornerOptions;
 export declare class LinearPath2<T extends Vector2Like = Vector2Like> {
     points: T[];
-    constructor(points?: T[]);
-    from(points: Vector2Declaration[], { pointType, }?: {
+    closed: boolean;
+    constructor(points?: T[], closed?: boolean);
+    from(points: Vector2Declaration[], closed?: boolean, { pointType, }?: {
         pointType?: (new () => Vector2Like) | undefined;
     }): this;
     copy(source: LinearPath2<T>): this;
     clone(): LinearPath2<T>;
-    set(points: T[]): this;
-    clean({ threshold }?: {
-        threshold?: number | undefined;
-    }): this;
+    set(points: T[], closed?: boolean): this;
+    /**
+     * Removes duplicate and collinear points.
+     */
+    simplify(options?: Parameters<typeof simplify>[2]): this;
     offset(amount: number): this;
+    outline(width: number): this;
     transform(...values: Transform2Declaration[]): this;
     roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions): this;
 }
