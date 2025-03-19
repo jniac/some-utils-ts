@@ -145,7 +145,7 @@ function roundCorner(points, delegate) {
     }
     return result;
 }
-export class Path2 {
+export class LinearPath2 {
     points;
     constructor(points = []) {
         this.points = points;
@@ -159,7 +159,7 @@ export class Path2 {
         return this;
     }
     clone() {
-        return new Path2(this.points.map(p => ({ ...p })));
+        return new LinearPath2(this.points.map(p => ({ ...p })));
     }
     set(points) {
         this.points = points;

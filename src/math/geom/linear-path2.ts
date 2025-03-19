@@ -175,7 +175,7 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
   return result
 }
 
-export class Path2<T extends Vector2Like = Vector2Like> {
+export class LinearPath2<T extends Vector2Like = Vector2Like> {
   points: T[]
 
   constructor(points: T[] = []) {
@@ -189,13 +189,13 @@ export class Path2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  copy(source: Path2<T>): this {
+  copy(source: LinearPath2<T>): this {
     this.points = source.points.map(p => ({ ...p }))
     return this
   }
 
-  clone(): Path2<T> {
-    return new Path2(this.points.map(p => ({ ...p })))
+  clone(): LinearPath2<T> {
+    return new LinearPath2(this.points.map(p => ({ ...p })))
   }
 
   set(points: T[]): this {

@@ -20,14 +20,14 @@ type RoundCornerDelegate = (info: {
     line1: Line2;
     line2: Line2;
 }) => RoundCornerOptions;
-export declare class Path2<T extends Vector2Like = Vector2Like> {
+export declare class LinearPath2<T extends Vector2Like = Vector2Like> {
     points: T[];
     constructor(points?: T[]);
     from(points: Vector2Declaration[], { pointType, }?: {
         pointType?: (new () => Vector2Like) | undefined;
     }): this;
-    copy(source: Path2<T>): this;
-    clone(): Path2<T>;
+    copy(source: LinearPath2<T>): this;
+    clone(): LinearPath2<T>;
     set(points: T[]): this;
     clean({ threshold }?: {
         threshold?: number | undefined;
