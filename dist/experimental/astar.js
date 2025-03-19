@@ -5,30 +5,48 @@ import { distance2, manhattanDistance2 } from '../math/geom/geom2.js';
  * - `Node` is the type of the nodes in the graph, could be anything.
  * - neighbors and heuristic cost are provided by delegates.
  */
-export function aStar({ start, goal, getNeighbors, heuristic }) {
+export function aStar(params) {
+    const { start, goal, getNeighbors, heuristic, customNeighborHeuristic } = params;
     const openSet = new Set([start]);
     const cameFrom = new Map();
+    /**
+     * gScore = cost of the cheapest path from start to node
+     */
     const gScore = new Map();
     gScore.set(start, 0);
+    let current = start, neighbor = start;
+    const info = {
+        start,
+        goal,
+        get neighbor() { return neighbor; },
+        wayback: (count = Infinity) => wayback(current, cameFrom, count),
+    };
+    /**
+     * fScore = gScore + heuristic
+     */
     const fScore = new Map();
     fScore.set(start, heuristic(start, goal));
     while (openSet.size > 0) {
-        let current = undefined;
+        let lowest = undefined;
         let currentFScore = Infinity;
+        // Find the node in openSet having the lowest fScore
         for (const node of openSet) {
             const score = fScore.get(node) ?? Infinity;
             if (score < currentFScore) {
-                current = node;
+                lowest = node;
                 currentFScore = score;
             }
         }
-        if (!current)
+        if (!lowest)
             break;
-        if (current === goal) {
+        current = lowest;
+        if (current === goal)
             return reconstructPath(cameFrom, current);
-        }
         openSet.delete(current);
-        for (const { node: neighbor, cost } of getNeighbors(current)) {
+        for (const { node, cost: defaultCost } of getNeighbors(current)) {
+            neighbor = node;
+            // If a custom heuristic is provided, use it to compute the cost of moving to the neighbor
+            const cost = customNeighborHeuristic?.(info) ?? defaultCost;
             const tentativeGScore = (gScore.get(current) ?? Infinity) + cost;
             if (tentativeGScore < (gScore.get(neighbor) ?? Infinity)) {
                 cameFrom.set(neighbor, current);
@@ -40,13 +58,22 @@ export function aStar({ start, goal, getNeighbors, heuristic }) {
     }
     return []; // No path found
 }
-function reconstructPath(cameFrom, current) {
-    const path = [current];
-    while (cameFrom.has(current)) {
-        current = cameFrom.get(current);
-        path.push(current);
+function* wayback(current, cameFrom, countMax = Infinity) {
+    let count = 0;
+    while (count++ < countMax) {
+        yield current;
+        const next = cameFrom.get(current);
+        if (next === undefined)
+            break;
+        current = next;
+        if (count > 1000) {
+            console.log(count);
+            throw new Error('Infinite loop?');
+        }
     }
-    return path.reverse();
+}
+function reconstructPath(cameFrom, current) {
+    return [...wayback(current, cameFrom)].reverse();
 }
 export class Graph2 {
     #map = new Map();
@@ -127,13 +154,14 @@ export class Graph2 {
                 return link;
         }
     }
-    findPath(start, goal) {
+    findPath(start, goal, customNeighborHeuristic) {
         const { getNeighbors, heuristic } = this;
         return aStar({
             start,
             goal,
             getNeighbors,
             heuristic,
+            customNeighborHeuristic,
         });
     }
     pathIsValid(path) {

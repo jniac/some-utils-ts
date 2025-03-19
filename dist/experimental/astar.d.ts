@@ -1,4 +1,10 @@
 import { Vector2Like } from '../types';
+type AStarHookInfo<Node> = {
+    neighbor: Node;
+    start: Node;
+    goal: Node;
+    wayback: (count?: number) => Generator<Node>;
+};
 type AStarParams<Node> = {
     start: Node;
     goal: Node;
@@ -7,13 +13,19 @@ type AStarParams<Node> = {
         cost: number;
     }>;
     heuristic: (node: Node, goal: Node) => number;
+    /**
+     * Custom hook to compute the heuristic cost of a neighbor.
+     * If provided, this hook will be called for each neighbor of the current node,
+     * and the result will be used instead of the default heuristic cost.
+     */
+    customNeighborHeuristic?: (info: AStarHookInfo<Node>) => number;
 };
 /**
  * Definitively generic A* pathfinding algorithm:
  * - `Node` is the type of the nodes in the graph, could be anything.
  * - neighbors and heuristic cost are provided by delegates.
  */
-export declare function aStar<Node>({ start, goal, getNeighbors, heuristic }: AStarParams<Node>): Node[];
+export declare function aStar<Node>(params: AStarParams<Node>): Node[];
 type Link<Node> = {
     a: Node;
     b: Node;
@@ -66,7 +78,7 @@ export declare class Graph2<Node extends Vector2Like> implements Graph<Node> {
         areNeighbors?: ((a: Node, b: Node) => boolean) | undefined;
     }): this;
     findLink(a: Node, b: Node): Link<Node> | null | undefined;
-    findPath(start: Node, goal: Node): Node[];
+    findPath(start: Node, goal: Node, customNeighborHeuristic?: (info: AStarHookInfo<Node>) => number): Node[];
     pathIsValid(path: Node[]): boolean;
 }
 export {};
