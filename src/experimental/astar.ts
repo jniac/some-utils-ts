@@ -78,11 +78,7 @@ type Graph<Node> = {
   pathIsValid(path: Node[]): boolean
 }
 
-type Graph2Node = {
-  getPosition(): Vector2Like
-}
-
-export class Graph2<Node extends Graph2Node> implements Graph<Node> {
+export class Graph2<Node extends Vector2Like> implements Graph<Node> {
   #map = new Map<Node, Set<Link<Node>>>()
   #links = new Set<Link<Node>>()
 
@@ -100,7 +96,7 @@ export class Graph2<Node extends Graph2Node> implements Graph<Node> {
      * NOTE: The heuristic will be called twice for each link, once for `a` to `b`
      * and once for `b` to `a`. Results may differ if the heuristic is not symmetric.
      */
-    heuristic = (a: Node, b: Node) => distance2(a.getPosition(), b.getPosition()),
+    heuristic = (a: Node, b: Node) => distance2(a, b),
   } = {}) {
     const map = this.#map
     for (const node of nodes) {
@@ -132,7 +128,7 @@ export class Graph2<Node extends Graph2Node> implements Graph<Node> {
      * Delegate to determine if two nodes are neighbors.
      * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
      */
-    areNeighbors = (a: Node, b: Node) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001,
+    areNeighbors = (a: Node, b: Node) => manhattanDistance2(a, b) <= gridStep + .0001,
   } = {}) {
     const map = this.#map
     const links = this.#links

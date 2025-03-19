@@ -31,10 +31,7 @@ type Graph<Node> = {
     findPath(start: Node, goal: Node): Node[];
     pathIsValid(path: Node[]): boolean;
 };
-type Graph2Node = {
-    getPosition(): Vector2Like;
-};
-export declare class Graph2<Node extends Graph2Node> implements Graph<Node> {
+export declare class Graph2<Node extends Vector2Like> implements Graph<Node> {
     #private;
     nodes: () => MapIterator<Node>;
     links: () => SetIterator<Link<Node>>;

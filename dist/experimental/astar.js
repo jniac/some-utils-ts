@@ -63,7 +63,7 @@ export class Graph2 {
      * NOTE: The heuristic will be called twice for each link, once for `a` to `b`
      * and once for `b` to `a`. Results may differ if the heuristic is not symmetric.
      */
-    heuristic = (a, b) => distance2(a.getPosition(), b.getPosition()), } = {}) {
+    heuristic = (a, b) => distance2(a, b), } = {}) {
         const map = this.#map;
         for (const node of nodes) {
             map.set(node, new Set());
@@ -91,7 +91,7 @@ export class Graph2 {
      * Delegate to determine if two nodes are neighbors.
      * By default, two nodes are neighbors if they are at most `gridStep` distance apart (manhattan distance).
      */
-    areNeighbors = (a, b) => manhattanDistance2(a.getPosition(), b.getPosition()) <= gridStep + .0001, } = {}) {
+    areNeighbors = (a, b) => manhattanDistance2(a, b) <= gridStep + .0001, } = {}) {
         const map = this.#map;
         const links = this.#links;
         const { heuristic } = this;
