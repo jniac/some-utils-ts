@@ -7,7 +7,10 @@ import { Observable, SetValueOptions } from './observable'
 type PartialChangeCallback<T, SubType> =
   (partialValue: SubType, partialValueOld: SubType, info: { observable: ObservableTree<T>, path: Path }) => void
 
-function wrap(path: string | Path, value: any) {
+/**
+ * Turn a path string or array into a nested object.
+ */
+function nested(path: string | Path, value: any) {
   if (typeof path === 'string') {
     path = path.split('.')
   }
@@ -71,7 +74,7 @@ export class ObservableTree<T> extends Observable<T> {
     }
 
     const { value: currentValue } = this
-    const mutationObject = Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation
+    const mutationObject = Array.isArray(mutation) ? nested(mutation[0], mutation[1]) : mutation
 
     // Check if the mutation is really mutating the tree.
     let doReallyMutate = false
@@ -102,7 +105,7 @@ export class ObservableTree<T> extends Observable<T> {
    */
   enqueueMutation(mutation: DeepPartial<T> | [path: string | Path, value: any]): this {
     this._pendingMutations ??= {} as DeepPartial<T>
-    deepAssign(this._pendingMutations, Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation)
+    deepAssign(this._pendingMutations, Array.isArray(mutation) ? nested(mutation[0], mutation[1]) : mutation)
     return this
   }
 
