@@ -1,7 +1,10 @@
 import { comparePaths, deepAssign, deepClone, deepGet, deepWalk } from '../object/deep.js';
 import { deepDiff, DeepDiffResult } from '../object/deep/diff.js';
 import { Observable } from './observable.js';
-function wrap(path, value) {
+/**
+ * Turn a path string or array into a nested object.
+ */
+function nested(path, value) {
     if (typeof path === 'string') {
         path = path.split('.');
     }
@@ -60,7 +63,7 @@ export class ObservableTree extends Observable {
             throw new Error('Mutation must be an object.');
         }
         const { value: currentValue } = this;
-        const mutationObject = Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation;
+        const mutationObject = Array.isArray(mutation) ? nested(mutation[0], mutation[1]) : mutation;
         // Check if the mutation is really mutating the tree.
         let doReallyMutate = false;
         deepWalk(mutationObject, {
@@ -87,7 +90,7 @@ export class ObservableTree extends Observable {
      */
     enqueueMutation(mutation) {
         this._pendingMutations ??= {};
-        deepAssign(this._pendingMutations, Array.isArray(mutation) ? wrap(mutation[0], mutation[1]) : mutation);
+        deepAssign(this._pendingMutations, Array.isArray(mutation) ? nested(mutation[0], mutation[1]) : mutation);
         return this;
     }
     /**

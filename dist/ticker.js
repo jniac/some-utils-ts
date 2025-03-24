@@ -408,7 +408,16 @@ export class Ticker {
         }
         return this;
     }
-    onTick(...args) {
+    /**
+     * Executes the callback on every tick (or less frequently if options are set).
+     *
+     * NOTE: `onTick` is bound to the ticker and can be used as a pure callback:
+     * ```
+     * const { onTick } = ticker
+     * onTick(() => console.log('Tick'))
+     * ```
+     */
+    onTick = (...args) => {
         function solveArgs(args) {
             if (args.length === 1) {
                 return [{}, args[0]];
@@ -449,7 +458,7 @@ export class Ticker {
             this.internal.updateRegister.remove(callback);
         };
         return { destroy, value: this };
-    }
+    };
     offTick(callback) {
         return this.internal.updateRegister.remove(callback);
     }

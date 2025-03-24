@@ -493,7 +493,16 @@ export class Ticker implements DestroyableObject {
     return this
   }
 
-  onTick(...args: OnTickParameters): DestroyableObject {
+  /**
+   * Executes the callback on every tick (or less frequently if options are set).
+   * 
+   * NOTE: `onTick` is bound to the ticker and can be used as a pure callback:
+   * ```
+   * const { onTick } = ticker
+   * onTick(() => console.log('Tick'))
+   * ```
+   */
+  onTick = (...args: OnTickParameters): DestroyableObject => {
     function solveArgs(args: any[]): [OnTickOptions, TickCallback] {
       if (args.length === 1) {
         return [{}, args[0]]

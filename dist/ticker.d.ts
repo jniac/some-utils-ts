@@ -237,7 +237,16 @@ export declare class Ticker implements DestroyableObject {
         minActiveDuration: number | null;
     };
     set(props: Partial<typeof Ticker.defaultProps & typeof Ticker.defaultSetOptions>): this;
-    onTick(...args: OnTickParameters): DestroyableObject;
+    /**
+     * Executes the callback on every tick (or less frequently if options are set).
+     *
+     * NOTE: `onTick` is bound to the ticker and can be used as a pure callback:
+     * ```
+     * const { onTick } = ticker
+     * onTick(() => console.log('Tick'))
+     * ```
+     */
+    onTick: (...args: OnTickParameters) => DestroyableObject;
     offTick(callback: TickCallback): boolean;
     onActivate(callback: TickCallback): DestroyableObject;
     onDeactivate(callback: TickCallback): DestroyableObject;
