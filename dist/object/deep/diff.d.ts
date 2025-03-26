@@ -26,6 +26,7 @@ export declare class DeepDiffResult<TypeA = any, TypeB = any> {
     getAChangeObject(): DeepPartial<TypeA>;
     getBChanges(): Generator<any[], void, unknown>;
     getBChangeObject(): DeepPartial<TypeB>;
+    info(): string;
 }
 /**
  * Compares two objects deeply and returns the differences in a diff object.

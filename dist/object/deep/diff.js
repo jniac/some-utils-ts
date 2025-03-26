@@ -64,6 +64,20 @@ export class DeepDiffResult {
         }
         return object;
     }
+    info() {
+        const lines = [
+            `Total changes: ${this.totalChangeCount}`,
+            `  Both changes (${this.bothChanges.length})`,
+            ...this.bothChanges.map(([path, aValue, bValue]) => `    ${path.join('.')} = ${aValue} → ${bValue}`),
+            '',
+            `  A only changes (${this.aOnlyChanges.length})`,
+            ...this.aOnlyChanges.map(([path, value]) => `    ${path.join('.')} = ${value}`),
+            '',
+            `  B only changes (${this.bOnlyChanges.length})`,
+            ...this.bOnlyChanges.map(([path, value]) => `    ${path.join('.')} = ${value}`),
+        ];
+        return lines.join('\n');
+    }
 }
 /**
  * Compares two objects deeply and returns the differences in a diff object.
