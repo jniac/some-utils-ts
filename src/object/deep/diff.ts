@@ -76,6 +76,21 @@ export class DeepDiffResult<TypeA = any, TypeB = any> {
     }
     return object as DeepPartial<TypeB>
   }
+
+  info() {
+    const lines = [
+      `Total changes: ${this.totalChangeCount}`,
+      `  Both changes (${this.bothChanges.length})`,
+      ...this.bothChanges.map(([path, aValue, bValue]) => `    ${path.join('.')} = ${aValue} → ${bValue}`),
+      '',
+      `  A only changes (${this.aOnlyChanges.length})`,
+      ...this.aOnlyChanges.map(([path, value]) => `    ${path.join('.')} = ${value}`),
+      '',
+      `  B only changes (${this.bOnlyChanges.length})`,
+      ...this.bOnlyChanges.map(([path, value]) => `    ${path.join('.')} = ${value}`),
+    ]
+    return lines.join('\n')
+  }
 }
 
 /**
