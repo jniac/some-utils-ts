@@ -2,7 +2,8 @@
   "name": "some-utils-ts",
   "version": "1.0.0",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "dev": "tsc-watch --onSuccess \"node scripts/post-build.mjs\"",
     "build": "tsc && node scripts/post-build.mjs",
