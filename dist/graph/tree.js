@@ -71,22 +71,33 @@ export class Node {
             }
         }
     }
-    find(predicate, { traverseMethod: method = 'depth-first', skipSelf = false, } = {}) {
+    static findOptionDefaults = {
+        method: 'depth-first',
+        skipSelf: false,
+    };
+    find(...args) {
+        const predicate = args.at(-1);
+        const { method, skipSelf } = { ...Node.findOptionDefaults, ...args.at(-2) };
         for (const node of this.traverse({ method, skipSelf })) {
             if (predicate(node))
                 return node;
         }
         return null;
     }
-    *findAll(predicate, { traverseMethod: method = 'depth-first', skipSelf = false, } = {}) {
+    ;
+    *findAll(...args) {
+        const predicate = args.at(-1);
+        const { method, skipSelf } = { ...Node.findOptionDefaults, ...args.at(-2) };
         for (const node of this.traverse({ method, skipSelf })) {
             if (predicate(node))
                 yield node;
         }
     }
-    followPath(nodePredicate, { skipSelf = true, } = {}) {
+    down(...args) {
+        const predicate = args.at(-1);
+        const { skipSelf } = { skipSelf: false, ...args.at(-2) };
         const visit = (node, depth) => {
-            const [ok, down] = nodePredicate(node, depth);
+            const [ok, down] = predicate(node, depth);
             if (ok)
                 return node;
             if (!down)

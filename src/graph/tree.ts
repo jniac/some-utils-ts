@@ -88,31 +88,40 @@ export class Node<T> {
     }
   }
 
-  find(predicate: (node: Node<T>) => boolean, {
-    traverseMethod: method = 'depth-first' as TraversalMethod,
-    skipSelf = false,
-  } = {}): Node<T> | null {
+  static findOptionDefaults = {
+    method: 'depth-first' as TraversalMethod,
+    skipSelf: false,
+  }
+
+  find(predicate: (node: Node<T>) => boolean): Node<T> | null
+  find(options: Partial<typeof Node.findOptionDefaults>, predicate: (node: Node<T>) => boolean): Node<T> | null
+  find(...args: any[]): Node<T> | null {
+    const predicate = args.at(-1)
+    const { method, skipSelf } = { ...Node.findOptionDefaults, ...args.at(-2) }
     for (const node of this.traverse({ method, skipSelf })) {
       if (predicate(node)) return node
     }
     return null
-  }
+  };
 
-  *findAll(predicate: (node: Node<T>) => boolean, {
-    traverseMethod: method = 'depth-first' as TraversalMethod,
-    skipSelf = false,
-  } = {}): Generator<Node<T>, void, unknown> {
+  findAll(predicate: (node: Node<T>) => boolean): Generator<Node<T>, void, unknown>
+  findAll(options: Partial<typeof Node.findOptionDefaults>, predicate: (node: Node<T>) => boolean): Generator<Node<T>, void, unknown>
+  *findAll(...args: any[]): Generator<Node<T>, void, unknown> {
+    const predicate = args.at(-1)
+    const { method, skipSelf } = { ...Node.findOptionDefaults, ...args.at(-2) }
     for (const node of this.traverse({ method, skipSelf })) {
       if (predicate(node))
         yield node
     }
   }
 
-  followPath(nodePredicate: (node: Node<T>, depth: number) => [end: boolean, down: boolean], {
-    skipSelf = true,
-  } = {}): Node<T> | null {
+  down(predicate: (node: Node<T>, depth: number) => [end: boolean, down: boolean]): Node<T> | null
+  down(options: Partial<{ skipSelf: boolean }>, predicate: (node: Node<T>, depth: number) => [end: boolean, down: boolean]): Node<T> | null
+  down(...args: any[]): Node<T> | null {
+    const predicate = args.at(-1)
+    const { skipSelf } = { skipSelf: false, ...args.at(-2) }
     const visit = (node: Node<T>, depth: number): Node<T> | null => {
-      const [ok, down] = nodePredicate(node, depth)
+      const [ok, down] = predicate(node, depth)
       if (ok)
         return node
       if (!down)
