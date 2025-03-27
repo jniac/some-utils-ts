@@ -30,6 +30,16 @@ export class Node {
             current = current.parent;
         }
     }
+    get(...indexes) {
+        let current = this;
+        for (const index of indexes) {
+            if (current === null || index < 0 || index >= current.children.length) {
+                return null;
+            }
+            current = current.children[index];
+        }
+        return current;
+    }
     populate(...data) {
         const createChild = (entry) => {
             if (Array.isArray(entry)) {
@@ -51,10 +61,10 @@ export class Node {
     *traverse({ method = 'depth-first', skipSelf = false, } = {}) {
         const stack = skipSelf ? [...this.children] : [this];
         while (stack.length > 0) {
-            const current = method === 'depth-first' ? stack.pop() : stack.shift();
+            const current = stack.shift();
             yield current;
             if (method === 'depth-first') {
-                stack.push(...current.children);
+                stack.unshift(...current.children);
             }
             else {
                 stack.push(...current.children);
@@ -91,5 +101,36 @@ export class Node {
         return skipSelf
             ? this.children.map(child => visit(child, 0)).find(Boolean) ?? null
             : visit(this, 0);
+    }
+    add(...nodes) {
+        for (const node of nodes) {
+            node.parent = this;
+            this.children.push(node);
+        }
+        return this;
+    }
+    addTo(parent) {
+        if (parent) {
+            parent.add(this);
+        }
+        else {
+            this.removeFromParent();
+        }
+        return this;
+    }
+    removeFromParent() {
+        if (this.parent) {
+            this.parent.children = this.parent.children.filter(child => child !== this);
+            this.parent = null;
+        }
+        return this;
+    }
+    remove(...nodes) {
+        for (const node of nodes) {
+            if (node.parent === this) {
+                node.removeFromParent();
+            }
+        }
+        return this;
     }
 }

@@ -42,6 +42,17 @@ export class Node<T> {
     }
   }
 
+  get(...indexes: number[]): Node<T> | null {
+    let current: Node<T> | null = this
+    for (const index of indexes) {
+      if (current === null || index < 0 || index >= current.children.length) {
+        return null
+      }
+      current = current.children[index]
+    }
+    return current
+  }
+
   populate(...data: RecursiveStructure<T>[]) {
     const createChild = (entry: RecursiveStructure<T>): Node<T> => {
       if (Array.isArray(entry)) {
@@ -67,10 +78,10 @@ export class Node<T> {
   } = {}): Generator<Node<T>, void, unknown> {
     const stack: Node<T>[] = skipSelf ? [...this.children] : [this]
     while (stack.length > 0) {
-      const current = method === 'depth-first' ? stack.pop()! : stack.shift()!
+      const current = stack.shift()!
       yield current
       if (method === 'depth-first') {
-        stack.push(...current.children)
+        stack.unshift(...current.children)
       } else {
         stack.push(...current.children)
       }
@@ -119,5 +130,39 @@ export class Node<T> {
     return skipSelf
       ? this.children.map(child => visit(child, 0)).find(Boolean) ?? null
       : visit(this, 0)
+  }
+
+  add(...nodes: Node<T>[]) {
+    for (const node of nodes) {
+      node.parent = this
+      this.children.push(node)
+    }
+    return this
+  }
+
+  addTo(parent: Node<T> | null) {
+    if (parent) {
+      parent.add(this)
+    } else {
+      this.removeFromParent()
+    }
+    return this
+  }
+
+  removeFromParent() {
+    if (this.parent) {
+      this.parent.children = this.parent.children.filter(child => child !== this)
+      this.parent = null
+    }
+    return this
+  }
+
+  remove(...nodes: Node<T>[]) {
+    for (const node of nodes) {
+      if (node.parent === this) {
+        node.removeFromParent()
+      }
+    }
+    return this
   }
 }

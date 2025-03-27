@@ -9,6 +9,7 @@ export declare class Node<T> {
     isLeaf(): boolean;
     ancestorCount(): number;
     ancestors(): Generator<Node<T>, void, unknown>;
+    get(...indexes: number[]): Node<T> | null;
     populate(...data: RecursiveStructure<T>[]): this;
     traverse({ method, skipSelf, }?: {
         method?: "depth-first" | "breadth-first" | undefined;
@@ -25,5 +26,9 @@ export declare class Node<T> {
     followPath(nodePredicate: (node: Node<T>, depth: number) => [end: boolean, down: boolean], { skipSelf, }?: {
         skipSelf?: boolean | undefined;
     }): Node<T> | null;
+    add(...nodes: Node<T>[]): this;
+    addTo(parent: Node<T> | null): this;
+    removeFromParent(): this;
+    remove(...nodes: Node<T>[]): this;
 }
 export {};
