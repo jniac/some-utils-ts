@@ -80,3 +80,13 @@ export function uniqueBy(keyFn) {
         return true;
     };
 }
+export function groupBy(keyFn, items) {
+    const record = {};
+    for (const item of items) {
+        const key = keyFn(item);
+        if (!record[key])
+            record[key] = [];
+        record[key].push(item);
+    }
+    return record;
+}
