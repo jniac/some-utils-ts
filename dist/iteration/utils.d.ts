@@ -31,4 +31,11 @@ export declare function distribute<T>(array: T[], predicate: (value: T) => numbe
 export declare function pairwise<T>(values: Iterable<T>): Generator<[T, T]>;
 export declare function findMaxBy<T>(items: Iterable<T>, score: (item: T) => number): T | undefined;
 export declare function uniqueBy<T>(keyFn: (item: T) => any): (item: T) => boolean;
-export declare function groupBy<K extends string | number | symbol, T>(keyFn: (item: T) => K, items: Iterable<T>): Record<K, T[]>;
+/**
+ * Usage:
+ * ```ts
+ * const { even, odd } = [1, 2, 3, 4, 5]
+ *   .reduce(groupBy(item => item % 2 === 0 ? 'even' : 'odd'), null!) // accumulator will be automatically created if null is provided (but will not work if the array is empty)
+ * ```
+ */
+export declare function recordBy<K extends string | number | symbol, T>(keyFn: (item: T) => K): (acc: null | Partial<Record<K, T[]>>, item: T) => Partial<Record<K, T[]>>;

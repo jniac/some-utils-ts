@@ -80,13 +80,23 @@ export function uniqueBy(keyFn) {
         return true;
     };
 }
-export function groupBy(keyFn, items) {
-    const record = {};
-    for (const item of items) {
+/**
+ * Usage:
+ * ```ts
+ * const { even, odd } = [1, 2, 3, 4, 5]
+ *   .reduce(groupBy(item => item % 2 === 0 ? 'even' : 'odd'), null!) // accumulator will be automatically created if null is provided (but will not work if the array is empty)
+ * ```
+ */
+export function recordBy(keyFn) {
+    return (acc, item) => {
+        if (acc !== null && typeof acc !== 'object') {
+            throw new Error('Accumulator must be an object');
+        }
+        const record = (acc === null ? {} : acc);
         const key = keyFn(item);
         if (!record[key])
             record[key] = [];
         record[key].push(item);
-    }
-    return record;
+        return record;
+    };
 }
