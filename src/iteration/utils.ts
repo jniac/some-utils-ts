@@ -96,3 +96,17 @@ export function uniqueBy<T>(keyFn: (item: T) => any): (item: T) => boolean {
     return true
   }
 }
+
+export function groupBy<K extends string | number | symbol, T>(
+  keyFn: (item: T) => K,
+  items: Iterable<T>
+): Record<K, T[]> {
+  const record = {} as Record<K, T[]>
+  for (const item of items) {
+    const key = keyFn(item)
+    if (!record[key])
+      record[key] = []
+    record[key].push(item)
+  }
+  return record
+}
