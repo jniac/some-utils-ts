@@ -97,16 +97,25 @@ export function uniqueBy<T>(keyFn: (item: T) => any): (item: T) => boolean {
   }
 }
 
-export function groupBy<K extends string | number | symbol, T>(
+/**
+ * Usage: 
+ * ```ts
+ * const { even, odd } = [1, 2, 3, 4, 5]
+ *   .reduce(groupBy(item => item % 2 === 0 ? 'even' : 'odd'), null!) // accumulator will be automatically created if null is provided (but will not work if the array is empty)
+ * ```
+ */
+export function recordBy<K extends string | number | symbol, T>(
   keyFn: (item: T) => K,
-  items: Iterable<T>
-): Record<K, T[]> {
-  const record = {} as Record<K, T[]>
-  for (const item of items) {
+): (acc: null | Partial<Record<K, T[]>>, item: T) => Partial<Record<K, T[]>> {
+  return (acc, item) => {
+    if (acc !== null && typeof acc !== 'object') {
+      throw new Error('Accumulator must be an object')
+    }
+    const record = (acc === null ? {} : acc) as Partial<Record<K, T[]>>
     const key = keyFn(item)
     if (!record[key])
       record[key] = []
     record[key].push(item)
+    return record
   }
-  return record
 }
