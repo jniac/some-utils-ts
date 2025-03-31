@@ -86,3 +86,13 @@ export function findMaxBy<T>(items: Iterable<T>, score: (item: T) => number) {
   }
   return bestItem
 }
+
+export function uniqueBy<T>(keyFn: (item: T) => any): (item: T) => boolean {
+  const seen = new Set<any>()
+  return item => {
+    const key = keyFn(item)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  }
+}

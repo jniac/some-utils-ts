@@ -70,3 +70,13 @@ export function findMaxBy(items, score) {
     }
     return bestItem;
 }
+export function uniqueBy(keyFn) {
+    const seen = new Set();
+    return item => {
+        const key = keyFn(item);
+        if (seen.has(key))
+            return false;
+        seen.add(key);
+        return true;
+    };
+}
