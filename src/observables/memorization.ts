@@ -56,6 +56,20 @@ export class Memorization {
     return result
   }
 
+  getAverage(count = this._array.length): number {
+    count = count > this._array.length
+      ? this._array.length : count < 1
+        ? 1 : count
+    const { _array, _index } = this
+    const { length } = _array
+    let sum = 0
+    for (let i = 0; i < count; i++) {
+      const valueIndex = (_index - i + length) % length
+      sum += _array[valueIndex]
+    }
+    return sum / count
+  }
+
   get sum() { return this._sum }
   get average() { return this._sum / this._array.length }
 }

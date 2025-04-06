@@ -10,6 +10,7 @@ export declare class Memorization {
     setValue(value: number, asNewValue: boolean): this;
     values(): Generator<number, void, unknown>;
     valuesArray(): number[];
+    getAverage(count?: number): number;
     get sum(): number;
     get average(): number;
 }
