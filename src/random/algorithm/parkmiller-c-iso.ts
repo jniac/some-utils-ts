@@ -24,11 +24,35 @@ const next = (state: number) => {
 
 const map = (n: number) => (n - 1) / (MAX - 1)
 
+/**
+ * Wrapper function to get a random number between 0 and 1.
+ * @param seed The seed for the random number generator.
+ * @returns A function that returns a random number between 0 and 1.
+ * @example
+ * const random = getRandom(123)
+ * console.log(random()) // 0.123456789
+ */
+const getRandom = (seed: number = DEFAULT_SEED): () => number => {
+  let state = init(seed)
+  return () => {
+    state = next(state)
+    return map(state)
+  }
+}
+
 export {
   DEFAULT_SEED,
-  MAX,
+  MAX
+}
+
+export {
   init,
   map,
   next
 }
+
+export {
+  getRandom
+}
+
 
