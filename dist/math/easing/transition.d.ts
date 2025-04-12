@@ -1,10 +1,12 @@
 export declare const linear: (x: number) => number;
+export declare const _in: (x: number, p: number) => number;
 export declare const in1: (x: number) => number;
 export declare const in2: (x: number) => number;
 export declare const in3: (x: number) => number;
 export declare const in4: (x: number) => number;
 export declare const in5: (x: number) => number;
 export declare const in6: (x: number) => number;
+export declare const out: (x: number, p: number) => number;
 export declare const out1: (x: number) => number;
 export declare const out2: (x: number) => number;
 export declare const out3: (x: number) => number;
@@ -49,12 +51,14 @@ export declare const inLinearOut: (x: number, p: number, q: number, s: number) =
 export declare const asymmetricalInOut: (x: number, a: number, b: number) => number;
 export declare const transition: {
     linear: (x: number) => number;
+    in: (x: number, p: number) => number;
     in1: (x: number) => number;
     in2: (x: number) => number;
     in3: (x: number) => number;
     in4: (x: number) => number;
     in5: (x: number) => number;
     in6: (x: number) => number;
+    out: (x: number, p: number) => number;
     out1: (x: number) => number;
     out2: (x: number) => number;
     out3: (x: number) => number;

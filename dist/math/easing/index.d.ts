@@ -13,12 +13,14 @@ export { in1 as easeIn1, in2 as easeIn2, in3 as easeIn3, in4 as easeIn4, in5 as 
 export declare const easing: {
     transition: {
         linear: (x: number) => number;
+        in: (x: number, p: number) => number;
         in1: (x: number) => number;
         in2: (x: number) => number;
         in3: (x: number) => number;
         in4: (x: number) => number;
         in5: (x: number) => number;
         in6: (x: number) => number;
+        out: (x: number, p: number) => number;
         out1: (x: number) => number;
         out2: (x: number) => number;
         out3: (x: number) => number;

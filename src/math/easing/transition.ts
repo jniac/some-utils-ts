@@ -2,6 +2,7 @@ const clamp01 = (x: number) => x < 0 ? 0 : x > 1 ? 1 : x
 
 export const linear = (x: number) => clamp01(x)
 
+const _in = (x: number, p: number) => clamp01(x) ** p
 export const in1 = linear
 export const in2 = (x: number) => (x = clamp01(x)) * x
 export const in3 = (x: number) => (x = clamp01(x)) * x * x
@@ -9,6 +10,7 @@ export const in4 = (x: number) => (x = clamp01(x)) * x * x * x
 export const in5 = (x: number) => (x = clamp01(x)) * x * x * x * x
 export const in6 = (x: number) => (x = clamp01(x)) * x * x * x * x * x
 
+const out = (x: number, p: number) => 1 - clamp01(1 - x) ** p
 export const out1 = linear
 export const out2 = (x: number) => 1 - (x = clamp01(1 - x)) * x
 export const out3 = (x: number) => 1 - (x = clamp01(1 - x)) * x * x
@@ -121,12 +123,14 @@ export const asymmetricalInOut = (x: number, a: number, b: number) => {
 
 export const transition = {
   linear,
+  in: _in,
   in1,
   in2,
   in3,
   in4,
   in5,
   in6,
+  out,
   out1,
   out2,
   out3,
