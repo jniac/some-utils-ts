@@ -1,12 +1,10 @@
 export declare const linear: (x: number) => number;
-export declare const _in: (x: number, p: number) => number;
 export declare const in1: (x: number) => number;
 export declare const in2: (x: number) => number;
 export declare const in3: (x: number) => number;
 export declare const in4: (x: number) => number;
 export declare const in5: (x: number) => number;
 export declare const in6: (x: number) => number;
-export declare const out: (x: number, p: number) => number;
 export declare const out1: (x: number) => number;
 export declare const out2: (x: number) => number;
 export declare const out3: (x: number) => number;
