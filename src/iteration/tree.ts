@@ -44,8 +44,7 @@ export function* allAscendantsOf<T>(firstNode: T, options: Partial<typeof allAsc
   } = { ...allAscendantsOfOptionsDefaults<T>(), ...options }
   let count = 0
   const visited = new Set<T>()
-  const queue: T[] = includeFirstNode ? [firstNode] : []
-  let current: T | undefined = firstNode
+  let current: T | undefined = includeFirstNode ? firstNode : getParent(firstNode)
 
   while (current) {
     if (filter(current) === false) {

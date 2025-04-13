@@ -29,8 +29,7 @@ export function* allAscendantsOf(firstNode, options = {}) {
     const { nodesMax, includeFirstNode, filter, getParent, } = { ...allAscendantsOfOptionsDefaults(), ...options };
     let count = 0;
     const visited = new Set();
-    const queue = includeFirstNode ? [firstNode] : [];
-    let current = firstNode;
+    let current = includeFirstNode ? firstNode : getParent(firstNode);
     while (current) {
         if (filter(current) === false) {
             break;
