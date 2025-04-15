@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "downlevelIteration": true,
-    "target": "ESNext", // Target ES6 or higher
-    "module": "ESNext", // Module format
-    "declaration": true, // Generates .d.ts files
-    "outDir": "./dist", // Output directory
-    "strict": true, // Enable all strict type-checking options
-    "esModuleInterop": true, // For compatibility with ES6 modules
+    "target": "ESNext",
+    "module": "ESNext",
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true
