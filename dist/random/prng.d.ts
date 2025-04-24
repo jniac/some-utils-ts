@@ -32,6 +32,8 @@ declare function create(): {
     seedMax: () => number;
     reset: () => Core;
     next: () => Core;
+    getState: () => number;
+    setState: (newState: number) => /*elided*/ any;
     random: () => number;
     between: {
         (): number;
