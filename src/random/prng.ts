@@ -55,6 +55,15 @@ function create() {
     return MAX
   }
 
+  function getState() {
+    return state
+  }
+
+  function setState(newState: number) {
+    state = newState & MAX
+    return prng
+  }
+
   /**
    * Similar to `seed`, but here the seed is set to the default seed.
    */
@@ -406,6 +415,8 @@ function create() {
     seedMax,
     reset,
     next,
+    getState,
+    setState,
 
     random,
     between,
