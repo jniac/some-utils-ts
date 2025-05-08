@@ -6,15 +6,18 @@ let globalTime = 0
 let globalDeltaTime = 0
 let globalFrame = 0
 
-const stopSignals = [
-  'stop',
-  'onTick:stop',
-] as const
+const ON_TICK_STOP_SIGNAL_0 = 'stop'
+const ON_TICK_STOP_SIGNAL_1 = 'onTick:stop'
 
-export type StopSignal = typeof stopSignals[number]
+export type OnTickStopSignal =
+  | typeof ON_TICK_STOP_SIGNAL_0
+  | typeof ON_TICK_STOP_SIGNAL_1
 
-export function isStopSignal(value: any): value is StopSignal {
-  return stopSignals.includes(value)
+export function isOnTickStopSignal(value: any): value is OnTickStopSignal {
+  if (typeof value === 'string') {
+    return value === ON_TICK_STOP_SIGNAL_0 || value === ON_TICK_STOP_SIGNAL_1
+  }
+  return false
 }
 
 export class Tick {
@@ -130,7 +133,7 @@ export class Tick {
   }
 }
 
-export type TickCallback = (tick: Tick) => (void | StopSignal)
+export type TickCallback = (tick: Tick) => (void | OnTickStopSignal)
 
 type Listener = Readonly<{
   id: number
@@ -211,7 +214,7 @@ class ListenerRegister {
     this._clearDirty()
     for (const { callback } of this._lockedListeners) {
       const result = callback(tick)
-      if (isStopSignal(result)) {
+      if (isOnTickStopSignal(result)) {
         this.remove(callback)
       }
     }
