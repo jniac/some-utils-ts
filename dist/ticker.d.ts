@@ -1,8 +1,9 @@
 import { Memorization } from './observables/memorization';
 import { DestroyableObject } from './types';
-declare const stopSignals: readonly ["stop", "onTick:stop"];
-export type StopSignal = typeof stopSignals[number];
-export declare function isStopSignal(value: any): value is StopSignal;
+declare const ON_TICK_STOP_SIGNAL_0 = "stop";
+declare const ON_TICK_STOP_SIGNAL_1 = "onTick:stop";
+export type OnTickStopSignal = typeof ON_TICK_STOP_SIGNAL_0 | typeof ON_TICK_STOP_SIGNAL_1;
+export declare function isOnTickStopSignal(value: any): value is OnTickStopSignal;
 export declare class Tick {
     previousTick: Tick | null;
     readonly frame: number;
@@ -73,7 +74,7 @@ export declare class Tick {
     propagate(root: object, options?: Partial<typeof Tick.defaultPropagateOptions>): this;
     toString(): string;
 }
-export type TickCallback = (tick: Tick) => (void | StopSignal);
+export type TickCallback = (tick: Tick) => (void | OnTickStopSignal);
 type Listener = Readonly<{
     id: number;
     order: number;

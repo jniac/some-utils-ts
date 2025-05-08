@@ -3,12 +3,13 @@ import { Memorization } from './observables/memorization.js';
 let globalTime = 0;
 let globalDeltaTime = 0;
 let globalFrame = 0;
-const stopSignals = [
-    'stop',
-    'onTick:stop',
-];
-export function isStopSignal(value) {
-    return stopSignals.includes(value);
+const ON_TICK_STOP_SIGNAL_0 = 'stop';
+const ON_TICK_STOP_SIGNAL_1 = 'onTick:stop';
+export function isOnTickStopSignal(value) {
+    if (typeof value === 'string') {
+        return value === ON_TICK_STOP_SIGNAL_0 || value === ON_TICK_STOP_SIGNAL_1;
+    }
+    return false;
 }
 export class Tick {
     previousTick;
@@ -185,7 +186,7 @@ class ListenerRegister {
         this._clearDirty();
         for (const { callback } of this._lockedListeners) {
             const result = callback(tick);
-            if (isStopSignal(result)) {
+            if (isOnTickStopSignal(result)) {
                 this.remove(callback);
             }
         }
