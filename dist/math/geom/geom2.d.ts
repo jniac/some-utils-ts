@@ -6,3 +6,4 @@ export declare function distance2(u: Vector2Like, v: Vector2Like): number;
 export declare function sqDistance2(u: Vector2Like, v: Vector2Like): number;
 export declare function manhattanDistance2(u: Vector2Like, v: Vector2Like): number;
 export declare function vectorAngle2(u: Vector2Like, v: Vector2Like): number;
+//# sourceMappingURL=geom2.d.ts.map

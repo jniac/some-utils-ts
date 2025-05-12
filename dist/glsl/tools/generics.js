@@ -36,3 +36,4 @@ export const generics = (typeArg, template) => {
     }
     return chunks.join('\n');
 };
+//# sourceMappingURL=generics.js.map

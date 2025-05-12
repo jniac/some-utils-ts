@@ -2,3 +2,4 @@
  * From https://thebookofshaders.com/12
  */
 export declare const glsl_pgv_voronoise = "\nvec2 random2( vec2 p ) {\n    return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);\n}\n\nvec2 pgv_voronoise(vec2 p) {\n    float m_dist = 10.;  // minimum distance\n    vec2 m_point;        // minimum point\n\n    vec2 i_st = floor(p.xy);\n    vec2 f_st = fract(p.xy);\n    \n    for (int j=-1; j<=1; j++ ) {\n        for (int i=-1; i<=1; i++ ) {\n            vec2 neighbor = vec2(float(i),float(j));\n            vec2 point = random2(i_st + neighbor);\n            //point = 0.5 + 0.5*sin(u_time + 6.2831*point);\n            vec2 diff = neighbor + point - f_st;\n            float dist = length(diff);\n\n            if( dist < m_dist ) {\n                m_dist = dist;\n                m_point = point;\n            }\n        }\n    }\n \treturn vec2(dot(m_point,vec2(.3,.6)), m_dist);  \n}\n";
+//# sourceMappingURL=pgv-voronoise.d.ts.map

@@ -35,3 +35,4 @@ export declare class Node<T> {
     remove(...nodes: Node<T>[]): this;
 }
 export {};
+//# sourceMappingURL=tree.d.ts.map

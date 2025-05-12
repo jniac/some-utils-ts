@@ -584,3 +584,4 @@ export class Space {
         return this;
     }
 }
+//# sourceMappingURL=Space.js.map

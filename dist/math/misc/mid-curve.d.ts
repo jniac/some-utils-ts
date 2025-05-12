@@ -29,3 +29,4 @@ export declare const inverseInterpolateWithMidPoint: (min: number, max: number, 
  * Same as {@link inverseInterpolateWithMidPoint} but without clamp.
  */
 export declare const inverseInterpolateWithMidPointUnclamped: (min: number, max: number, midValue: number, x: number) => number;
+//# sourceMappingURL=mid-curve.d.ts.map

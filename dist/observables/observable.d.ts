@@ -136,3 +136,4 @@ declare class Observable<T = any> implements ObservableCore<T> {
 }
 export type { Callback, ConstructorOptions, DerivativeCallback, ObservableCore, OnChangeOptions, SetValueOptions };
 export { Observable };
+//# sourceMappingURL=observable.d.ts.map

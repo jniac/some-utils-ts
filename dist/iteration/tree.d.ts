@@ -63,3 +63,4 @@ export declare function allDescendantsOf<T>(firstNode: T, options?: Partial<type
     node: T;
 }>;
 export {};
+//# sourceMappingURL=tree.d.ts.map

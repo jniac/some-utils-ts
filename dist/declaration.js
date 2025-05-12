@@ -291,3 +291,4 @@ export function toVector4Declaration(arg) {
     const { x, y, z, w } = fromVector4Declaration(arg);
     return [x, y, z, w];
 }
+//# sourceMappingURL=declaration.js.map

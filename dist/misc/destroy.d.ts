@@ -17,3 +17,4 @@ export declare class DestroyableInstance {
      */
     destroy: () => void;
 }
+//# sourceMappingURL=destroy.d.ts.map

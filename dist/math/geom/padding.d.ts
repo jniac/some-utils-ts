@@ -41,3 +41,4 @@ export declare class Padding {
         marginLeft: string;
     });
 }
+//# sourceMappingURL=padding.d.ts.map

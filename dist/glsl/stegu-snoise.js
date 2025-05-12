@@ -201,3 +201,4 @@ ${generics(['vec2', 'vec3'], /* glsl */ `
   }
 `)}
 `;
+//# sourceMappingURL=stegu-snoise.js.map

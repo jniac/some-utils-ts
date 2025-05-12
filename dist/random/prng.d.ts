@@ -97,3 +97,4 @@ type PRNG = Core & (new (seed?: number) => Core);
  */
 declare const _PRNG: PRNG;
 export { _PRNG as PRNG };
+//# sourceMappingURL=prng.d.ts.map

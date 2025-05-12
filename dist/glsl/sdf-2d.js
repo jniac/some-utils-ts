@@ -52,3 +52,4 @@ export const glsl_sdf2d = /* glsl */ `
     return abs(d) - r;
   }
 `;
+//# sourceMappingURL=sdf-2d.js.map

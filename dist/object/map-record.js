@@ -3,3 +3,4 @@ export function mapRecord(source, mapper) {
         .entries(source)
         .map(([key, value]) => mapper(key, value)));
 }
+//# sourceMappingURL=map-record.js.map

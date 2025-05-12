@@ -4,3 +4,4 @@ declare function withDelay(obs: Observable<any>, delay: Delay, callback: () => v
 declare function clearDelay(obs: Observable<any>): void;
 export type { Delay };
 export { clearDelay, withDelay };
+//# sourceMappingURL=delay.d.ts.map

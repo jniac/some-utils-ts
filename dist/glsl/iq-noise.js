@@ -24,3 +24,4 @@ float iq_noise3(in vec3 x)
 }
 
 `;
+//# sourceMappingURL=iq-noise.js.map

@@ -22,3 +22,4 @@ export declare function splitObject<T extends object, K extends (keyof T)>(sourc
         [Property in keyof T as Exclude<Property, K>]: T[Property];
     }
 ];
+//# sourceMappingURL=split.d.ts.map

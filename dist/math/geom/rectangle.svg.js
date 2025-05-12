@@ -20,3 +20,4 @@ export class SvgUtils {
         return `x="${formatNumber(x)}" y="${formatNumber(y)}" width="${formatNumber(width)}" height="${formatNumber(height)}"`;
     }
 }
+//# sourceMappingURL=rectangle.svg.js.map

@@ -36,3 +36,4 @@ export class DestroyableInstance {
         this.destroyables = [];
     };
 }
+//# sourceMappingURL=destroy.js.map

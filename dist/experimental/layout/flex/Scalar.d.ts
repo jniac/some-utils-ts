@@ -35,3 +35,4 @@ export declare class Scalar {
     toString(): string;
 }
 export {};
+//# sourceMappingURL=Scalar.d.ts.map

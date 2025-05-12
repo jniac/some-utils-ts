@@ -202,3 +202,4 @@ class MultiKeyWeakMap {
 //   console.log(m.get([obj1, Math.PI]))
 // }
 export { MultiKeyWeakMap };
+//# sourceMappingURL=multi-key-map.js.map

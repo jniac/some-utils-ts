@@ -288,3 +288,4 @@ export class ObservableNumber extends Observable {
         return this.setValue(value);
     }
 }
+//# sourceMappingURL=observable-number.js.map

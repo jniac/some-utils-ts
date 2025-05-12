@@ -172,3 +172,4 @@ export function normalize(v) {
     v.y /= n;
     return v;
 }
+//# sourceMappingURL=basic.js.map

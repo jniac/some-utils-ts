@@ -26,3 +26,4 @@ export declare class Ray2 implements Ray2Like {
     get direction(): Vector2Like;
     set direction(direction: Vector2Like);
 }
+//# sourceMappingURL=ray2.d.ts.map

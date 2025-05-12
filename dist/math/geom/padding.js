@@ -109,3 +109,4 @@ export class Padding {
         return Object.fromEntries(props);
     }
 }
+//# sourceMappingURL=padding.js.map

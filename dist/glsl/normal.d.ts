@@ -1,1 +1,2 @@
 export declare const glsl = "\n\n  // https://www.shadertoy.com/view/4t2SzR\n  vec3 blendNormals(vec3 n1, vec3 n2) {\n    n1 += vec3( 0,  0, 1);\n    n2 *= vec3(-1, -1, 1);\n    return n1 * dot(n1, n2) / n1.z - n2;\n  }\n\n";
+//# sourceMappingURL=normal.d.ts.map

@@ -4,3 +4,4 @@ const info = `
 
 A collection of Typescript/Javascript utilities.
 `;
+//# sourceMappingURL=index.js.map

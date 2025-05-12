@@ -96,3 +96,4 @@ export function* allDescendantsOf(firstNode, options = {}) {
         }
     }
 }
+//# sourceMappingURL=tree.js.map

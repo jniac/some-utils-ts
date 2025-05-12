@@ -76,3 +76,4 @@ export class ExponentialDecay {
         return this;
     }
 }
+//# sourceMappingURL=exponential-decay.js.map

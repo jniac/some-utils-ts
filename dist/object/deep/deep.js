@@ -324,3 +324,4 @@ export function deepFreeze(obj) {
     return obj;
 }
 // import('./deep.test').then(({ test }) => test())
+//# sourceMappingURL=deep.js.map

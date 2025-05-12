@@ -297,3 +297,4 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     };
 }
 export {};
+//# sourceMappingURL=rectangle.d.ts.map

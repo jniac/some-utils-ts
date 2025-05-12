@@ -17,3 +17,4 @@ export declare function gcd(a: number, b: number): number;
  */
 export declare function lcm(a: number, b: number): number;
 export declare function bruteForceLcm(...numbers: number[]): number;
+//# sourceMappingURL=lcm.d.ts.map

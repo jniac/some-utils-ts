@@ -8,3 +8,4 @@ export const glsl = /* glsl */ `
   }
 
 `;
+//# sourceMappingURL=normal.js.map

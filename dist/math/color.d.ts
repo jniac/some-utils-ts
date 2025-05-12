@@ -18,3 +18,4 @@ export declare class Color4 {
     lerpColors(c1: Color4, c2: Color4, t: number): this;
     toCSS(format?: 'hex' | 'rgba'): string;
 }
+//# sourceMappingURL=color.d.ts.map

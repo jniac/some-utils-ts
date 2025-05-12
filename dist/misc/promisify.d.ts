@@ -29,3 +29,4 @@ export declare function promisify<T extends object>(value: T): Promisified<T> & 
     resolve: () => void;
     reject: (reason?: any) => void;
 };
+//# sourceMappingURL=promisify.d.ts.map

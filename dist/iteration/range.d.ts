@@ -3,3 +3,4 @@ export declare function range(count: number): Generator<{
     readonly t: number;
     readonly count: number;
 }, void, unknown>;
+//# sourceMappingURL=range.d.ts.map

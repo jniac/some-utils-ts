@@ -7,3 +7,4 @@ export function parseNumberWithUnit(value) {
     const n = Number.parseFloat(v) / (d ? Number.parseFloat(d.slice(1)) : 1);
     return [n, u];
 }
+//# sourceMappingURL=parse.js.map

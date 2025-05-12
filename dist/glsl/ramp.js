@@ -61,3 +61,4 @@ ${glsl_easings}
 ${ramp}
 #endif
 `;
+//# sourceMappingURL=ramp.js.map

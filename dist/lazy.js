@@ -26,3 +26,4 @@ export const lazy = (callback) => {
         return value;
     };
 };
+//# sourceMappingURL=lazy.js.map

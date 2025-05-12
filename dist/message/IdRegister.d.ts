@@ -27,3 +27,4 @@ export declare class IdRegister {
     private _requireArrayId;
     requireId(value: any): number;
 }
+//# sourceMappingURL=IdRegister.d.ts.map

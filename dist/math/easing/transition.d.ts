@@ -73,3 +73,4 @@ export declare const transition: {
     inLinearOut: (x: number, p: number, q: number, s: number) => number;
     asymmetricalInOut: (x: number, a: number, b: number) => number;
 };
+//# sourceMappingURL=transition.d.ts.map

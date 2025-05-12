@@ -46,3 +46,4 @@ export function splitCamelcase(str) {
     tokens.push(str.slice(previousIndex));
     return tokens;
 }
+//# sourceMappingURL=case.js.map

@@ -45,3 +45,4 @@ export declare class LinearPath2<T extends Vector2Like = Vector2Like> {
     roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions): this;
 }
 export {};
+//# sourceMappingURL=linear-path2.d.ts.map

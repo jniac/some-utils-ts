@@ -57,3 +57,4 @@ export declare class ExponentialDecay {
     set(props: Partial<ExponentialDecay>): this;
     update(deltaTime: number): this;
 }
+//# sourceMappingURL=exponential-decay.d.ts.map

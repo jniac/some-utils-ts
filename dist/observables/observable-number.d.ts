@@ -155,3 +155,4 @@ export declare class ObservableNumber extends Observable<number> {
     exponentialGrow(target: number, grow: number | [value: number, deltaTime: number], deltaTime: number): boolean;
 }
 export {};
+//# sourceMappingURL=observable-number.d.ts.map

@@ -15,3 +15,4 @@ declare const getRandom: (seed?: number) => () => number;
 export { DEFAULT_SEED, MAX };
 export { init, map, next };
 export { getRandom };
+//# sourceMappingURL=parkmiller-c-iso.d.ts.map

@@ -63,3 +63,4 @@ declare class Line2 implements Line2Like {
     end: <T extends Vector2Like>(out?: T | null) => T;
 }
 export { Line2, Line2Declaration, Line2Like, Line2Side };
+//# sourceMappingURL=line2.d.ts.map

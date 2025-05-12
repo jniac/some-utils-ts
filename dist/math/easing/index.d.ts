@@ -46,3 +46,4 @@ export declare const easing: {
         elastic: (x: number, f?: number, p?: number) => number;
     };
 };
+//# sourceMappingURL=index.d.ts.map

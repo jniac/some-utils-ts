@@ -39,3 +39,4 @@ export declare function uniqueBy<T>(keyFn: (item: T) => any): (item: T) => boole
  * ```
  */
 export declare function recordBy<K extends string | number | symbol, T>(keyFn: (item: T) => K): (acc: null | Partial<Record<K, T[]>>, item: T) => Partial<Record<K, T[]>>;
+//# sourceMappingURL=utils.d.ts.map

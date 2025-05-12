@@ -99,3 +99,4 @@ const easing = fromEaseDeclaration;
  */
 const parseEase = fromEaseDeclaration;
 export { easing, fromEaseDeclaration, parseEase, remap };
+//# sourceMappingURL=easing.js.map

@@ -943,3 +943,4 @@ export class Rectangle {
     }
 }
 const _rect = new Rectangle();
+//# sourceMappingURL=rectangle.js.map

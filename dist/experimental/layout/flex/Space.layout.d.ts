@@ -8,3 +8,4 @@ export declare function computePadding(space: Space): Padding;
  * It assumes that the rect of the space itself has already been computed.
  */
 export declare function computeChildrenRect(space: Space): void;
+//# sourceMappingURL=Space.layout.d.ts.map

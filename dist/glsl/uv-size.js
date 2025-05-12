@@ -34,3 +34,4 @@ export const glsl_uv_size = /* glsl */ `
     return applyUvSize(uv, outerAspect, innerAspect, 1.0);
   }
 `;
+//# sourceMappingURL=uv-size.js.map

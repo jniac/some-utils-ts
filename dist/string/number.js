@@ -50,3 +50,4 @@ export function formatBigNumber(n, { thousandsSeparator = ',', } = {}) {
     }
     return parts.join(thousandsSeparator);
 }
+//# sourceMappingURL=number.js.map

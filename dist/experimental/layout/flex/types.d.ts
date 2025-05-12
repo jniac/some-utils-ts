@@ -23,3 +23,4 @@ export type SizeDeclaration = ScalarDeclaration | [width: ScalarDeclaration, hei
     width: ScalarDeclaration;
     height: ScalarDeclaration;
 };
+//# sourceMappingURL=types.d.ts.map

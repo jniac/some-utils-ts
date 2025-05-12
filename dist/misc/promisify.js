@@ -44,3 +44,4 @@ export function promisify(value) {
     });
     return value;
 }
+//# sourceMappingURL=promisify.js.map

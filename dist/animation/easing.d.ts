@@ -36,3 +36,4 @@ declare const easing: typeof fromEaseDeclaration;
  */
 declare const parseEase: typeof fromEaseDeclaration;
 export { easing, fromEaseDeclaration, parseEase, remap };
+//# sourceMappingURL=easing.d.ts.map

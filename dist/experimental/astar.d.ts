@@ -97,3 +97,4 @@ export declare class Graph2<Node extends Vector2Like> implements Graph<Node> {
     pathIsValid(path: Node[]): boolean;
 }
 export {};
+//# sourceMappingURL=astar.d.ts.map

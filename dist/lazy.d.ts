@@ -15,3 +15,4 @@
  * ```
  */
 export declare const lazy: <T extends unknown>(callback: () => T) => () => T;
+//# sourceMappingURL=lazy.d.ts.map

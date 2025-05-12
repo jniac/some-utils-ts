@@ -50,3 +50,4 @@ export function vec3(arg, { precision = 3, } = {}) {
     return 'vec3(1.0, 0.0, 1.0)';
 }
 toff;
+//# sourceMappingURL=conversion.js.map

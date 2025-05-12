@@ -54,3 +54,4 @@ declare class MultiKeyWeakMap<K extends object = object, V = any> {
     set(key: K | K[], value: V): void;
 }
 export { MultiKeyWeakMap };
+//# sourceMappingURL=multi-key-map.d.ts.map

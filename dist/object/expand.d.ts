@@ -19,3 +19,4 @@
  * ```
  */
 export declare function expandObject(obj: Record<string, any>): Record<string, any>;
+//# sourceMappingURL=expand.d.ts.map

@@ -80,3 +80,4 @@ export function expandObject(obj) {
     }
     return _expandPipe(_expandDot(_deepClone(obj)));
 }
+//# sourceMappingURL=expand.js.map

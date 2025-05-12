@@ -1,0 +1,1 @@
+{"version":3,"file":"cubic-bezier.d.ts","sourceRoot":"","sources":["../../../src/math/easing/cubic-bezier.ts"],"names":[],"mappings":"AAWA,QAAA,MAAM,cAAc,OACd,MAAM,MACN,MAAM,KACP,MAAM,wHAkCV,CAAA;AAED,QAAA,MAAM,cAAc,OAAQ,MAAM,MAAM,MAAM,MAAM,MAAM,MAAM,MAAM,KAAK,MAAM,eAAe,MAAM,cAAc,MAAM,WAIzH,CAAA;AAED,OAAO,EACL,cAAc,EACd,cAAc,EACf,CAAA"}

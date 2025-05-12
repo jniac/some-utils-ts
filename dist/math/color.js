@@ -131,3 +131,4 @@ export class Color4 {
         throw new Error('Invalid format');
     }
 }
+//# sourceMappingURL=color.js.map

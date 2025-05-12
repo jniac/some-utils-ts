@@ -201,3 +201,4 @@ class Line2 {
     end = this.p1;
 }
 export { Line2, Line2Side };
+//# sourceMappingURL=line2.js.map

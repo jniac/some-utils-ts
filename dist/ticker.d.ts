@@ -302,3 +302,4 @@ export declare class Ticker implements DestroyableObject {
 export declare function onTick(tickerName: string, ...args: OnTickParameters): DestroyableObject;
 export declare function onTick(...args: OnTickParameters): DestroyableObject;
 export {};
+//# sourceMappingURL=ticker.d.ts.map

@@ -14,3 +14,4 @@ export declare function vec3(arg: Vec3Declaration, { precision, }?: {
     precision?: number | undefined;
 }): string;
 export {};
+//# sourceMappingURL=conversion.d.ts.map

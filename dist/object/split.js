@@ -30,3 +30,4 @@ export function splitObject(source, keys) {
         Object.fromEntries(entries2),
     ];
 }
+//# sourceMappingURL=split.js.map

@@ -12,3 +12,4 @@ export declare class SvgUtils {
         scalar?: number | undefined;
     }): string;
 }
+//# sourceMappingURL=rectangle.svg.d.ts.map

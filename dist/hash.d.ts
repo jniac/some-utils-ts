@@ -36,3 +36,4 @@ export declare class Hash {
     get value(): number;
     getDebugString(): string;
 }
+//# sourceMappingURL=hash.d.ts.map

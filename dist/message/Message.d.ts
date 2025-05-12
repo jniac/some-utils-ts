@@ -128,3 +128,4 @@ declare function send<P = any>(target: any, type: string, options: {
 }): Message<P>;
 export { Message };
 export type { Callback as MessageCallback, Listener as MessageListener };
+//# sourceMappingURL=Message.d.ts.map

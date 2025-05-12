@@ -188,3 +188,4 @@ function send(...args) {
     return new Message(target, type, payload);
 }
 export { Message };
+//# sourceMappingURL=Message.js.map

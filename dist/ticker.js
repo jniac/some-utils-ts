@@ -617,3 +617,4 @@ export function onTick(...args) {
     // @ts-ignore
     return Ticker.current().onTick(...args);
 }
+//# sourceMappingURL=ticker.js.map

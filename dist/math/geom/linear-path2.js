@@ -315,3 +315,4 @@ export class LinearPath2 {
         return this;
     }
 }
+//# sourceMappingURL=linear-path2.js.map

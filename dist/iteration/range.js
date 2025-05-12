@@ -9,3 +9,4 @@ export function* range(count) {
         yield out;
     }
 }
+//# sourceMappingURL=range.js.map

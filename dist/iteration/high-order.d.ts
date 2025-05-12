@@ -7,3 +7,4 @@ export {
  * @deprecated Use `distribute()` from `iteration/utils` instead.
  */
 distribute as split } from './utils';
+//# sourceMappingURL=high-order.d.ts.map

@@ -47,3 +47,4 @@ export function bruteForceLcm(...numbers) {
         throw new Error('Lcm brute force failed');
     return i;
 }
+//# sourceMappingURL=lcm.js.map

@@ -185,3 +185,4 @@ export declare function loop3(size: Vector3Like | [number, number, number]): Gen
  */
 export declare function loop3Array(width: number, height: number, depth: number): Loop3Result[];
 export declare function loop3Array(size: Vector3Like | [number, number, number]): Loop3Result[];
+//# sourceMappingURL=loop.d.ts.map

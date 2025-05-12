@@ -299,3 +299,4 @@ export const glsl_web_colors = /* glsl */ `
   // #9ACD32
   #define yellowgreen vec3(154.0 / 255.0, 205.0 / 255.0, 50.0 / 255.0) 
 `;
+//# sourceMappingURL=web_colors.js.map

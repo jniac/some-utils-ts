@@ -5,3 +5,4 @@ export { isVector2Like as isPoint2Like };
 export declare function isVector3Like(obj: any): obj is Vector3Like;
 export { isVector3Like as isPoint3Like };
 export declare function isRectangleLike(obj: any): obj is RectangleLike;
+//# sourceMappingURL=is.d.ts.map

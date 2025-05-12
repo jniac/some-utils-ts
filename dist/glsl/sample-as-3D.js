@@ -65,3 +65,4 @@ export const glsl_sampleAs3d = /* glsl */ `
       fz);
   }
 `;
+//# sourceMappingURL=sample-as-3D.js.map

@@ -254,3 +254,4 @@ class Observable {
     }
 }
 export { Observable };
+//# sourceMappingURL=observable.js.map

@@ -14,3 +14,4 @@ export const glsl_basic_colors = /* glsl */ `
   #define light_gray vec3(0.75)
   #define dark_gray vec3(0.25)
 `;
+//# sourceMappingURL=basic_color.js.map

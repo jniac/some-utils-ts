@@ -74,3 +74,4 @@ export const inverseInterpolateWithMidPointUnclamped = (min, max, midValue, x) =
     }
     return midInverse(t, m);
 };
+//# sourceMappingURL=mid-curve.js.map

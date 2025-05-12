@@ -12,3 +12,4 @@ export { isVector3Like as isPoint3Like };
 export function isRectangleLike(obj) {
     return obj && typeof obj.x === 'number' && typeof obj.y === 'number' && typeof obj.width === 'number' && typeof obj.height === 'number';
 }
+//# sourceMappingURL=is.js.map

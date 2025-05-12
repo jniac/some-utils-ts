@@ -16,3 +16,4 @@
  */
 export declare function areEquivalent(a: any, b: any): boolean;
 export declare function isEquivalentSubsetOf(subsetCandidate: any, parent: any): boolean;
+//# sourceMappingURL=equivalence.d.ts.map

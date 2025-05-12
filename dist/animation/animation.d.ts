@@ -287,3 +287,4 @@ declare const AnimationModule: {
 };
 export type { Callback as AnimationCallback, TweenArg as AnimationTweenArg, TweenInstance as AnimationTweenInstance };
 export { AnimationModule as Animation, parseEase, remap };
+//# sourceMappingURL=animation.d.ts.map

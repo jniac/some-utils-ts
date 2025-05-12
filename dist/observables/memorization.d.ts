@@ -14,3 +14,4 @@ export declare class Memorization {
     get sum(): number;
     get average(): number;
 }
+//# sourceMappingURL=memorization.d.ts.map

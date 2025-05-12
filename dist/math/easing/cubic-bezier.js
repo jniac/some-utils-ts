@@ -38,3 +38,4 @@ const solveCubicEase = (x1, y1, x2, y2, x, iterations, precision) => {
     return y;
 };
 export { cubic01SearchT, solveCubicEase };
+//# sourceMappingURL=cubic-bezier.js.map

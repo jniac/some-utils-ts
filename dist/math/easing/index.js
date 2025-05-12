@@ -16,3 +16,4 @@ export const easing = {
     transition,
     bump,
 };
+//# sourceMappingURL=index.js.map

@@ -50,3 +50,4 @@ vec3 rotateByAxisAngleAroundPoint(vec3 v, vec3 axis, float angle, vec3 point) {
   return rotateByAxisAngle(v - point, axis, angle) + point;
 }
 `;
+//# sourceMappingURL=quaternion.js.map

@@ -75,3 +75,4 @@ export class Ray2 {
         this.setDirection(direction);
     }
 }
+//# sourceMappingURL=ray2.js.map

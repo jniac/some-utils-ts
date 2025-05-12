@@ -5,3 +5,4 @@ export declare function formatNumber(n: number, { maxDigits, }?: {
 export declare function formatBigNumber(n: number, { thousandsSeparator, }?: {
     thousandsSeparator?: string | undefined;
 }): string;
+//# sourceMappingURL=number.d.ts.map

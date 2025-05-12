@@ -44,3 +44,4 @@ export declare const bump: {
     unnormalizedElastic: (x: number, f?: number, p?: number) => number;
     elastic: (x: number, f?: number, p?: number) => number;
 };
+//# sourceMappingURL=bump.d.ts.map

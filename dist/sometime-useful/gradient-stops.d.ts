@@ -10,3 +10,4 @@ type Options = Partial<typeof defaultOptions>;
  */
 export declare function createGradientStops(color1: ColorDeclaration, color2: ColorDeclaration, options?: Options): string[];
 export {};
+//# sourceMappingURL=gradient-stops.d.ts.map

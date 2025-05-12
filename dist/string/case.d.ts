@@ -11,3 +11,4 @@
  * ```
  */
 export declare function splitCamelcase(str: string): string[];
+//# sourceMappingURL=case.d.ts.map

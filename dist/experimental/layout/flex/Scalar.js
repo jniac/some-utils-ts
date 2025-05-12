@@ -99,3 +99,4 @@ export class Scalar {
         return `${this.value}${scalarExtensionsReverse[this.type]}`;
     }
 }
+//# sourceMappingURL=Scalar.js.map

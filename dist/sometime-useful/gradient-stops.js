@@ -19,3 +19,4 @@ export function createGradientStops(color1, color2, options) {
     });
     return stops;
 }
+//# sourceMappingURL=gradient-stops.js.map

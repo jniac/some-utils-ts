@@ -73,3 +73,4 @@ export type Color4Like = {
     a: number;
 };
 export {};
+//# sourceMappingURL=types.d.ts.map

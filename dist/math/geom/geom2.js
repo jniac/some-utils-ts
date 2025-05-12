@@ -23,3 +23,4 @@ export function manhattanDistance2(u, v) {
 export function vectorAngle2(u, v) {
     return Math.atan2(cross2(u, v), dot2(u, v));
 }
+//# sourceMappingURL=geom2.js.map

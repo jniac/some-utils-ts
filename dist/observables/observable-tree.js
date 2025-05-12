@@ -128,3 +128,4 @@ export class ObservableTree extends Observable {
         });
     }
 }
+//# sourceMappingURL=observable-tree.js.map

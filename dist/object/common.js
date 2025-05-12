@@ -4,3 +4,4 @@ export function isObject(value) {
 export function isRecord(value) {
     return isObject(value) && Array.isArray(value) === false;
 }
+//# sourceMappingURL=common.js.map

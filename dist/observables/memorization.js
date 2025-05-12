@@ -63,3 +63,4 @@ export class Memorization {
     get sum() { return this._sum; }
     get average() { return this._sum / this._array.length; }
 }
+//# sourceMappingURL=memorization.js.map

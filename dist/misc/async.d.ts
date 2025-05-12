@@ -26,3 +26,4 @@ export declare function waitForSeconds(seconds: number, options?: Partial<typeof
     readonly elapsed: number;
 }, void, unknown>;
 export {};
+//# sourceMappingURL=async.d.ts.map

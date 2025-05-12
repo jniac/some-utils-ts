@@ -37,3 +37,4 @@ const getRandom = (seed = DEFAULT_SEED) => {
 export { DEFAULT_SEED, MAX };
 export { init, map, next };
 export { getRandom };
+//# sourceMappingURL=parkmiller-c-iso.js.map

@@ -38,3 +38,4 @@ function clearDelay(obs) {
     map.delete(obs);
 }
 export { clearDelay, withDelay };
+//# sourceMappingURL=delay.js.map

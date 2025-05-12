@@ -13,3 +13,4 @@ export function applyStringMatcher(str, matcher) {
     }
     return false;
 }
+//# sourceMappingURL=match.js.map

@@ -267,3 +267,4 @@ export function computeChildrenRect(space) {
         }
     }
 }
+//# sourceMappingURL=Space.layout.js.map

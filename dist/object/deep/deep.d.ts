@@ -93,3 +93,4 @@ export declare function deepAssignWithOptions<T = any>(options: Partial<typeof d
 export declare function deepAssign<T = any>(target: any, ...sources: any[]): T;
 export declare function deepFreeze<T = any>(obj: T): DeepReadonly<T>;
 export {};
+//# sourceMappingURL=deep.d.ts.map

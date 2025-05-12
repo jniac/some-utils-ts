@@ -59,3 +59,4 @@ export const bump = {
     unnormalizedElastic,
     elastic,
 };
+//# sourceMappingURL=bump.js.map

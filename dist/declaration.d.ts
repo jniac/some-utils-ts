@@ -65,3 +65,4 @@ export declare function isVector4Declaration<BaseType = number>(arg: any, isBase
 export declare function fromVector4Declaration<BaseType = number, T extends Vector4Like<BaseType> = Vector4Like<BaseType>>(arg: Vector4Declaration<BaseType>, out?: T, defaultValue?: BaseType, isBaseType?: IsBaseType<BaseType>): T;
 export declare function toVector4Declaration<BaseType = number>(arg: Vector4Declaration<BaseType>): Vector4Declaration<BaseType>;
 export {};
+//# sourceMappingURL=declaration.d.ts.map

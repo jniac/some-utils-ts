@@ -581,3 +581,4 @@ parseEase, remap };
 // if (typeof window !== 'undefined') {
 //   Object.assign(window, { Animation: AnimationBundle })
 // }
+//# sourceMappingURL=animation.js.map

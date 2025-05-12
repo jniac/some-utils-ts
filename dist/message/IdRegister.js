@@ -69,3 +69,4 @@ export class IdRegister {
                 : this._requireObjectId(value));
     }
 }
+//# sourceMappingURL=IdRegister.js.map

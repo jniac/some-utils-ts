@@ -44,3 +44,4 @@ export async function* waitForSeconds(seconds, options) {
         yield it;
     }
 }
+//# sourceMappingURL=async.js.map

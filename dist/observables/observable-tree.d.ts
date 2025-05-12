@@ -59,3 +59,4 @@ export declare class ObservableTree<T> extends Observable<T> {
     onMutation<SubType = any>(path: string | Path, callback: PartialChangeCallback<T, SubType>): import("../types").DestroyableObject;
 }
 export {};
+//# sourceMappingURL=observable-tree.d.ts.map

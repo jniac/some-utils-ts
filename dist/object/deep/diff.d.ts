@@ -38,3 +38,4 @@ export declare class DeepDiffResult<TypeA = any, TypeB = any> {
  * - `differences !== aDifferences + bDifferences` because some differences may be common.
  */
 export declare function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB): DeepDiffResult<TypeA, TypeB>;
+//# sourceMappingURL=diff.d.ts.map

@@ -11,3 +11,4 @@ type TypeArg = Type | keyof typeof options;
  */
 export declare const generics: (typeArg: TypeArg | TypeArg[], template: string | ((type: string) => string)) => string;
 export {};
+//# sourceMappingURL=generics.d.ts.map

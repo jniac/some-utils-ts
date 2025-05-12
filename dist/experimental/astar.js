@@ -241,3 +241,4 @@ export class Graph2 {
         return true;
     }
 }
+//# sourceMappingURL=astar.js.map

@@ -23,3 +23,4 @@ export function mergePrototypes(ClassA, ClassB) {
     }
     return C;
 }
+//# sourceMappingURL=polymorphism.js.map

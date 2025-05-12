@@ -44,3 +44,4 @@ export declare class ManyToOne<K, V> {
      */
     valueCount(): number;
 }
+//# sourceMappingURL=many-to-one.d.ts.map

@@ -8,3 +8,4 @@ float clamp01(float x) {
 
 #endif
 `;
+//# sourceMappingURL=basic.js.map

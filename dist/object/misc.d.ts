@@ -15,3 +15,4 @@ export declare function omit<T extends Record<string, any>, K extends keyof T>(o
 export declare function omitWithGetters<T extends Record<string, any>, K extends keyof T>(object: T, ...keys: K[]): Omit<T, K>;
 export declare function pick<T extends object, K extends keyof T>(source: T, ...keys: K[]): Pick<T, K>;
 export declare function pickWithGetters<T extends object, K extends keyof T>(source: T, ...keys: K[]): Pick<T, K>;
+//# sourceMappingURL=misc.d.ts.map

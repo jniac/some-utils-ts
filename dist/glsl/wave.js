@@ -29,3 +29,4 @@ export const glsl_wave = /* glsl */ `
   }
 
 `;
+//# sourceMappingURL=wave.js.map
