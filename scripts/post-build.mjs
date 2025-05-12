@@ -2,6 +2,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
+import { generateShortImports } from './generate-short-imports.mjs'
 
 /**
  * Adds .js extensions to relative imports in a single file.
@@ -91,3 +92,5 @@ const targetFolder = process.argv[2] || './dist' // Default to './dist' if no fo
 const now = Date.now()
 const count = await processDirectory(targetFolder)
 console.log(`Changed ${count} import paths in ${targetFolder} (${Date.now() - now}ms)`)
+
+await generateShortImports(targetFolder)
