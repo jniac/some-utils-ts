@@ -1,3 +1,7 @@
+// This script generates short import files for all directories containing an `index.js` file.  
+// Original file from `some-utils-ts`.  
+// https://github.com/jniac/some-utils-ts/blob/main/scripts/generate-short-imports.mjs
+
 import fs from "fs/promises"
 import path from "path"
 
@@ -8,22 +12,24 @@ async function doGenerateShortImports(dir, head = { logs: [], parent: null }) {
     const fullPath = path.join(dir, item.name)
 
     if (item.isDirectory()) {
-      // Check if `index.js` exists in this directory
-      const indexPath = path.join(fullPath, "index.js")
 
       try {
-        await fs.access(indexPath) // Check if index.js exists
+        // Check if `index.js` exists in this directory
+        const indexPath = path.join(fullPath, 'index.js')
+        await fs.access(indexPath)
 
         // Get the relative path from the base dir
         const relativePath = path.relative(dir, fullPath)
 
         {
+          // JS file
           const filepath = path.join(dir, `${relativePath}.js`)
           const content = `export * from './${relativePath}/index.js';\n`
           await fs.writeFile(filepath, content)
         }
 
         {
+          // DTS file
           const filepath = path.join(dir, `${relativePath}.d.ts`)
           const content = `export * from './${relativePath}/index';\n`
           await fs.writeFile(filepath, content)
