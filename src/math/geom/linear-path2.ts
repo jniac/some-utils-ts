@@ -326,6 +326,8 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
   extend(amount: number): this {
     if (this.closed)
       throw new Error('Cannot extend a closed path')
+    if (this.points.length < 2)
+      throw new Error('Cannot extend a path with less than 2 points')
     const n = this.points.length
     const { x: x0, y: y0 } = this.points[0]
     const { x: x1, y: y1 } = this.points[1]

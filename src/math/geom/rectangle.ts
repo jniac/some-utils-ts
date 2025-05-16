@@ -39,7 +39,7 @@ export type RectangleDeclaration =
   | WithAlignOption<{ aspect: number, diagonal: number }>
   | WithAlignOption<{ center?: Vector2Declaration, extent: number | Vector2Declaration }>
   | WithAlignOption<{ /** @deprecated Use `center` instead. */position?: Vector2Declaration, extent: number | Vector2Declaration }>
-  | WithAlignOption<{ position?: Vector2Declaration, size: Vector2Declaration }>
+  | WithAlignOption<{ position?: Vector2Declaration, center?: Vector2Declaration, size: Vector2Declaration }>
 
 export const defaultRectangleDeclaration: RectangleDeclaration = { x: 0, y: 0, width: 1, height: 1 }
 
@@ -99,9 +99,15 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
   }
 
   if ('size' in restDeclaration) {
-    const { position = 0, size } = restDeclaration
-    const p = fromVector2Declaration(position)
+    const { center, position = 0, size } = restDeclaration
+    const p = center
+      ? fromVector2Declaration(center)
+      : fromVector2Declaration(position)
     const s = fromVector2Declaration(size)
+    if (center) {
+      p.x -= s.x / 2
+      p.y -= s.y / 2
+    }
     return out
       .setPosition(p.x, p.y)
       .setSize(s.x, s.y)
