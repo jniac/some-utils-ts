@@ -71,9 +71,15 @@ export function fromRectangleDeclaration(declaration, out = new Rectangle()) {
             .relativeTranslate(-ax, -ay);
     }
     if ('size' in restDeclaration) {
-        const { position = 0, size } = restDeclaration;
-        const p = fromVector2Declaration(position);
+        const { center, position = 0, size } = restDeclaration;
+        const p = center
+            ? fromVector2Declaration(center)
+            : fromVector2Declaration(position);
         const s = fromVector2Declaration(size);
+        if (center) {
+            p.x -= s.x / 2;
+            p.y -= s.y / 2;
+        }
         return out
             .setPosition(p.x, p.y)
             .setSize(s.x, s.y)

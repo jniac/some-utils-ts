@@ -11,7 +11,7 @@ const init = (seed = DEFAULT_SEED) => {
     if (seed === 0) {
         return 345678;
     }
-    return DEFAULT_SEED;
+    throw new Error('Impossible.');
 };
 const next = (state) => {
     state = Math.imul(state, 48271);

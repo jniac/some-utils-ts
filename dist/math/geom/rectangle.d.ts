@@ -57,6 +57,7 @@ export type RectangleDeclaration = [x: number, y: number, width: number, height:
     extent: number | Vector2Declaration;
 }> | WithAlignOption<{
     position?: Vector2Declaration;
+    center?: Vector2Declaration;
     size: Vector2Declaration;
 }>;
 export declare const defaultRectangleDeclaration: RectangleDeclaration;
