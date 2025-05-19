@@ -10,11 +10,26 @@ type AStarHookInfo<Node> = {
 }
 
 type AStarParams<Node> = {
+  /**
+   * The starting node of the pathfinding algorithm.
+   */
   start: Node
+  /**
+   * The goal node of the pathfinding algorithm.
+   */
   goal: Node
+  /**
+   * A delegate function that returns the neighbors of a given node.
+   * The function should return an iterable of objects containing the neighbor node and the cost to reach it.
+   */
   getNeighbors: (node: Node) => Iterable<{ node: Node, cost: number }>
+  /**
+   * A delegate function that computes the heuristic cost between two nodes.
+   * 
+   * Note: The heuristic function is also used to determine if the goal node is 
+   * reached (returning value < EPSILON).
+   */
   heuristic: (node: Node, goal: Node) => number
-
   /**
    * Custom hook to compute the heuristic cost of a neighbor.
    * If provided, this hook will be called for each neighbor of the current node,
