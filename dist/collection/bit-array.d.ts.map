@@ -1,0 +1,1 @@
+{"version":3,"file":"bit-array.d.ts","sourceRoot":"","sources":["../../src/collection/bit-array.ts"],"names":[],"mappings":"AAEA;;;GAGG;AACH,qBAAa,QAAQ;;IAInB,IAAI,MAAM,IAAI,MAAM,CAEnB;gBAEW,KAAK,EAAE,MAAM;IASzB,GAAG,CAAC,KAAK,EAAE,MAAM,GAAG,OAAO;IAS3B,GAAG,CAAC,KAAK,EAAE,MAAM,EAAE,KAAK,EAAE,OAAO,GAAG,IAAI;IAexC,KAAK,IAAI,IAAI;CAGd"}
