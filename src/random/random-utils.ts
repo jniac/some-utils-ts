@@ -15,7 +15,7 @@ type RandomUtilsType = {
    * algorithm with the given seed, resetting the state of the generator.
    * @param seed - The seed for the random number generator.
    */
-  seed: (seed?: number) => RandomUtilsType
+  seed: (seed?: number | 'reset') => RandomUtilsType
 
   /**
    * Creates a new instance of RandomUtils. This is useful if you want to create
@@ -30,6 +30,12 @@ type RandomUtilsType = {
   number(): number
   number(max: number): number
   number(min: number, max: number): number
+
+  /**
+   * Generates a random hex color string in the format '#RRGGBB'.
+   * @returns A random hex color string.
+   */
+  hexColor(): string
 
   /**
    * Generates a random integer between 0 and max, or between min and max if provided.
@@ -91,8 +97,8 @@ function createRandomUtils(): RandomUtilsType {
     return instance
   }
 
-  function seed(seed?: number) {
-    doResetRandom(seed ?? 0)
+  function seed(seed?: number | 'reset') {
+    doResetRandom(seed === 'reset' ? 0 : seed ?? 0)
     return instance
   }
 
@@ -107,6 +113,11 @@ function createRandomUtils(): RandomUtilsType {
     if (args.length === 1) return Math.floor(random() * args[0])
     if (args.length === 2) return Math.floor(random() * (args[1] - args[0])) + args[0]
     throw new Error('Invalid arguments')
+  }
+
+  function hexColor(): string {
+    const randomColor = Math.floor(random() * 0xffffff)
+    return `#${randomColor.toString(16).padStart(6, '0')}`
   }
 
   function pickIndex(weights: number[]): number {
@@ -145,6 +156,7 @@ function createRandomUtils(): RandomUtilsType {
 
     number,
     int,
+    hexColor,
     pickIndex,
     pick,
   }
