@@ -1,5 +1,9 @@
 import { hash2 } from './hash2'
 
+type Entry2<T> = [x: number, y: number, value: T]
+
+type SingleEntry2<T> = { x: number, y: number, value: T }
+
 class LinkedList2<T> {
   x: number
   y: number
@@ -41,7 +45,19 @@ class LinkedList2<T> {
   }
 }
 
-type SingleEntry2<T> = { x: number, y: number, value: T }
+function* yieldSingleEntryOrLinkedList2<T>(e?: SingleEntry2<T> | LinkedList2<T>): Generator<Entry2<T>, void, unknown> {
+  if (e === undefined)
+    return
+  if (e instanceof LinkedList2) {
+    let current: LinkedList2<T> | undefined = e
+    while (current) {
+      yield [current.x, current.y, current.value]
+      current = current.next
+    }
+  } else {
+    yield [e.x, e.y, e.value]
+  }
+}
 
 /**
  * A hash grid that uses a hash function to map 2D coordinates (x, y) to a 32-bit 
@@ -67,18 +83,6 @@ export class HashGrid2<T> {
   #valueCount = 0
   #cellSize: number
   #hash: (x: number, y: number) => number
-
-  get cellCount(): number {
-    return this.#map.size
-  }
-
-  get valueCount(): number {
-    return this.#valueCount
-  }
-
-  get cellSize(): number {
-    return this.#cellSize
-  }
 
   constructor(cellSize = 0) {
     this.#cellSize = cellSize
@@ -118,7 +122,9 @@ export class HashGrid2<T> {
       }
       return undefined
     } else {
-      return (e.x === x && e.y === y) ? e.value : undefined
+      return (e.x === x && e.y === y)
+        ? e.value
+        : undefined
     }
   }
 
@@ -179,65 +185,70 @@ export class HashGrid2<T> {
     }
   }
 
-  *cellValues(x: number, y: number): Generator<T, void, unknown> {
-    const h = this.#hash(x, y)
-    const e = this.#map.get(h)
-    if (e === undefined) {
-      return
-    }
+  /**
+   * Returns a generator of all values in the cell at (x, y).
+   */
+  *cellEntries(x: number, y: number): Generator<Entry2<T>, void, unknown> {
+    const e = this.#map.get(this.#hash(x, y))
+    yield* yieldSingleEntryOrLinkedList2(e)
+  }
 
-    if (e instanceof LinkedList2) {
-      let current: LinkedList2<T> | undefined = e
-      while (current) {
-        yield current.value
-        current = current.next
+  *cellNeighborEntries(x: number, y: number, neighborExtent = 1): Generator<Entry2<T>, void, unknown> {
+    const cx = Math.floor(x / this.#cellSize)
+    const cy = Math.floor(y / this.#cellSize)
+    const minX = cx - neighborExtent
+    const minY = cy - neighborExtent
+    const maxX = cx + neighborExtent
+    const maxY = cy + neighborExtent
+    for (let i = minX; i <= maxX; i++) {
+      for (let j = minY; j <= maxY; j++) {
+        const e = this.#map.get(this.#hash(i * this.#cellSize, j * this.#cellSize))
+        yield* yieldSingleEntryOrLinkedList2(e)
       }
-    } else {
-      yield e.value
     }
+  }
+
+  *cellValues(x: number, y: number): Generator<T, void, unknown> {
+    for (const [, , value] of this.cellEntries(x, y))
+      yield value
+  }
+
+  *entries(): Generator<Entry2<T>, void, unknown> {
+    for (const e of this.#map.values())
+      yield* yieldSingleEntryOrLinkedList2(e)
   }
 
   *values(): Generator<T, void, unknown> {
-    for (const e of this.#map.values()) {
-      if (e instanceof LinkedList2) {
-        let current: LinkedList2<T> | undefined = e
-        while (current) {
-          yield current.value
-          current = current.next
-        }
-      } else {
-        yield e.value
-      }
-    }
-  }
-
-  *entries(): Generator<[x: number, y: number, value: T], void, unknown> {
-    for (const e of this.#map.values()) {
-      if (e instanceof LinkedList2) {
-        let current: LinkedList2<T> | undefined = e
-        while (current) {
-          yield [current.x, current.y, current.value]
-          current = current.next
-        }
-      } else {
-        yield [e.x, e.y, e.value]
-      }
-    }
+    for (const [, , value] of this.entries())
+      yield value
   }
 
   mapEntries<V>(fn: (x: number, y: number, value: T) => V): V[] {
     const values: V[] = []
-    for (const e of this.#map.values()) {
-      if (e instanceof LinkedList2) {
-        let current: LinkedList2<T> | undefined = e
-        while (current) {
-          values.push(fn(current.x, current.y, current.value))
-          current = current.next
-        }
-      } else {
-        values.push(fn(e.x, e.y, e.value))
-      }
-    }
+    for (const [x, y, value] of this.entries())
+      values.push(fn(x, y, value))
     return values
+  }
+
+  // Readonly properties & Utils
+
+  get cellCount(): number {
+    return this.#map.size
+  }
+
+  get valueCount(): number {
+    return this.#valueCount
+  }
+
+  get cellSize(): number {
+    return this.#cellSize
+  }
+
+  get hash(): (x: number, y: number) => number {
+    return this.#hash
+  }
+
+  floor(x: number) {
+    return Math.floor(x / this.#cellSize) * this.#cellSize
   }
 }
