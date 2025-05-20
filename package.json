@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsc-watch --onSuccess \"node scripts/post-build.mjs\"",
+    "dev": "rm -rf dist && tsc-watch --onSuccess \"node scripts/post-build.mjs\"",
     "build": "tsc && node scripts/post-build.mjs",
     "test": "vitest"
   },

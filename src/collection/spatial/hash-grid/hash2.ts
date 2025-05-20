@@ -2,12 +2,15 @@ const PRIME1 = 48271
 const PRIME2 = 2246822519
 const PRIME3 = 3266489917
 const PRIME4 = 668265263
+
 function mix(x: number, shift = 2, factor = 6329): number {
   x = Math.imul(x, factor)
   return (x << shift) | (x >>> (32 - shift))
 }
+
 const f64 = new Float64Array(1)
 const i32 = new Int32Array(f64.buffer)
+
 /**
  * An hash function that takes two numbers (x, y) and returns a 32-bit integer.
  *
@@ -37,7 +40,6 @@ const i32 = new Int32Array(f64.buffer)
  * }
  *  ```
  */
-
 export function hash2(x: number, y: number): number {
   f64[0] = x
   const x1 = i32[0]

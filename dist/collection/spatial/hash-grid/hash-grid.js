@@ -41,33 +41,53 @@ class LinkedList2 {
  * A hash grid that uses a hash function to map 2D coordinates (x, y) to a 32-bit
  * integer map.
  *
- * It uses internally a linked list to handle collisions.
- *
- * The hash function is very fast and has a very low collision rate.
- *
  * Hash grids are useful for spatial partitioning, for example in games or
  * simulations, to run spatial algorithms like raycasting, pathfinding, random
  * sampling, etc.
+ *
+ * A cell size can be specified to group values into cells. If the cell size is 0,
+ * the hash function will use the exact coordinates, otherwise it will use the
+ * coordinates divided by the cell size.
+ *
+ * The hash function is very fast and has a very low collision rate.
+ *
+ * Note:
+ * - Cell size can be omitted or set to 0 for exact coordinates, it's ok.
+ * - The grid is memory-optimized and use linked lists only when there are more
+ *   than 1 value in the same cell.
  */
 export class HashGrid2 {
     #map = new Map();
-    #size = 0;
-    get mapSize() {
+    #valueCount = 0;
+    #cellSize;
+    #hash;
+    get cellCount() {
         return this.#map.size;
     }
-    get size() {
-        return this.#size;
+    get valueCount() {
+        return this.#valueCount;
+    }
+    get cellSize() {
+        return this.#cellSize;
+    }
+    constructor(cellSize = 0) {
+        this.#cellSize = cellSize;
+        this.#hash = (cellSize === 0)
+            ? hash2
+            : (x, y) => hash2(Math.floor(x / cellSize), Math.floor(y / cellSize));
     }
     clear() {
         this.#map.clear();
-        this.#size = 0;
+        this.#valueCount = 0;
+    }
+    hasCell(x, y) {
+        return this.#map.has(this.#hash(x, y));
     }
     has(x, y) {
-        const h = hash2(x, y);
-        return this.#map.has(h);
+        return this.get(x, y) !== undefined;
     }
     get(x, y) {
-        const h = hash2(x, y);
+        const h = this.#hash(x, y);
         const e = this.#map.get(h);
         if (e === undefined) {
             return undefined;
@@ -90,15 +110,15 @@ export class HashGrid2 {
             this.delete(x, y);
             return;
         }
-        const h = hash2(x, y);
+        const h = this.#hash(x, y);
         const e = this.#map.get(h);
         if (e === undefined) {
             this.#map.set(h, { x, y, value });
-            this.#size++;
+            this.#valueCount++;
         }
         else if (e instanceof LinkedList2) {
             e.insert(x, y, value);
-            this.#size++;
+            this.#valueCount++;
         }
         else {
             if (e.x === x && e.y === y) {
@@ -108,12 +128,12 @@ export class HashGrid2 {
                 const list = new LinkedList2(e.x, e.y, e.value);
                 list.insert(x, y, value);
                 this.#map.set(h, list);
-                this.#size++;
+                this.#valueCount++;
             }
         }
     }
     delete(x, y) {
-        const h = hash2(x, y);
+        const h = this.#hash(x, y);
         const e = this.#map.get(h);
         if (e === undefined)
             return false;
@@ -125,22 +145,83 @@ export class HashGrid2 {
                 else {
                     this.#map.delete(h);
                 }
-                this.#size--;
+                this.#valueCount--;
                 return true;
             }
             else {
-                this.#size--;
+                this.#valueCount--;
                 return e.remove(x, y);
             }
         }
         else {
             if (e.x === x && e.y === y) {
                 this.#map.delete(h);
-                this.#size--;
+                this.#valueCount--;
                 return true;
             }
             return false;
         }
+    }
+    *cellValues(x, y) {
+        const h = this.#hash(x, y);
+        const e = this.#map.get(h);
+        if (e === undefined) {
+            return;
+        }
+        if (e instanceof LinkedList2) {
+            let current = e;
+            while (current) {
+                yield current.value;
+                current = current.next;
+            }
+        }
+        else {
+            yield e.value;
+        }
+    }
+    *values() {
+        for (const e of this.#map.values()) {
+            if (e instanceof LinkedList2) {
+                let current = e;
+                while (current) {
+                    yield current.value;
+                    current = current.next;
+                }
+            }
+            else {
+                yield e.value;
+            }
+        }
+    }
+    *entries() {
+        for (const e of this.#map.values()) {
+            if (e instanceof LinkedList2) {
+                let current = e;
+                while (current) {
+                    yield [current.x, current.y, current.value];
+                    current = current.next;
+                }
+            }
+            else {
+                yield [e.x, e.y, e.value];
+            }
+        }
+    }
+    mapEntries(fn) {
+        const values = [];
+        for (const e of this.#map.values()) {
+            if (e instanceof LinkedList2) {
+                let current = e;
+                while (current) {
+                    values.push(fn(current.x, current.y, current.value));
+                    current = current.next;
+                }
+            }
+            else {
+                values.push(fn(e.x, e.y, e.value));
+            }
+        }
+        return values;
     }
 }
 //# sourceMappingURL=hash-grid.js.map
