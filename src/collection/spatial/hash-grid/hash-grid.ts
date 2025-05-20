@@ -1,4 +1,4 @@
-import { hash2 } from './hash2'
+import { hash2 } from './hash'
 
 type Entry2<T> = [x: number, y: number, value: T]
 
