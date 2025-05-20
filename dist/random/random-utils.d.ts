@@ -11,7 +11,7 @@ type RandomUtilsType = {
      * algorithm with the given seed, resetting the state of the generator.
      * @param seed - The seed for the random number generator.
      */
-    seed: (seed?: number) => RandomUtilsType;
+    seed: (seed?: number | 'reset') => RandomUtilsType;
     /**
      * Creates a new instance of RandomUtils. This is useful if you want to create
      * multiple independent random number generators.
@@ -24,6 +24,11 @@ type RandomUtilsType = {
     number(): number;
     number(max: number): number;
     number(min: number, max: number): number;
+    /**
+     * Generates a random hex color string in the format '#RRGGBB'.
+     * @returns A random hex color string.
+     */
+    hexColor(): string;
     /**
      * Generates a random integer between 0 and max, or between min and max if provided.
      * Note: The max value is exclusive.

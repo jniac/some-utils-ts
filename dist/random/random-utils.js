@@ -27,7 +27,7 @@ function createRandomUtils() {
         return instance;
     }
     function seed(seed) {
-        doResetRandom(seed ?? 0);
+        doResetRandom(seed === 'reset' ? 0 : seed ?? 0);
         return instance;
     }
     function number(...args) {
@@ -45,6 +45,10 @@ function createRandomUtils() {
         if (args.length === 2)
             return Math.floor(random() * (args[1] - args[0])) + args[0];
         throw new Error('Invalid arguments');
+    }
+    function hexColor() {
+        const randomColor = Math.floor(random() * 0xffffff);
+        return `#${randomColor.toString(16).padStart(6, '0')}`;
     }
     function pickIndex(weights) {
         if (weights.length === 0)
@@ -75,6 +79,7 @@ function createRandomUtils() {
         seed,
         number,
         int,
+        hexColor,
         pickIndex,
         pick,
     };
