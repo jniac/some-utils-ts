@@ -37,6 +37,20 @@ class LinkedList2 {
         return false;
     }
 }
+function* yieldSingleEntryOrLinkedList2(e) {
+    if (e === undefined)
+        return;
+    if (e instanceof LinkedList2) {
+        let current = e;
+        while (current) {
+            yield [current.x, current.y, current.value];
+            current = current.next;
+        }
+    }
+    else {
+        yield [e.x, e.y, e.value];
+    }
+}
 /**
  * A hash grid that uses a hash function to map 2D coordinates (x, y) to a 32-bit
  * integer map.
@@ -61,15 +75,6 @@ export class HashGrid2 {
     #valueCount = 0;
     #cellSize;
     #hash;
-    get cellCount() {
-        return this.#map.size;
-    }
-    get valueCount() {
-        return this.#valueCount;
-    }
-    get cellSize() {
-        return this.#cellSize;
-    }
     constructor(cellSize = 0) {
         this.#cellSize = cellSize;
         this.#hash = (cellSize === 0)
@@ -102,7 +107,9 @@ export class HashGrid2 {
             return undefined;
         }
         else {
-            return (e.x === x && e.y === y) ? e.value : undefined;
+            return (e.x === x && e.y === y)
+                ? e.value
+                : undefined;
         }
     }
     set(x, y, value) {
@@ -162,66 +169,60 @@ export class HashGrid2 {
             return false;
         }
     }
-    *cellValues(x, y) {
-        const h = this.#hash(x, y);
-        const e = this.#map.get(h);
-        if (e === undefined) {
-            return;
-        }
-        if (e instanceof LinkedList2) {
-            let current = e;
-            while (current) {
-                yield current.value;
-                current = current.next;
+    /**
+     * Returns a generator of all values in the cell at (x, y).
+     */
+    *cellEntries(x, y) {
+        const e = this.#map.get(this.#hash(x, y));
+        yield* yieldSingleEntryOrLinkedList2(e);
+    }
+    *cellNeighborEntries(x, y, neighborExtent = 1) {
+        const cx = Math.floor(x / this.#cellSize);
+        const cy = Math.floor(y / this.#cellSize);
+        const minX = cx - neighborExtent;
+        const minY = cy - neighborExtent;
+        const maxX = cx + neighborExtent;
+        const maxY = cy + neighborExtent;
+        for (let i = minX; i <= maxX; i++) {
+            for (let j = minY; j <= maxY; j++) {
+                const e = this.#map.get(this.#hash(i * this.#cellSize, j * this.#cellSize));
+                yield* yieldSingleEntryOrLinkedList2(e);
             }
-        }
-        else {
-            yield e.value;
         }
     }
-    *values() {
-        for (const e of this.#map.values()) {
-            if (e instanceof LinkedList2) {
-                let current = e;
-                while (current) {
-                    yield current.value;
-                    current = current.next;
-                }
-            }
-            else {
-                yield e.value;
-            }
-        }
+    *cellValues(x, y) {
+        for (const [, , value] of this.cellEntries(x, y))
+            yield value;
     }
     *entries() {
-        for (const e of this.#map.values()) {
-            if (e instanceof LinkedList2) {
-                let current = e;
-                while (current) {
-                    yield [current.x, current.y, current.value];
-                    current = current.next;
-                }
-            }
-            else {
-                yield [e.x, e.y, e.value];
-            }
-        }
+        for (const e of this.#map.values())
+            yield* yieldSingleEntryOrLinkedList2(e);
+    }
+    *values() {
+        for (const [, , value] of this.entries())
+            yield value;
     }
     mapEntries(fn) {
         const values = [];
-        for (const e of this.#map.values()) {
-            if (e instanceof LinkedList2) {
-                let current = e;
-                while (current) {
-                    values.push(fn(current.x, current.y, current.value));
-                    current = current.next;
-                }
-            }
-            else {
-                values.push(fn(e.x, e.y, e.value));
-            }
-        }
+        for (const [x, y, value] of this.entries())
+            values.push(fn(x, y, value));
         return values;
+    }
+    // Readonly properties & Utils
+    get cellCount() {
+        return this.#map.size;
+    }
+    get valueCount() {
+        return this.#valueCount;
+    }
+    get cellSize() {
+        return this.#cellSize;
+    }
+    get hash() {
+        return this.#hash;
+    }
+    floor(x) {
+        return Math.floor(x / this.#cellSize) * this.#cellSize;
     }
 }
 //# sourceMappingURL=hash-grid.js.map
