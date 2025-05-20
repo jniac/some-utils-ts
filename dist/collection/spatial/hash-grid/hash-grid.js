@@ -177,15 +177,11 @@ export class HashGrid2 {
         yield* yieldSingleEntryOrLinkedList2(e);
     }
     *cellNeighborEntries(x, y, neighborExtent = 1) {
-        const cx = Math.floor(x / this.#cellSize);
-        const cy = Math.floor(y / this.#cellSize);
-        const minX = cx - neighborExtent;
-        const minY = cy - neighborExtent;
-        const maxX = cx + neighborExtent;
-        const maxY = cy + neighborExtent;
-        for (let i = minX; i <= maxX; i++) {
-            for (let j = minY; j <= maxY; j++) {
-                const e = this.#map.get(this.#hash(i * this.#cellSize, j * this.#cellSize));
+        for (let i = -neighborExtent; i <= neighborExtent; i++) {
+            for (let j = -neighborExtent; j <= neighborExtent; j++) {
+                const cx = x + i * this.#cellSize;
+                const cy = y + j * this.#cellSize;
+                const e = this.#map.get(this.#hash(cx, cy));
                 yield* yieldSingleEntryOrLinkedList2(e);
             }
         }
