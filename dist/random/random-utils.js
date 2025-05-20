@@ -77,6 +77,9 @@ function createRandomUtils() {
         new: _new,
         setRandom,
         seed,
+        get random() {
+            return random;
+        },
         number,
         int,
         hexColor,

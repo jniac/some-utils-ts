@@ -74,12 +74,27 @@ export class HashGrid2 {
     #map = new Map();
     #valueCount = 0;
     #cellSize;
+    // @ts-ignore
     #hash;
     constructor(cellSize = 0) {
         this.#cellSize = cellSize;
         this.#hash = (cellSize === 0)
             ? hash2
             : (x, y) => hash2(Math.floor(x / cellSize), Math.floor(y / cellSize));
+        // @ts-ignore
+        // Hack for memo:
+        // raw string hash function has quite the same performance as the number hash 
+        // function, which is a little deceiving since the number hash function was 
+        // not that easy to implement with a low rate collision, but hey, at least
+        // `hash2` is a good hash function, compatible with other more-lower-level 
+        // languages.
+        // this.#hash = (cellSize === 0)
+        //   ? (x: number, y: number) => `${x},${y}`
+        //   : (x: number, y: number) => {
+        //     x = Math.floor(x / this.#cellSize)
+        //     y = Math.floor(y / this.#cellSize)
+        //     return `${x},${y}`
+        //   }
     }
     clear() {
         this.#map.clear();
@@ -177,22 +192,25 @@ export class HashGrid2 {
         yield* yieldSingleEntryOrLinkedList2(e);
     }
     *cellNeighborEntries(x, y, neighborExtent = 1) {
+        const map = this.#map;
+        const hash = this.#hash;
+        const cellSize = this.#cellSize;
         for (let i = -neighborExtent; i <= neighborExtent; i++) {
             for (let j = -neighborExtent; j <= neighborExtent; j++) {
-                const cx = x + i * this.#cellSize;
-                const cy = y + j * this.#cellSize;
-                const e = this.#map.get(this.#hash(cx, cy));
+                const cx = x + i * cellSize;
+                const cy = y + j * cellSize;
+                const e = map.get(hash(cx, cy));
                 yield* yieldSingleEntryOrLinkedList2(e);
             }
         }
     }
-    *cellValues(x, y) {
-        for (const [, , value] of this.cellEntries(x, y))
-            yield value;
-    }
     *entries() {
         for (const e of this.#map.values())
             yield* yieldSingleEntryOrLinkedList2(e);
+    }
+    *cellValues(x, y) {
+        for (const [, , value] of this.cellEntries(x, y))
+            yield value;
     }
     *values() {
         for (const [, , value] of this.entries())

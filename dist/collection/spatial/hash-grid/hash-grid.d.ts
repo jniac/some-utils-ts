@@ -32,8 +32,8 @@ export declare class HashGrid2<T> {
      */
     cellEntries(x: number, y: number): Generator<Entry2<T>, void, unknown>;
     cellNeighborEntries(x: number, y: number, neighborExtent?: number): Generator<Entry2<T>, void, unknown>;
-    cellValues(x: number, y: number): Generator<T, void, unknown>;
     entries(): Generator<Entry2<T>, void, unknown>;
+    cellValues(x: number, y: number): Generator<T, void, unknown>;
     values(): Generator<T, void, unknown>;
     mapEntries<V>(fn: (x: number, y: number, value: T) => V): V[];
     get cellCount(): number;

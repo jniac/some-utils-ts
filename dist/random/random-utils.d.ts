@@ -19,6 +19,16 @@ type RandomUtilsType = {
      */
     new: (...args: SetRandomParameters) => RandomUtilsType;
     /**
+     * Returns a random number between 0 and 1 using the current random function.
+     *
+     * Same signature as Math.random and can be used as a replacement.
+     *
+     * For more options, use the number() method.
+     *
+     * @returns A random number between 0 and 1.
+     */
+    random: () => number;
+    /**
      * Generates a random number between 0 and 1, or between min and max if provided.
      */
     number(): number;
