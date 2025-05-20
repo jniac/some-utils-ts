@@ -48,4 +48,4 @@ export function hash2(x, y) {
         mix(y1, 17, PRIME2)) ^ (mix(x2, 13, PRIME3) ^
         mix(y2, 27, PRIME4));
 }
-//# sourceMappingURL=hash2.js.map
+//# sourceMappingURL=hash.js.map

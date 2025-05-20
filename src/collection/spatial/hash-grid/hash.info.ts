@@ -1,5 +1,5 @@
-import { BitArray } from '../bit-array'
-import { hash2 } from './hash2'
+import { BitArray } from '../../bit-array'
+import { hash2 } from './hash'
 
 function findPrimes(count = 1000) {
   const primes: number[] = []

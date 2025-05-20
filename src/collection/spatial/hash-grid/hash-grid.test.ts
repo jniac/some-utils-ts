@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { HashGrid2 } from './hash-grid'
-import hash2Collision from './hash2.collisions.json'
+import hash2Collision from './hash.collisions.json'
 
 describe('HashGrid2', () => {
   test('should set and get values', () => {

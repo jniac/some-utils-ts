@@ -1,4 +1,4 @@
-import { hash2 } from './hash2.js';
+import { hash2 } from './hash.js';
 class LinkedList2 {
     x;
     y;
