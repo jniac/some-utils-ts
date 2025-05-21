@@ -191,6 +191,10 @@ export class HashGrid2 {
         const e = this.#map.get(this.#hash(x, y));
         yield* yieldSingleEntryOrLinkedList2(e);
     }
+    cellFirstEntry(x, y) {
+        const e = this.#map.get(this.#hash(x, y));
+        return e && [e.x, e.y, e.value];
+    }
     *cellNeighborEntries(x, y, neighborExtent = 1) {
         const map = this.#map;
         const hash = this.#hash;
@@ -222,6 +226,49 @@ export class HashGrid2 {
             values.push(fn(x, y, value));
         return values;
     }
+    /**
+     * Returns a generator of all the entries in the grid that are within a circle of
+     * radius `radius` centered at (x, y).
+     */
+    *query(x, y, radius) {
+        const radius2 = radius * radius;
+        for (const [px, py, value] of this.cellNeighborEntries(x, y, Math.ceil(radius / this.#cellSize))) {
+            const dx = px - x;
+            const dy = py - y;
+            if (dx * dx + dy * dy <= radius2)
+                yield [px, py, value];
+        }
+    }
+    /**
+     * Returns the first entry in the grid that is within a circle of radius
+     * `radius` centered at (x, y).
+     *
+     * Note: The first entry is not necessarily the closest one.
+     */
+    queryFirst(x, y, radius) {
+        for (const [px, py, value] of this.query(x, y, radius)) {
+            return [px, py, value];
+        }
+        return undefined;
+    }
+    /**
+     * Returns the closest entry in the grid that is within a circle of radius
+     * `radius` centered at (x, y).
+     */
+    queryNearest(x, y, radius) {
+        let nearest;
+        let nearestDistance = Infinity;
+        for (const [px, py, value] of this.query(x, y, radius)) {
+            const dx = px - x;
+            const dy = py - y;
+            const distance = dx * dx + dy * dy;
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = [px, py, value];
+            }
+        }
+        return nearest;
+    }
     // Readonly properties & Utils
     get cellCount() {
         return this.#map.size;
@@ -237,6 +284,31 @@ export class HashGrid2 {
     }
     floor(x) {
         return Math.floor(x / this.#cellSize) * this.#cellSize;
+    }
+    ceil(x) {
+        return Math.ceil(x / this.#cellSize) * this.#cellSize;
+    }
+    round(x) {
+        return Math.round(x / this.#cellSize) * this.#cellSize;
+    }
+    computeMaxValueCountPerCell() {
+        let max = 0;
+        for (const e of this.#map.values()) {
+            if (e instanceof LinkedList2) {
+                let count = 0;
+                let current = e;
+                while (current) {
+                    count++;
+                    current = current.next;
+                }
+                if (count > max)
+                    max = count;
+            }
+            else {
+                max = Math.max(max, 1);
+            }
+        }
+        return max;
     }
 }
 //# sourceMappingURL=hash-grid.js.map

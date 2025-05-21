@@ -2,7 +2,7 @@ import { HashGrid2 } from '../collection/spatial/hash-grid'
 import { fromVector2Declaration, Vector2Declaration } from '../declaration'
 import { Vector2Like } from '../types'
 
-const defaultProps = {
+const defaultParams = {
   /**
    * The minimum distance between samples.
    * @default 1
@@ -99,7 +99,12 @@ const defaultProps = {
 //   }
 // }
 
-export function generatePoissonDiscSamples2(props?: Partial<typeof defaultProps>): Vector2Like[] {
+export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defaultParams>): {
+  samples: Vector2Like[]
+  grid: HashGrid2<number>
+  params: typeof defaultParams
+} {
+  const params = { ...defaultParams, ...incomingParams }
   const {
     radius,
     radiusRatioMax,
@@ -108,7 +113,7 @@ export function generatePoissonDiscSamples2(props?: Partial<typeof defaultProps>
     start,
     isValid,
     maxAttempts,
-  } = { ...defaultProps, ...props }
+  } = params
 
   if (radius <= 0)
     throw new Error('Radius must be greater than 0')
@@ -178,5 +183,9 @@ export function generatePoissonDiscSamples2(props?: Partial<typeof defaultProps>
     }
   }
 
-  return samples
+  return {
+    samples,
+    grid,
+    params,
+  }
 }

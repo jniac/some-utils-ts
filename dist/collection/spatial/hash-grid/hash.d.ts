@@ -28,4 +28,5 @@
  *  ```
  */
 export declare function hash2(x: number, y: number): number;
+export declare function hash3(x: number, y: number, z: number): number;
 //# sourceMappingURL=hash.d.ts.map

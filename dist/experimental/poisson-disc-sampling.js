@@ -1,6 +1,6 @@
 import { HashGrid2 } from '../collection/spatial/hash-grid.js';
 import { fromVector2Declaration } from '../declaration.js';
-const defaultProps = {
+const defaultParams = {
     /**
      * The minimum distance between samples.
      * @default 1
@@ -84,8 +84,9 @@ const defaultProps = {
 //     return entries
 //   }
 // }
-export function generatePoissonDiscSamples2(props) {
-    const { radius, radiusRatioMax, maxCount, random, start, isValid, maxAttempts, } = { ...defaultProps, ...props };
+export function generatePoissonDiscSamples2(incomingParams) {
+    const params = { ...defaultParams, ...incomingParams };
+    const { radius, radiusRatioMax, maxCount, random, start, isValid, maxAttempts, } = params;
     if (radius <= 0)
         throw new Error('Radius must be greater than 0');
     if (radiusRatioMax < 1)
@@ -138,6 +139,10 @@ export function generatePoissonDiscSamples2(props) {
             active.splice(sampleIndex, 1);
         }
     }
-    return samples;
+    return {
+        samples,
+        grid,
+        params,
+    };
 }
 //# sourceMappingURL=poisson-disc-sampling.js.map

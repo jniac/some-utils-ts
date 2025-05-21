@@ -1,6 +1,7 @@
+import { HashGrid2 } from '../collection/spatial/hash-grid';
 import { Vector2Declaration } from '../declaration';
 import { Vector2Like } from '../types';
-declare const defaultProps: {
+declare const defaultParams: {
     /**
      * The minimum distance between samples.
      * @default 1
@@ -36,6 +37,10 @@ declare const defaultProps: {
      */
     maxAttempts: number;
 };
-export declare function generatePoissonDiscSamples2(props?: Partial<typeof defaultProps>): Vector2Like[];
+export declare function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defaultParams>): {
+    samples: Vector2Like[];
+    grid: HashGrid2<number>;
+    params: typeof defaultParams;
+};
 export {};
 //# sourceMappingURL=poisson-disc-sampling.d.ts.map

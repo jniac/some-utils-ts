@@ -31,16 +31,37 @@ export declare class HashGrid2<T> {
      * Returns a generator of all values in the cell at (x, y).
      */
     cellEntries(x: number, y: number): Generator<Entry2<T>, void, unknown>;
+    cellFirstEntry(x: number, y: number): Entry2<T> | undefined;
     cellNeighborEntries(x: number, y: number, neighborExtent?: number): Generator<Entry2<T>, void, unknown>;
     entries(): Generator<Entry2<T>, void, unknown>;
     cellValues(x: number, y: number): Generator<T, void, unknown>;
     values(): Generator<T, void, unknown>;
     mapEntries<V>(fn: (x: number, y: number, value: T) => V): V[];
+    /**
+     * Returns a generator of all the entries in the grid that are within a circle of
+     * radius `radius` centered at (x, y).
+     */
+    query(x: number, y: number, radius: number): Generator<Entry2<T>, void, unknown>;
+    /**
+     * Returns the first entry in the grid that is within a circle of radius
+     * `radius` centered at (x, y).
+     *
+     * Note: The first entry is not necessarily the closest one.
+     */
+    queryFirst(x: number, y: number, radius: number): Entry2<T> | undefined;
+    /**
+     * Returns the closest entry in the grid that is within a circle of radius
+     * `radius` centered at (x, y).
+     */
+    queryNearest(x: number, y: number, radius: number): Entry2<T> | undefined;
     get cellCount(): number;
     get valueCount(): number;
     get cellSize(): number;
     get hash(): (x: number, y: number) => number;
     floor(x: number): number;
+    ceil(x: number): number;
+    round(x: number): number;
+    computeMaxValueCountPerCell(): number;
 }
 export {};
 //# sourceMappingURL=hash-grid.d.ts.map
