@@ -209,6 +209,11 @@ export class HashGrid2<T> {
     yield* yieldSingleEntryOrLinkedList2(e)
   }
 
+  cellFirstEntry(x: number, y: number): Entry2<T> | undefined {
+    const e = this.#map.get(this.#hash(x, y))
+    return e && [e.x, e.y, e.value]
+  }
+
   *cellNeighborEntries(x: number, y: number, neighborExtent = 1): Generator<Entry2<T>, void, unknown> {
     const map = this.#map
     const hash = this.#hash
@@ -245,6 +250,52 @@ export class HashGrid2<T> {
     return values
   }
 
+  /**
+   * Returns a generator of all the entries in the grid that are within a circle of
+   * radius `radius` centered at (x, y).
+   */
+  *query(x: number, y: number, radius: number): Generator<Entry2<T>, void, unknown> {
+    const radius2 = radius * radius
+    for (const [px, py, value] of this.cellNeighborEntries(x, y, Math.ceil(radius / this.#cellSize))) {
+      const dx = px - x
+      const dy = py - y
+      if (dx * dx + dy * dy <= radius2)
+        yield [px, py, value]
+    }
+  }
+
+  /**
+   * Returns the first entry in the grid that is within a circle of radius
+   * `radius` centered at (x, y).
+   * 
+   * Note: The first entry is not necessarily the closest one.
+   */
+  queryFirst(x: number, y: number, radius: number): Entry2<T> | undefined {
+    for (const [px, py, value] of this.query(x, y, radius)) {
+      return [px, py, value]
+    }
+    return undefined
+  }
+
+  /**
+   * Returns the closest entry in the grid that is within a circle of radius
+   * `radius` centered at (x, y).
+   */
+  queryNearest(x: number, y: number, radius: number): Entry2<T> | undefined {
+    let nearest: Entry2<T> | undefined
+    let nearestDistance = Infinity
+    for (const [px, py, value] of this.query(x, y, radius)) {
+      const dx = px - x
+      const dy = py - y
+      const distance = dx * dx + dy * dy
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = [px, py, value]
+      }
+    }
+    return nearest
+  }
+
   // Readonly properties & Utils
 
   get cellCount(): number {
@@ -265,5 +316,32 @@ export class HashGrid2<T> {
 
   floor(x: number) {
     return Math.floor(x / this.#cellSize) * this.#cellSize
+  }
+
+  ceil(x: number) {
+    return Math.ceil(x / this.#cellSize) * this.#cellSize
+  }
+
+  round(x: number) {
+    return Math.round(x / this.#cellSize) * this.#cellSize
+  }
+
+  computeMaxValueCountPerCell(): number {
+    let max = 0
+    for (const e of this.#map.values()) {
+      if (e instanceof LinkedList2) {
+        let count = 0
+        let current: LinkedList2<T> | undefined = e
+        while (current) {
+          count++
+          current = current.next
+        }
+        if (count > max)
+          max = count
+      } else {
+        max = Math.max(max, 1)
+      }
+    }
+    return max
   }
 }

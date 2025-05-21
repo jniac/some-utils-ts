@@ -11,7 +11,7 @@ describe('HashGrid2', () => {
     expect(grid.get(102332, Math.PI)).toBe('b')
   })
 
-  const { p0: [x0, y0], p1: [x1, y1] } = hash2Collision.random[0]
+  const { p0: [x0, y0], p1: [x1, y1] } = hash2Collision.random2.firstTenCollisions[0]
 
   test('should handle hash collisions', () => {
     const grid = new HashGrid2<string>()

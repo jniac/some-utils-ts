@@ -2,6 +2,8 @@ const PRIME1 = 48271
 const PRIME2 = 2246822519
 const PRIME3 = 3266489917
 const PRIME4 = 668265263
+const PRIME5 = 374761393
+const PRIME6 = 2654435761
 
 function mix(x: number, shift = 2, factor = 6329): number {
   x = Math.imul(x, factor)
@@ -49,9 +51,29 @@ export function hash2(x: number, y: number): number {
   const y1 = i32[0]
   const y2 = i32[1]
 
-  return (
-    mix(x1, 3, PRIME1) ^
-    mix(y1, 17, PRIME2)) ^ (
-      mix(x2, 13, PRIME3) ^
-      mix(y2, 27, PRIME4))
+  return 0b00010011000111100110001110111101 ^ (
+    (mix(x1, 3, PRIME1) ^ mix(x2, 17, PRIME2)) ^
+    (mix(y1, 13, PRIME3) ^ mix(y2, 27, PRIME4))
+  )
 }
+
+export function hash3(x: number, y: number, z: number): number {
+  f64[0] = x
+  const x1 = i32[0]
+  const x2 = i32[1]
+
+  f64[0] = y
+  const y1 = i32[0]
+  const y2 = i32[1]
+
+  f64[0] = z
+  const z1 = i32[0]
+  const z2 = i32[1]
+
+  return 0b10011010010110000110000001010111 ^ (
+    (mix(x1, 3, PRIME1) ^ mix(x2, 17, PRIME2)) ^
+    (mix(y1, 13, PRIME3) ^ mix(y2, 27, PRIME4)) ^
+    (mix(z1, 5, PRIME5) ^ mix(z2, 19, PRIME6))
+  )
+}
+
