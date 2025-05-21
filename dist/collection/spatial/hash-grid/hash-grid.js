@@ -75,10 +75,10 @@ export class HashGrid2 {
     #valueCount = 0;
     #cellSize;
     // @ts-ignore
-    #hash;
+    #cellHash;
     constructor(cellSize = 0) {
         this.#cellSize = cellSize;
-        this.#hash = (cellSize === 0)
+        this.#cellHash = (cellSize === 0)
             ? hash2
             : (x, y) => hash2(Math.floor(x / cellSize), Math.floor(y / cellSize));
         // @ts-ignore
@@ -101,13 +101,13 @@ export class HashGrid2 {
         this.#valueCount = 0;
     }
     hasCell(x, y) {
-        return this.#map.has(this.#hash(x, y));
+        return this.#map.has(this.#cellHash(x, y));
     }
     has(x, y) {
         return this.get(x, y) !== undefined;
     }
     get(x, y) {
-        const h = this.#hash(x, y);
+        const h = this.#cellHash(x, y);
         const e = this.#map.get(h);
         if (e === undefined) {
             return undefined;
@@ -132,7 +132,7 @@ export class HashGrid2 {
             this.delete(x, y);
             return;
         }
-        const h = this.#hash(x, y);
+        const h = this.#cellHash(x, y);
         const e = this.#map.get(h);
         if (e === undefined) {
             this.#map.set(h, { x, y, value });
@@ -155,7 +155,7 @@ export class HashGrid2 {
         }
     }
     delete(x, y) {
-        const h = this.#hash(x, y);
+        const h = this.#cellHash(x, y);
         const e = this.#map.get(h);
         if (e === undefined)
             return false;
@@ -188,16 +188,16 @@ export class HashGrid2 {
      * Returns a generator of all values in the cell at (x, y).
      */
     *cellEntries(x, y) {
-        const e = this.#map.get(this.#hash(x, y));
+        const e = this.#map.get(this.#cellHash(x, y));
         yield* yieldSingleEntryOrLinkedList2(e);
     }
     cellFirstEntry(x, y) {
-        const e = this.#map.get(this.#hash(x, y));
+        const e = this.#map.get(this.#cellHash(x, y));
         return e && [e.x, e.y, e.value];
     }
     *cellNeighborEntries(x, y, neighborExtent = 1) {
         const map = this.#map;
-        const hash = this.#hash;
+        const hash = this.#cellHash;
         const cellSize = this.#cellSize;
         for (let i = -neighborExtent; i <= neighborExtent; i++) {
             for (let j = -neighborExtent; j <= neighborExtent; j++) {
@@ -279,8 +279,12 @@ export class HashGrid2 {
     get cellSize() {
         return this.#cellSize;
     }
-    get hash() {
-        return this.#hash;
+    /**
+     * The same hash function that is used to store the values in the grid (based
+     * on the cell size).
+     */
+    get cellHash() {
+        return this.#cellHash;
     }
     floor(x) {
         return Math.floor(x / this.#cellSize) * this.#cellSize;

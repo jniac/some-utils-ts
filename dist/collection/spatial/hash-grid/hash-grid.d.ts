@@ -57,7 +57,11 @@ export declare class HashGrid2<T> {
     get cellCount(): number;
     get valueCount(): number;
     get cellSize(): number;
-    get hash(): (x: number, y: number) => number;
+    /**
+     * The same hash function that is used to store the values in the grid (based
+     * on the cell size).
+     */
+    get cellHash(): (x: number, y: number) => number;
     floor(x: number): number;
     ceil(x: number): number;
     round(x: number): number;
