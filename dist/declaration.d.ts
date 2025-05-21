@@ -5,7 +5,7 @@ import { Vector2Like, Vector3Like, Vector4Like } from './types';
 type ReadonlyOrNot<T> = T | Readonly<T>;
 declare const vector2DeclarationStrings: readonly ["x", "y"];
 type Vector2DeclarationString = typeof vector2DeclarationStrings[number];
-type Vector2DeclarationBase<T> = Vector2DeclarationString | T | [x: T, y: T] | {
+type Vector2DeclarationBase<T> = Vector2DeclarationString | T | [x: T, y: T, ...any[]] | {
     x: T;
     y: T;
 } | {
@@ -15,7 +15,7 @@ type Vector2DeclarationBase<T> = Vector2DeclarationString | T | [x: T, y: T] | {
 export type Vector2Declaration<T = number> = ReadonlyOrNot<Vector2DeclarationBase<T>>;
 declare const vector3DeclarationStrings: readonly ["x", "y", "z"];
 type Vector3DeclarationString = typeof vector3DeclarationStrings[number];
-type Vector3DeclarationBase<T> = Vector3DeclarationString | T | [x: T, y: T, z?: T] | {
+type Vector3DeclarationBase<T> = Vector3DeclarationString | T | [x: T, y: T, z?: T, ...any[]] | {
     x: T;
     y: T;
     z?: T;
@@ -27,7 +27,7 @@ type Vector3DeclarationBase<T> = Vector3DeclarationString | T | [x: T, y: T, z?:
 export type Vector3Declaration<T = number> = ReadonlyOrNot<Vector3DeclarationBase<T>>;
 declare const vector4DeclarationStrings: readonly ["x", "y", "z", "w"];
 type Vector4DeclarationString = typeof vector4DeclarationStrings[number];
-type Vector4DeclarationBase<T> = Vector4DeclarationString | T | [x: T, y: T, z?: T, w?: T] | {
+type Vector4DeclarationBase<T> = Vector4DeclarationString | T | [x: T, y: T, z?: T, w?: T, ...any[]] | {
     x: T;
     y: T;
     z?: T;
