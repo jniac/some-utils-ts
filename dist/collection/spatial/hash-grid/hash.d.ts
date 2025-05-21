@@ -29,4 +29,15 @@
  */
 export declare function hash2(x: number, y: number): number;
 export declare function hash3(x: number, y: number, z: number): number;
+export declare function hashN(...args: number[]): number;
+/**
+ * Convenient function to hash a vector or a list of numbers.
+ *
+ * Note:
+ * - If a single argument is passed and it is an object, it will be converted to
+ *   an array of numbers.
+ * - Uses internal hash2 and hash3 functions to hash 2D and 3D vectors.
+ */
+export declare function hashX(vector: unknown): number;
+export declare function hashX(...args: number[]): number;
 //# sourceMappingURL=hash.d.ts.map

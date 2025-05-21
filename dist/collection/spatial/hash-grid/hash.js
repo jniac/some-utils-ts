@@ -63,4 +63,22 @@ export function hash3(x, y, z) {
         (mix(y1, 13, PRIME3) ^ mix(y2, 27, PRIME4)) ^
         (mix(z1, 5, PRIME5) ^ mix(z2, 19, PRIME6)));
 }
+export function hashN(...args) {
+    let h = 0b10010110110101010000111011011111;
+    let i = 0;
+    for (; i < args.length - 1; i += 2)
+        h = hash3(h, args[i], args[i + 1]);
+    for (; i < args.length; i++)
+        h = hash2(h, args[i]);
+    return h;
+}
+export function hashX(...args) {
+    if (args.length === 1 && typeof args[0] === 'object')
+        args = Object.values(args[0]).filter(v => typeof v === 'number');
+    switch (args.length) {
+        case 2: return hash2(args[0], args[1]);
+        case 3: return hash3(args[0], args[1], args[2]);
+        default: return hashN(...args);
+    }
+}
 //# sourceMappingURL=hash.js.map

@@ -77,3 +77,33 @@ export function hash3(x: number, y: number, z: number): number {
   )
 }
 
+export function hashN(...args: number[]): number {
+  let h = 0b10010110110101010000111011011111
+  let i = 0
+  for (; i < args.length - 1; i += 2)
+    h = hash3(h, args[i], args[i + 1])
+  for (; i < args.length; i++)
+    h = hash2(h, args[i])
+  return h
+}
+
+/**
+ * Convenient function to hash a vector or a list of numbers.
+ * 
+ * Note:
+ * - If a single argument is passed and it is an object, it will be converted to 
+ *   an array of numbers.
+ * - Uses internal hash2 and hash3 functions to hash 2D and 3D vectors.
+ */
+export function hashX(vector: unknown): number
+export function hashX(...args: number[]): number
+export function hashX(...args: any[]): number {
+  if (args.length === 1 && typeof args[0] === 'object')
+    args = Object.values(args[0]).filter(v => typeof v === 'number')
+
+  switch (args.length) {
+    case 2: return hash2(args[0], args[1])
+    case 3: return hash3(args[0], args[1], args[2])
+    default: return hashN(...args)
+  }
+}
