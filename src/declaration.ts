@@ -11,7 +11,7 @@ type Vector2DeclarationString = typeof vector2DeclarationStrings[number]
 type Vector2DeclarationBase<T> =
   | Vector2DeclarationString
   | T
-  | [x: T, y: T]
+  | [x: T, y: T, ...any[]]
   | { x: T; y: T }
   | { width: T; height: T }
 
@@ -22,7 +22,7 @@ type Vector3DeclarationString = typeof vector3DeclarationStrings[number]
 type Vector3DeclarationBase<T> =
   | Vector3DeclarationString
   | T
-  | [x: T, y: T, z?: T]
+  | [x: T, y: T, z?: T, ...any[]]
   | { x: T; y: T; z?: T }
   | { width: T; height: T; depth?: T }
 
@@ -33,7 +33,7 @@ type Vector4DeclarationString = typeof vector4DeclarationStrings[number]
 type Vector4DeclarationBase<T> =
   | Vector4DeclarationString
   | T
-  | [x: T, y: T, z?: T, w?: T]
+  | [x: T, y: T, z?: T, w?: T, ...any[]]
   | { x: T; y: T; z?: T, w?: T }
   | { width: T; height: T; depth?: T; time?: T }
   | { top: T; right: T; bottom: T; left: T }
