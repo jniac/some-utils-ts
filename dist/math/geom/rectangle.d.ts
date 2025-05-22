@@ -64,7 +64,7 @@ export declare const defaultRectangleDeclaration: RectangleDeclaration;
 export declare function fromRectangleDeclaration(declaration: RectangleDeclaration, out?: Rectangle): Rectangle;
 export declare function union<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void;
 export declare function intersection<T extends RectangleLike>(out: T, a: RectangleLike, b: RectangleLike): void;
-export declare function innerRectangle<T extends RectangleLike>(out: T, outerRect: RectangleLike, innerAspect: number, sizeMode: "contain" | "cover", alignX: number, alignY: number): void;
+export declare function innerRectangle<T extends RectangleLike>(out: T, outerRectangle: RectangleLike, innerAspect: number, sizeMode: "contain" | "cover", alignX: number, alignY: number): void;
 declare class RectangleCastResult {
     ray: Ray2Like;
     intersects: boolean;
@@ -210,16 +210,20 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     relativeTo(other: RectangleLike): this;
     lerpRectangles(a: RectangleLike, b: RectangleLike, t: number): this;
     lerp(other: RectangleLike, t: number): this;
+    intersectsRectangle(other: RectangleLike): boolean;
+    /** @deprecated Use `intersectsRectangle()` instead. */
     intersectsRect(other: RectangleLike): boolean;
     containsXY(x: number, y: number): boolean;
     containsPoint(point: Vector2Like): boolean;
+    containsRectangle(other: RectangleLike): boolean;
+    /** @deprecated Use `containsRectangle()` instead. */
     containsRect(other: RectangleLike): boolean;
     /**
      * Readable / declarative method that can be called with different parameters:
      * contains(x, y) -> containsXY(x, y)
      * contains([x, y]) -> containsXY(x, y)
      * contains(point) -> containsPoint(point)
-     * contains(rect) -> containsRect(rect)
+     * contains(rect) -> containsRectangle(rect)
      */
     contains(x: number, y: number): boolean;
     contains(other: Vector2Like): boolean;
