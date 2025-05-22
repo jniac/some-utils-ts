@@ -161,7 +161,7 @@ export function intersection<T extends RectangleLike>(out: T, a: RectangleLike, 
 
 export function innerRectangle<T extends RectangleLike>(
   out: T,
-  outerRect: RectangleLike,
+  outerRectangle: RectangleLike,
   innerAspect: number,
   sizeMode: "contain" | "cover",
   alignX: number,
@@ -172,28 +172,28 @@ export function innerRectangle<T extends RectangleLike>(
 
   // Determine dimensions based on the chosen sizing strategy
   if (sizeMode === "contain") {
-    if (outerRect.width / outerRect.height > innerAspect) {
+    if (outerRectangle.width / outerRectangle.height > innerAspect) {
       // Outer is wider relative to desired aspect
-      innerHeight = outerRect.height
+      innerHeight = outerRectangle.height
       innerWidth = innerHeight * innerAspect
     } else {
-      innerWidth = outerRect.width
+      innerWidth = outerRectangle.width
       innerHeight = innerWidth / innerAspect
     }
   } else if (sizeMode === "cover") {
-    if (outerRect.width / outerRect.height < innerAspect) {
+    if (outerRectangle.width / outerRectangle.height < innerAspect) {
       // Outer is narrower relative to desired aspect
-      innerHeight = outerRect.height
+      innerHeight = outerRectangle.height
       innerWidth = innerHeight * innerAspect
     } else {
-      innerWidth = outerRect.width
+      innerWidth = outerRectangle.width
       innerHeight = innerWidth / innerAspect
     }
   }
 
   // Calculate centering position
-  const innerX = outerRect.x + (outerRect.width - innerWidth) * alignX
-  const innerY = outerRect.y + (outerRect.height - innerHeight) * alignY
+  const innerX = outerRectangle.x + (outerRectangle.width - innerWidth) * alignX
+  const innerY = outerRectangle.y + (outerRectangle.height - innerHeight) * alignY
 
   out.x = innerX
   out.y = innerY
@@ -875,11 +875,16 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.lerpRectangles(this, other, t)
   }
 
-  intersectsRect(other: RectangleLike): boolean {
+  intersectsRectangle(other: RectangleLike): boolean {
     return this.x < other.x + other.width
       && this.x + this.width > other.x
       && this.y < other.y + other.height
       && this.y + this.height > other.y
+  }
+
+  /** @deprecated Use `intersectsRectangle()` instead. */
+  intersectsRect(other: RectangleLike): boolean {
+    return this.intersectsRectangle(other)
   }
 
   containsXY(x: number, y: number): boolean {
@@ -893,11 +898,16 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this.containsXY(point.x, point.y)
   }
 
-  containsRect(other: RectangleLike): boolean {
+  containsRectangle(other: RectangleLike): boolean {
     return other.x >= this.x
       && other.y >= this.y
       && other.x + other.width <= this.x + this.width
       && other.y + other.height <= this.y + this.height
+  }
+
+  /** @deprecated Use `containsRectangle()` instead. */
+  containsRect(other: RectangleLike): boolean {
+    return this.containsRectangle(other)
   }
 
   /**
@@ -905,7 +915,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
    * contains(x, y) -> containsXY(x, y)
    * contains([x, y]) -> containsXY(x, y)
    * contains(point) -> containsPoint(point)
-   * contains(rect) -> containsRect(rect)
+   * contains(rect) -> containsRectangle(rect)
    */
   contains(x: number, y: number): boolean
   contains(other: Vector2Like): boolean
@@ -930,7 +940,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
             return this.containsPoint(arg)
           }
           if ('width' in arg && 'height' in arg) {
-            return this.containsRect(arg)
+            return this.containsRectangle(arg)
           }
           return this.containsPoint(arg)
         }
