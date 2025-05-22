@@ -194,7 +194,11 @@ export class AStar<Node> implements AStarHookInfo<Node> {
     return null
   }
 
-  solve(): Node[] {
+  /**
+   * Finds the path from start to goal using the A* algorithm.
+   * Returns an array of nodes representing the path.
+   */
+  findPath(): Node[] {
     const { openSet } = this
     while (openSet.size > 0) {
       const path = this.next()
@@ -202,6 +206,13 @@ export class AStar<Node> implements AStarHookInfo<Node> {
         return path
     }
     return []
+  }
+
+  /**
+   * @deprecated Use `findPath` instead.
+   */
+  solve(): Node[] {
+    return this.findPath()
   }
 }
 
@@ -324,7 +335,7 @@ export class Graph2<Node extends Vector2Like> implements Graph<Node> {
       heuristic,
       customNeighborHeuristic,
     })
-    return astar.solve()
+    return astar.findPath()
   }
 
   pathIsValid(path: Node[]): boolean {

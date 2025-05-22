@@ -130,7 +130,11 @@ export class AStar {
         }
         return null;
     }
-    solve() {
+    /**
+     * Finds the path from start to goal using the A* algorithm.
+     * Returns an array of nodes representing the path.
+     */
+    findPath() {
         const { openSet } = this;
         while (openSet.size > 0) {
             const path = this.next();
@@ -138,6 +142,12 @@ export class AStar {
                 return path;
         }
         return [];
+    }
+    /**
+     * @deprecated Use `findPath` instead.
+     */
+    solve() {
+        return this.findPath();
     }
 }
 export class Graph2 {
@@ -228,7 +238,7 @@ export class Graph2 {
             heuristic,
             customNeighborHeuristic,
         });
-        return astar.solve();
+        return astar.findPath();
     }
     pathIsValid(path) {
         for (const [a, b] of pairwise(path)) {

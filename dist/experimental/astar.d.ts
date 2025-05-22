@@ -55,6 +55,14 @@ export declare class AStar<Node> implements AStarHookInfo<Node> {
     wayback: (count?: number) => Generator<Node, any, any>;
     constructor(params: AStarParams<Node>);
     next(): Node[] | null;
+    /**
+     * Finds the path from start to goal using the A* algorithm.
+     * Returns an array of nodes representing the path.
+     */
+    findPath(): Node[];
+    /**
+     * @deprecated Use `findPath` instead.
+     */
     solve(): Node[];
 }
 type Link<Node> = {
