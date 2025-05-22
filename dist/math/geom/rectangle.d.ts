@@ -110,6 +110,7 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
     [Symbol.iterator](): Generator<number>;
     copy(other: RectangleLike): this;
     clone(): Rectangle;
+    setZero(): this;
     set(width: number, height: number): this;
     set(x: number, y: number, width: number, height: number): this;
     set(other: Rectangle): this;
@@ -191,9 +192,21 @@ export declare class Rectangle implements RectangleLike, Iterable<number> {
      * Useful for flipping the y-axis (e.g. canvas / web coordinates vs. screen / gl coordinates)
      */
     flipY(): this;
+    /**
+     * Expands the rectangle to include another rectangle.
+     */
     union(other: RectangleLike): this;
+    /**
+     * Sets the rectangle to the union of two other rectangles.
+     */
     unionRectangles(a: RectangleLike, b: RectangleLike): this;
+    /**
+     * Shrinks the rectangle to the intersection of itself and another rectangle.
+     */
     intersection(other: RectangleLike): this;
+    /**
+     * Sets the rectangle to the intersection of two other rectangles.
+     */
     intersectionRectangles(a: RectangleLike, b: RectangleLike): this;
     innerRectangle({ aspect, sizeMode, alignX, alignY, padding, }: Partial<{
         aspect: number;

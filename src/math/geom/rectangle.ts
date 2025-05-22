@@ -350,6 +350,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return new Rectangle().copy(this)
   }
 
+  setZero(): this {
+    this.x = 0
+    this.y = 0
+    this.width = 0
+    this.height = 0
+    return this
+  }
+
   set(width: number, height: number): this
   set(x: number, y: number, width: number, height: number): this
   set(other: Rectangle): this
@@ -803,21 +811,33 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  /**
+   * Expands the rectangle to include another rectangle.
+   */
   union(other: RectangleLike): this {
     union(this, other, this)
     return this
   }
 
+  /**
+   * Sets the rectangle to the union of two other rectangles.
+   */
   unionRectangles(a: RectangleLike, b: RectangleLike): this {
     union(this, a, b)
     return this
   }
 
+  /**
+   * Shrinks the rectangle to the intersection of itself and another rectangle.
+   */
   intersection(other: RectangleLike): this {
     intersection(this, other, this)
     return this
   }
 
+  /**
+   * Sets the rectangle to the intersection of two other rectangles.
+   */
   intersectionRectangles(a: RectangleLike, b: RectangleLike): this {
     intersection(this, a, b)
     return this

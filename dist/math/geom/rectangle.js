@@ -283,6 +283,13 @@ export class Rectangle {
     clone() {
         return new Rectangle().copy(this);
     }
+    setZero() {
+        this.x = 0;
+        this.y = 0;
+        this.width = 0;
+        this.height = 0;
+        return this;
+    }
     set(...args) {
         if (args.length === 4) {
             this.x = args[0];
@@ -671,18 +678,30 @@ export class Rectangle {
         this.y = -this.y - this.height;
         return this;
     }
+    /**
+     * Expands the rectangle to include another rectangle.
+     */
     union(other) {
         union(this, other, this);
         return this;
     }
+    /**
+     * Sets the rectangle to the union of two other rectangles.
+     */
     unionRectangles(a, b) {
         union(this, a, b);
         return this;
     }
+    /**
+     * Shrinks the rectangle to the intersection of itself and another rectangle.
+     */
     intersection(other) {
         intersection(this, other, this);
         return this;
     }
+    /**
+     * Sets the rectangle to the intersection of two other rectangles.
+     */
     intersectionRectangles(a, b) {
         intersection(this, a, b);
         return this;
