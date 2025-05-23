@@ -1,3 +1,4 @@
+import { Vector2Like, Vector3Like } from '../types'
 import * as parkmiller from './algorithm/parkmiller-c-iso'
 
 type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number]
@@ -77,6 +78,9 @@ type RandomUtilsType = {
    * console.log(randomElement) // Randomly picks 'apple', 'banana', or 'cherry' based on weights
    */
   pick: <T>(array: T[], weights?: number[]) => T
+
+  direction2: <T extends Vector2Like>(out?: T) => T
+  direction3: <T extends Vector3Like>(out?: T) => T
 }
 
 function createRandomUtils(): RandomUtilsType {
@@ -160,6 +164,26 @@ function createRandomUtils(): RandomUtilsType {
     return array[index]
   }
 
+  function direction2<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T): T {
+    const angle = random() * Math.PI * 2
+    out.x = Math.cos(angle)
+    out.y = Math.sin(angle)
+    return out
+  }
+
+  function direction3<T extends Vector3Like>(out: T = { x: 0, y: 0, z: 0 } as T): T {
+    const u = random()
+    const v = random()
+
+    const phi = 2 * Math.PI * u // Azimuthal angle
+    const theta = Math.acos(1 - 2 * v) // Polar angle
+
+    out.x = Math.sin(theta) * Math.cos(phi)
+    out.y = Math.sin(theta) * Math.sin(phi)
+    out.z = Math.cos(theta)
+    return out
+  }
+
   const instance: RandomUtilsType = {
     new: _new,
     setRandom,
@@ -174,6 +198,8 @@ function createRandomUtils(): RandomUtilsType {
     hexColor,
     pickIndex,
     pick,
+    direction2,
+    direction3,
   }
 
   return instance
