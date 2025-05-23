@@ -73,6 +73,22 @@ function createRandomUtils() {
         const index = Math.floor(random() * array.length);
         return array[index];
     }
+    function direction2(out = { x: 0, y: 0 }) {
+        const angle = random() * Math.PI * 2;
+        out.x = Math.cos(angle);
+        out.y = Math.sin(angle);
+        return out;
+    }
+    function direction3(out = { x: 0, y: 0, z: 0 }) {
+        const u = random();
+        const v = random();
+        const phi = 2 * Math.PI * u; // Azimuthal angle
+        const theta = Math.acos(1 - 2 * v); // Polar angle
+        out.x = Math.sin(theta) * Math.cos(phi);
+        out.y = Math.sin(theta) * Math.sin(phi);
+        out.z = Math.cos(theta);
+        return out;
+    }
     const instance = {
         new: _new,
         setRandom,
@@ -85,6 +101,8 @@ function createRandomUtils() {
         hexColor,
         pickIndex,
         pick,
+        direction2,
+        direction3,
     };
     return instance;
 }

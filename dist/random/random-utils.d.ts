@@ -1,3 +1,4 @@
+import { Vector2Like, Vector3Like } from '../types';
 type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number];
 type RandomUtilsType = {
     /**
@@ -66,6 +67,8 @@ type RandomUtilsType = {
      * console.log(randomElement) // Randomly picks 'apple', 'banana', or 'cherry' based on weights
      */
     pick: <T>(array: T[], weights?: number[]) => T;
+    direction2: <T extends Vector2Like>(out?: T) => T;
+    direction3: <T extends Vector3Like>(out?: T) => T;
 };
 /**
  * Agnostic random utility module.
