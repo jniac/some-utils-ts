@@ -80,8 +80,14 @@ export declare class ObservableNumber extends Observable<number> {
         derivativeCount?: number | undefined;
     }): this;
     getMemorization(): Memorization;
+    isAboveOrEqual(threshold: number): boolean;
+    /**
+     * @deprecated Use `isAboveOrEqual` instead.
+     */
     isAbove(threshold: number): boolean;
     isBelow(threshold: number): boolean;
+    isAboveOrEqualUpperbound(): boolean;
+    isBelowOrEqualLowerbound(): boolean;
     passed(mode: PassMode, threshold: number): boolean;
     getPassMode(threshold: number): (typeof passModeValues)[0] | (typeof passModeValues)[1] | null;
     stepValue(step: number): number;

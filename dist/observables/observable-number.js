@@ -133,11 +133,23 @@ export class ObservableNumber extends Observable {
     getMemorization() {
         return this._memorization;
     }
-    isAbove(threshold) {
+    isAboveOrEqual(threshold) {
         return this._value >= threshold;
+    }
+    /**
+     * @deprecated Use `isAboveOrEqual` instead.
+     */
+    isAbove(threshold) {
+        return this.isAboveOrEqual(threshold);
     }
     isBelow(threshold) {
         return this._value < threshold;
+    }
+    isAboveOrEqualUpperbound() {
+        return this._value >= this._upperBound;
+    }
+    isBelowOrEqualLowerbound() {
+        return this._value < this._lowerBound;
     }
     passed(mode, threshold) {
         const { value, valueOld } = this;

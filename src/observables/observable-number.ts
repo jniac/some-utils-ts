@@ -165,12 +165,27 @@ export class ObservableNumber extends Observable<number> {
     return this._memorization!
   }
 
-  isAbove(threshold: number): boolean {
+  isAboveOrEqual(threshold: number): boolean {
     return this._value >= threshold
+  }
+
+  /**
+   * @deprecated Use `isAboveOrEqual` instead.
+   */
+  isAbove(threshold: number): boolean {
+    return this.isAboveOrEqual(threshold)
   }
 
   isBelow(threshold: number): boolean {
     return this._value < threshold
+  }
+
+  isAboveOrEqualUpperbound(): boolean {
+    return this._value >= this._upperBound
+  }
+
+  isBelowOrEqualLowerbound(): boolean {
+    return this._value < this._lowerBound
   }
 
   passed(mode: PassMode, threshold: number): boolean {
