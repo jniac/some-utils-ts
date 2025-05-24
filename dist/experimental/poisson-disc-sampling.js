@@ -1,4 +1,4 @@
-import { HashGrid2 } from '../collection/spatial/hash-grid/index.js';
+import { HashGrid2 } from '../collection/spatial/hash-grid.js';
 import { fromVector2Declaration } from '../declaration.js';
 const defaultParams = {
     /**
