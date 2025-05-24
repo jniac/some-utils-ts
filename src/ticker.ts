@@ -591,7 +591,6 @@ export class Ticker implements DestroyableObject {
     return { destroy, value: this }
   }
 
-
   /**
    * Mock of window.requestAnimationFrame, with an order option.
    *
@@ -702,6 +701,35 @@ export class Ticker implements DestroyableObject {
    */
   getAverageDeltaTime() {
     return this.internal.memorization.average
+  }
+
+  /**
+   * Waits for the next tick and returns it.
+   */
+  waitNextTick(): Promise<Tick> {
+    return new Promise(resolve => {
+      const listener = this.onTick(tick => {
+        listener.destroy()
+        resolve(tick)
+      })
+    })
+  }
+
+  /**
+   * Waits for a specific number of seconds and returns the tick when the time is reached.
+   * 
+   * @param seconds The number of seconds to wait for.
+   */
+  waitForSeconds(seconds: number): Promise<Tick> {
+    return new Promise(resolve => {
+      const startTime = this.tick.time
+      const listener = this.onTick(tick => {
+        if (tick.time - startTime >= seconds) {
+          listener.destroy()
+          resolve(tick)
+        }
+      })
+    })
   }
 }
 

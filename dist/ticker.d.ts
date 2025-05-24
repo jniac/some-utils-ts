@@ -295,6 +295,16 @@ export declare class Ticker implements DestroyableObject {
      * Returns the average deltaTime of the last ticks (the last 60 ticks by default).
      */
     getAverageDeltaTime(): number;
+    /**
+     * Waits for the next tick and returns it.
+     */
+    waitNextTick(): Promise<Tick>;
+    /**
+     * Waits for a specific number of seconds and returns the tick when the time is reached.
+     *
+     * @param seconds The number of seconds to wait for.
+     */
+    waitForSeconds(seconds: number): Promise<Tick>;
 }
 /**
  * Shortcut for `Ticker.get("my-ticker").onTick(...)`.
