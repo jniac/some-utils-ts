@@ -18,10 +18,15 @@ export type Transform2Declaration = number[] | Partial<{
   rotation: AngleDeclaration
 }>
 
-function fromTransform2Declaration(value: Transform2Declaration, out = [0, 0, 0, 0, 0, 0, 0, 0, 0], rowMajor = true): number[] {
+function fromTransform2Declaration(value: Transform2Declaration, out = new Float32Array(9), rowMajor = true): Float32Array {
+  if (value instanceof Float32Array) {
+    if (value.length === 9)
+      return value
+    throw new Error('Invalid Transform2 declaration')
+  }
   if (Array.isArray(value)) {
     if (value.length === 9 && value.every((v) => typeof v === 'number')) {
-      return value
+      return new Float32Array(value)
     }
     throw new Error('Invalid Transform2 declaration')
   }
@@ -61,7 +66,7 @@ function fromTransform2Declaration(value: Transform2Declaration, out = [0, 0, 0,
   return out
 }
 
-function transform<T extends Vector2Like>(points: T[], matrix3: number[], rowMajor = true) {
+function transform<T extends Vector2Like>(points: T[], matrix3: Float32Array, rowMajor = true) {
   for (const p of points) {
     const x = p.x
     const y = p.y
@@ -262,6 +267,16 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
   return result
 }
 
+type OnError = 'throw' | 'warn' | 'ignore'
+function handleError<T>(instance: T, message: string, onError: OnError): T {
+  if (onError === 'throw') {
+    throw new Error(message)
+  } else if (onError === 'warn') {
+    console.warn(message)
+  }
+  return instance
+}
+
 export class LinearPath2<T extends Vector2Like = Vector2Like> {
   points: T[]
   closed: boolean
@@ -312,9 +327,9 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  outline(width: number): this {
+  outline(width: number, { onError = <OnError>'warn' } = {}): this {
     if (this.closed)
-      throw new Error('Cannot outline an closed path')
+      return handleError(this, 'Cannot outline an closed path', onError)
     this.points = [
       ...offsetOpenPath(this.points, width / 2),
       ...offsetOpenPath(this.points, -width / 2).reverse(),
@@ -323,11 +338,11 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  extend(amount: number): this {
+  extend(amount: number, { onError = <OnError>'warn' } = {}): this {
     if (this.closed)
-      throw new Error('Cannot extend a closed path')
+      return handleError(this, 'Cannot extend a closed path', onError)
     if (this.points.length < 2)
-      throw new Error('Cannot extend a path with less than 2 points')
+      return handleError(this, 'Cannot extend a path with less than 2 points', onError)
     const n = this.points.length
     const { x: x0, y: y0 } = this.points[0]
     const { x: x1, y: y1 } = this.points[1]
@@ -361,7 +376,9 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions): this {
+  roundCorner(options: number | RoundCornerDelegate | RoundCornerOptions, { onError = <OnError>'ignore' } = {}): this {
+    if (this.points.length < 3)
+      return handleError(this, 'Cannot round corners of a path with less than 3 points', onError)
     const delegate =
       typeof options === 'function' ? options :
         typeof options === 'number' ? () => ({ radius: options }) :
