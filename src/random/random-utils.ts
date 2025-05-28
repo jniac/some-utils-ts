@@ -37,6 +37,11 @@ type RandomUtilsType = {
   random: () => number
 
   /**
+   * Returns true with the given probability.
+   */
+  chance: (probability: number) => boolean
+
+  /**
    * Generates a random number between 0 and 1, or between min and max if provided.
    */
   number(): number
@@ -117,6 +122,10 @@ function createRandomUtils(): RandomUtilsType {
     return instance
   }
 
+  function chance(probability: number): boolean {
+    return random() < probability
+  }
+
   function number(...args: number[]): number {
     if (args.length === 0) return random()
     if (args.length === 1) return random() * args[0]
@@ -193,6 +202,7 @@ function createRandomUtils(): RandomUtilsType {
       return random
     },
 
+    chance,
     number,
     int,
     hexColor,
