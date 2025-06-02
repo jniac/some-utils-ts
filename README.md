@@ -36,4 +36,13 @@ In a PNPM monorepo, inside the "packages" folder:
 ```
 git submodule add https://github.com/jniac/some-utils-ts
 git submodule add https://github.com/jniac/some-utils-three
+git submodule add https://github.com/jniac/some-utils-dom
+git submodule add https://github.com/jniac/some-utils-react
+```
+
+## Dev
+
+To rebuild the dist folder after any change (dev), run:
+```
+pnpm dev
 ```
