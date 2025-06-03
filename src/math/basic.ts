@@ -1,20 +1,22 @@
 
 import { Vector2Like, Vector3Like } from '../types'
 
+export function saturate(x: number) {
+  return Math.max(0, Math.min(1, x))
+}
+
 export function clamp(x: number, min: number, max: number) {
   return x < min ? min : x > max ? max : x
 }
 
-export function clamp01(x: number) {
-  return x < 0 ? 0 : x > 1 ? 1 : x
-}
+export { saturate as clamp01 }
 
 export function signedClamp(x: number, max: number) {
   return x < -max ? -max : x > max ? max : x
 }
 
 export function lerp(a: number, b: number, x: number) {
-  return a + (b - a) * clamp01(x)
+  return a + (b - a) * saturate(x)
 }
 
 export function lerpUnclamped(a: number, b: number, x: number) {
@@ -22,15 +24,20 @@ export function lerpUnclamped(a: number, b: number, x: number) {
 }
 
 export function inverseLerp(a: number, b: number, x: number) {
-  return clamp01((x - a) / (b - a))
+  return saturate((x - a) / (b - a))
 }
 
 export function inverseLerpUnclamped(a: number, b: number, x: number) {
   return (x - a) / (b - a)
 }
 
+export function smoothstep(a: number, b: number, x: number) {
+  const t = saturate((x - a) / (b - a))
+  return t * t * (3 - 2 * t)
+}
+
 export function exponentialLerp(a: number, b: number, t: number) {
-  return a * Math.pow(b / a, clamp01(t))
+  return a * Math.pow(b / a, saturate(t))
 }
 
 export function exponentialLerpUnclamped(a: number, b: number, t: number) {
@@ -38,7 +45,7 @@ export function exponentialLerpUnclamped(a: number, b: number, t: number) {
 }
 
 export function inverseExponentialLerp(a: number, b: number, x: number) {
-  return clamp01(Math.log(x / a) / Math.log(b / a))
+  return saturate(Math.log(x / a) / Math.log(b / a))
 }
 
 export function inverseExponentialLerpUnclamped(a: number, b: number, x: number) {
@@ -97,10 +104,10 @@ export function sin01(x: number) {
   return .5 + .5 * Math.sin(x * Math.PI)
 }
 
-export function euclideanDivision(n: number, d: number): [integer: number, rest: number] {
-  const i = Math.floor(n / d)
-  const r = n - d * i
-  return [i, r]
+export function euclideanDivision(n: number, d: number): [quotient: number, remainder: number] {
+  const q = Math.floor(n / d)
+  const r = n - d * q
+  return [q, r]
 }
 
 /**

@@ -1,22 +1,22 @@
-const clamp01 = (x: number) => x < 0 ? 0 : x > 1 ? 1 : x
+const saturate = (x: number) => Math.max(0, Math.min(1, x))
 
-export const linear = (x: number) => clamp01(x)
+export const linear = (x: number) => saturate(x)
 
-const _in = (x: number, p: number) => clamp01(x) ** p
+const _in = (x: number, p: number) => saturate(x) ** p
 export const in1 = linear
-export const in2 = (x: number) => (x = clamp01(x)) * x
-export const in3 = (x: number) => (x = clamp01(x)) * x * x
-export const in4 = (x: number) => (x = clamp01(x)) * x * x * x
-export const in5 = (x: number) => (x = clamp01(x)) * x * x * x * x
-export const in6 = (x: number) => (x = clamp01(x)) * x * x * x * x * x
+export const in2 = (x: number) => (x = saturate(x)) * x
+export const in3 = (x: number) => (x = saturate(x)) * x * x
+export const in4 = (x: number) => (x = saturate(x)) * x * x * x
+export const in5 = (x: number) => (x = saturate(x)) * x * x * x * x
+export const in6 = (x: number) => (x = saturate(x)) * x * x * x * x * x
 
-const out = (x: number, p: number) => 1 - clamp01(1 - x) ** p
+const out = (x: number, p: number) => 1 - saturate(1 - x) ** p
 export const out1 = linear
-export const out2 = (x: number) => 1 - (x = clamp01(1 - x)) * x
-export const out3 = (x: number) => 1 - (x = clamp01(1 - x)) * x * x
-export const out4 = (x: number) => 1 - (x = clamp01(1 - x)) * x * x * x
-export const out5 = (x: number) => 1 - (x = clamp01(1 - x)) * x * x * x * x
-export const out6 = (x: number) => 1 - (x = clamp01(1 - x)) * x * x * x * x * x
+export const out2 = (x: number) => 1 - (x = saturate(1 - x)) * x
+export const out3 = (x: number) => 1 - (x = saturate(1 - x)) * x * x
+export const out4 = (x: number) => 1 - (x = saturate(1 - x)) * x * x * x
+export const out5 = (x: number) => 1 - (x = saturate(1 - x)) * x * x * x * x
+export const out6 = (x: number) => 1 - (x = saturate(1 - x)) * x * x * x * x * x
 
 /**
  * Asymmetrical transition function that chains together an transition-in and transition-out curves.
