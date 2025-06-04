@@ -1,11 +1,10 @@
 import { MultiKeyWeakMap } from '../collection/multi-key-map'
-import { clamp, clamp01 } from '../math/basic'
+import { clamp, lerp, saturate } from '../math/basic'
 import { isObject } from '../object/common'
 import { expandObject } from '../object/expand'
 import { omit } from '../object/misc'
 import { DestroyableObject } from '../types'
-import { EaseDeclaration, parseEase, remap } from './easing'
-
+import { EaseDeclaration, fromEaseDeclaration, remap } from './easing'
 
 /**
  * The safeword, when returned by a callback, stops the animation. 
@@ -192,7 +191,7 @@ class AnimationInstance implements DestroyableObject {
    * ```
    */
   progressLerp = (from: number, to: number, ease: EaseDeclaration = 'linear') => {
-    const alpha = parseEase(ease)(this.progress)
+    const alpha = fromEaseDeclaration(ease)(this.progress)
     return from + (to - from) * alpha
   }
 
@@ -399,7 +398,7 @@ const updateInstances = (deltaTime: number) => {
     instance.progress = isZeroDuration
       ? 1 // progress is one on zero duration (instant animation).
       : Number.isFinite(instance.duration)
-        ? clamp01(instance.time / instance.duration)
+        ? saturate(instance.time / instance.duration)
         : 0 // progress is zero on infinite animation.
 
     const hasChanged =
@@ -648,7 +647,7 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
   if (from ?? to) {
     instance.add({ target, from, to })
   }
-  const easingFunction = typeof ease === 'function' ? ease : parseEase(ease)
+  const easingFunction = typeof ease === 'function' ? ease : fromEaseDeclaration(ease)
   instance
     .onUpdate(({ progress }) => {
       const alpha = easingFunction(progress)
@@ -679,7 +678,8 @@ function tween<T extends Record<string, any>>(arg: TweenArg<T>): TweenInstance {
 const AnimationModule = {
   // easing:
   remap,
-  ease: parseEase,
+  ease: fromEaseDeclaration,
+  lerp,
 
   // animation:
   during,
@@ -707,7 +707,9 @@ export {
   AnimationModule as Animation,
 
   // re-export easing functions:
-  parseEase,
+  fromEaseDeclaration,
+  /** @deprecated Use `fromEaseDeclaration` instead. */
+  fromEaseDeclaration as parseEase,
   remap
 }
 
