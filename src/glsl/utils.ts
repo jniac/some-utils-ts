@@ -27,6 +27,19 @@ export const glsl_utils = /* glsl */`
     return clamp01((x - a) / (b - a));
   }
 
+  float remap(in float x, in float a, in float b, in float c, in float d) {
+    return c + (d - c) * inverseLerp(a, b, x);
+  }
+
+  // Remap from [-1, 1] to [0, 1]
+  float remap1101(in float x) {
+    return clamp01(0.5 + 0.5 * x);
+  }
+
+  float oneMinus(in float x) {
+    return 1.0 - x;
+  }
+
   float threshold(in float x, in float thresholdValue) {
     return x < thresholdValue ? 0. : 1.;
   }
