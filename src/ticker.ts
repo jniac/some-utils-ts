@@ -133,7 +133,7 @@ export class Tick {
   }
 }
 
-export type TickCallback = (tick: Tick) => (void | OnTickStopSignal)
+export type TickCallback = (tick: Tick) => (void | OnTickStopSignal | Promise<void>)
 
 type Listener = Readonly<{
   id: number
