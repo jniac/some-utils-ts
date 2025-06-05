@@ -1,17 +1,37 @@
 
 type ChildrenAccessor<T> = (node: T) => Iterable<T>
 type ParentAccessor<T> = (node: T) => T | undefined
-type FilterPredicate<T> = (node: T) => boolean
+type BooleanPredicate<T> = (node: T) => boolean
 
 const commonOptionsDefaults = <T>() => ({
   /**
+   * @deprecated Does filter prune or skip? Confusing. Use `prune` or `skip` instead.
+   * 
    * A function that returns true if the current node should be included in the result.
    * - By default, all nodes are included.
    * - If `false`, the node and all its ascendants or descendants will be excluded.
    *   - In ascendants, this will stop the traversal, useful for simulating partial rooted trees.
    *   - In descendants, this will stop the traversal, useful for pruning the tree.
    */
-  filter: (() => true) as FilterPredicate<T>,
+  filter: (() => true) as BooleanPredicate<T>,
+
+  /**
+   * A delegate that returns true if the current node and all its descendants 
+   * should be pruned from the traversal.
+   * - By default, no nodes are pruned.
+   * - If `true`, the node and all its descendants will be excluded.
+   *   - In ascendants, this will stop the traversal, useful for simulating partial rooted trees.
+   *   - In descendants, this will stop the traversal, useful for pruning the tree.
+   */
+  prune: (() => false) as BooleanPredicate<T>,
+
+  /**
+   * A delegate that returns true if the current node should be skipped.
+   * - By default, no nodes are skipped.
+   * - If `true`, the node will be skipped, but its children will still be traversed.
+   * - Useful for skipping nodes that are not relevant to the traversal (but still want to traverse their children).
+   */
+  skip: (() => false) as BooleanPredicate<T>,
 
   /**
    * Whether to include the node itself in the result.
@@ -40,6 +60,8 @@ export function* allAscendantsOf<T>(firstNode: T, options: Partial<typeof allAsc
     nodesMax,
     includeFirstNode,
     filter,
+    skip,
+    prune,
     getParent,
   } = { ...allAscendantsOfOptionsDefaults<T>(), ...options }
   let count = 0
@@ -47,9 +69,11 @@ export function* allAscendantsOf<T>(firstNode: T, options: Partial<typeof allAsc
   let current: T | undefined = includeFirstNode ? firstNode : getParent(firstNode)
 
   while (current) {
-    if (filter(current) === false) {
+    if (filter(current) === false)
       break
-    }
+
+    if (prune(current))
+      break
 
     if (visited.has(current)) {
       console.warn('Tree traversal visited the same node twice', current)
@@ -57,12 +81,13 @@ export function* allAscendantsOf<T>(firstNode: T, options: Partial<typeof allAsc
     }
     visited.add(current)
 
-    yield { node: current }
-    count++
-
-    if (count >= nodesMax) {
-      break
+    if (skip(current) === false) {
+      yield { node: current }
+      count++
     }
+
+    if (count >= nodesMax)
+      break
 
     current = getParent(current)
   }
@@ -98,6 +123,8 @@ export function* allDescendantsOf<T>(firstNode: T, options: Partial<typeof allDe
     includeFirstNode,
     method,
     filter,
+    skip,
+    prune,
     getChildren,
   } = { ...allDescendantsOfOptionsDefaults<T>(), ...options }
 
@@ -107,16 +134,19 @@ export function* allDescendantsOf<T>(firstNode: T, options: Partial<typeof allDe
   while (queue.length > 0) {
     const current = queue.shift()!
 
-    if (filter(current) === false) {
+    if (filter(current) === false)
       continue
+
+    if (prune(current))
+      continue
+
+    if (skip(current) === false) {
+      yield { node: current }
+      count++
     }
 
-    yield { node: current }
-    count++
-
-    if (count >= nodesMax) {
+    if (count >= nodesMax)
       break
-    }
 
     if (visited.has(current)) {
       console.warn('Tree traversal visited the same node twice', current)
