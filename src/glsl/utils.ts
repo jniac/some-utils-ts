@@ -40,6 +40,11 @@ export const glsl_utils = /* glsl */`
     return 1.0 - x;
   }
 
+  // Returns x^p, but handles negative x values correctly.
+  float spow(in float x, in float p) {
+    return x >= 0.0 ? pow(x, p) : -pow(-x, p);
+  }
+
   float threshold(in float x, in float thresholdValue) {
     return x < thresholdValue ? 0. : 1.;
   }

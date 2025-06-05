@@ -11,6 +11,10 @@ export function clamp(x: number, min: number, max: number) {
 
 export { saturate as clamp01 }
 
+export function spow(x: number, p: number) {
+  return x >= 0 ? Math.pow(x, p) : -Math.pow(-x, p)
+}
+
 export function signedClamp(x: number, max: number) {
   return x < -max ? -max : x > max ? max : x
 }
