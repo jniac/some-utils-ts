@@ -127,6 +127,38 @@ float hash(vec4 p) {
   return fract(sin(dot(p, vec4(12.9898, 78.233, 45.164, 94.673))) * 43758.5453);
 }
 
+vec2 hash2(float p) {
+  return vec2(hash(p), hash(p + 1.0));
+}
+
+vec2 hash2(vec2 p) {
+  return vec2(hash(p.x), hash(p.y));
+}
+
+vec2 hash2(vec3 p) {
+  return vec2(hash(p.xy), hash(p.yz));
+}
+
+vec2 hash2(vec4 p) {
+  return vec2(hash(p.xyz), hash(p.yzw));
+}
+
+vec3 hash3(float p) {
+  return vec3(hash2(p),  hash(p + 2.0));
+}
+
+vec3 hash3(vec2 p) {
+  return vec3(hash2(p), hash(p));
+}
+
+vec3 hash3(vec3 p) {
+  return vec3(hash(p.x), hash(p.y), hash(p.z));
+}
+
+vec3 hash3(vec4 p) {
+  return vec3(hash(p.xy), hash(p.yz), hash(p.zw));
+}
+
 float hash_alt(float p) {
   return fract(sin(p * 127.1) * 311.7);
 }
