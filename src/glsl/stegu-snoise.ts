@@ -304,6 +304,14 @@ ${generics(['vec2', 'vec3', 'vec4'], /* glsl */`
     // Normalize the result to stay within the range [0, 1]
     return total / maxValue;
   }
+
+  float fnoise(T p, int octaves) {
+    return fnoise(p, octaves, 0.5);
+  }
+
+  float fnoise(T p) {
+    return fnoise(p, 4, 0.5);
+  }
 `)}
 
 float snoiseFast4D(vec4 p) {
