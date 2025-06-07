@@ -427,6 +427,16 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return out
   }
 
+  toNdcPoint<T extends Vector2Like>(point: Vector2Like, out?: T, options?: { flipY: boolean }): T {
+    out ??= { x: 0, y: 0 } as T
+    out.x = (point.x - this.x) / this.width * 2 - 1
+    out.y = (point.y - this.y) / this.height * 2 - 1
+    if (options?.flipY ?? true) {
+      out.y = -out.y // Flip Y axis
+    }
+    return out
+  }
+
   getCenterX() {
     return this.x + this.width / 2
   }
