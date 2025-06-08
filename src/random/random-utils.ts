@@ -69,7 +69,7 @@ type RandomUtilsType = {
    * @param weights - An array of weights.
    * @returns A random index based on the weights.
    */
-  pickIndex: (weights: number[]) => number
+  pickIndex: (weights: number[], options?: Partial<{ weightsAreNormalized: boolean }>) => number
 
   /**
    * Picks a random element from an array, optionally weighted by the provided weights.
@@ -83,6 +83,18 @@ type RandomUtilsType = {
    * console.log(randomElement) // Randomly picks 'apple', 'banana', or 'cherry' based on weights
    */
   pick: <T>(array: T[], weights?: number[]) => T
+
+  /**
+   * Creates a picker function that returns a random value based on the provided options.
+   * @example
+   * const pickFruit = RandomUtils.createPicker([
+   *   [1, 'apple'],
+   *   [3, 'banana'],
+   *   [6, 'cherry']
+   * ])
+   * const randomFruit = pickFruit() // Randomly picks 'apple', 'banana', or 'cherry' based on weights
+   */
+  createPicker: <T>(options: [weight: number, value: T][]) => () => T
 
   direction2: <T extends Vector2Like>(out?: T) => T
   direction3: <T extends Vector3Like>(out?: T) => T
@@ -144,20 +156,34 @@ function createRandomUtils(): RandomUtilsType {
     return `#${randomColor.toString(16).padStart(6, '0')}`
   }
 
-  function pickIndex(weights: number[]): number {
+  function pickIndex(weights: number[], { weightsAreNormalized = false } = {}): number {
     if (weights.length === 0)
       throw new Error('Weights array is empty')
 
-    const totalWeight = weights.reduce((acc, weight) => acc + weight, 0)
-    const randomValue = random() * totalWeight
-    let cumulativeWeight = 0
+    if (weightsAreNormalized === false) {
+      const totalWeight = weights.reduce((acc, weight) => acc + weight, 0)
+      const randomValue = random() * totalWeight
+      let cumulativeWeight = 0
 
-    for (let i = 0; i < weights.length; i++) {
-      cumulativeWeight += weights[i]
-      if (randomValue < cumulativeWeight) return i
+      for (let i = 0; i < weights.length; i++) {
+        cumulativeWeight += weights[i]
+        if (randomValue < cumulativeWeight) return i
+      }
+
+      return weights.length - 1
     }
 
-    return weights.length - 1
+    else {
+      const randomValue = random()
+      let cumulativeWeight = 0
+
+      for (let i = 0; i < weights.length; i++) {
+        cumulativeWeight += weights[i]
+        if (randomValue < cumulativeWeight) return i
+      }
+
+      return weights.length - 1
+    }
   }
 
   function pick<T>(array: T[], weights?: number[]): T {
@@ -171,6 +197,17 @@ function createRandomUtils(): RandomUtilsType {
 
     const index = Math.floor(random() * array.length)
     return array[index]
+  }
+
+  function createPicker<T>(options: [weight: number, value: T][]): () => T {
+    const weights = options.map(option => option[0])
+    const values = options.map(option => option[1])
+    const totalWeight = weights.reduce((acc, weight) => acc + weight, 0)
+
+    for (let i = 0; i < weights.length; i++)
+      weights[i] /= totalWeight
+
+    return () => values[pickIndex(weights, { weightsAreNormalized: true })]
   }
 
   function direction2<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T): T {
@@ -208,6 +245,7 @@ function createRandomUtils(): RandomUtilsType {
     hexColor,
     pickIndex,
     pick,
+    createPicker,
     direction2,
     direction3,
   }
