@@ -364,7 +364,7 @@ export class Ticker implements DestroyableObject {
      * to make a smooth transition when the ticker deactivates itself (the application
      * will smoothly stop updating).
      */
-    activeFadeDuration: 1,
+    activeFadeDuration: 4,
   }
 
   readonly id = tickerNextId++
