@@ -120,6 +120,13 @@ class AnimationInstance implements DestroyableObject {
     threshold = .5,
 
     /**
+     * The value to use for the threshold.  
+     * - 'progress': the threshold is based on the progress value (0 to 1).
+     * - 'time': the threshold is based on the time value (0 to duration).
+     */
+    use = 'progress' as 'progress' | 'time',
+
+    /**
      * The direction to check.
      */
     direction = 'both' as 'forward' | 'backward' | 'both',
@@ -131,6 +138,9 @@ class AnimationInstance implements DestroyableObject {
      */
     mode = 'reach' as 'reach' | 'pass',
   }, callback: Callback) {
+    if (use === 'time')
+      threshold /= this.duration
+
     return this.onUpdate(({ progress, progressOld }) => {
       if (direction === 'both' || this.direction === direction) {
         const above = mode === 'reach'
@@ -146,12 +156,34 @@ class AnimationInstance implements DestroyableObject {
     })
   }
 
-  onPass(threshold: number, callback: Callback): this {
-    return this.onThreshold({ threshold, mode: 'pass' }, callback)
+  onProgressPass(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, use: 'progress', mode: 'pass' }, callback)
   }
 
-  onReach(threshold: number, callback: Callback): this {
-    return this.onThreshold({ threshold, mode: 'reach' }, callback)
+  onProgressReach(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, use: 'progress', mode: 'reach' }, callback)
+  }
+
+  onTimePass(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, use: 'time', mode: 'pass' }, callback)
+  }
+
+  onTimeReach(threshold: number, callback: Callback): this {
+    return this.onThreshold({ threshold, use: 'time', mode: 'reach' }, callback)
+  }
+
+  /**
+   * @deprecated Use `onProgressPass` instead.
+   */
+  onPass(...args: Parameters<AnimationInstance['onProgressPass']>): this {
+    return this.onProgressPass(...args)
+  }
+
+  /**
+   * @deprecated Use `onProgressReach` instead.
+   */
+  onReach(...args: Parameters<AnimationInstance['onProgressReach']>): this {
+    return this.onProgressReach(...args)
   }
 
   onDestroy(callback: Callback): this {
