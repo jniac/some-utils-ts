@@ -24,33 +24,62 @@ const simple = {
   inOut6: transition.inOut6,
 }
 
-type SimpleEasingDeclaration = keyof typeof simple
-function isSimpleEasingDeclaration(arg: string): arg is SimpleEasingDeclaration {
+type Simple = keyof typeof simple
+function isSimple(arg: string): arg is Simple {
   return arg in simple
 }
 
-type CubicBezierEasingDeclaration = `cubic-bezier(${number}, ${number}, ${number}, ${number})`
-function isCubicBezierEasingDeclaration(arg: string): arg is CubicBezierEasingDeclaration {
+/**
+ * cubic-bezier(x1, y1, x2, y2)
+ */
+type CubicBezier = `cubic-bezier(${number}, ${number}, ${number}, ${number})`
+function isCubicBezier(arg: string): arg is CubicBezier {
   return arg.startsWith('cubic-bezier(') && arg.endsWith(')')
 }
 
-type CustomInOutEasingDeclaration = `inOut(${number})` | `inOut(${number}, ${number})`
-function isCustomInOutEasingDeclaration(arg: string): arg is CustomInOutEasingDeclaration {
+/**
+ * int(power)
+ */
+type CustomIn = `in(${number})`
+function isCustomIn(arg: string): arg is CustomIn {
+  return arg.startsWith('in(') && arg.endsWith(')')
+}
+
+/**
+ * out(power)
+ */
+type CustomOut = `out(${number})`
+function isCustomOut(arg: string): arg is CustomOut {
+  return arg.startsWith('out(') && arg.endsWith(')')
+}
+
+/**
+ * inOut(power, inflectionPoint?)
+ * - inflectionPoint: defaults to 0.5
+ */
+type CustomInOut = `inOut(${number})` | `inOut(${number}, ${number})`
+function isCustomInOut(arg: string): arg is CustomInOut {
   return arg.startsWith('inOut(') && arg.endsWith(')')
 }
 
-type ElasticInPlaceEasingDeclaration = `elasticInPlace` | `elasticInPlace(${number})` | `elasticInPlace(${number}, ${number})`
-function isElasticInPlaceEasingDeclaration(arg: string): arg is ElasticInPlaceEasingDeclaration {
+/**
+ * elasticInPlace(frequency?, phase?)
+ * - frequency: defaults to 1
+ * - phase: defaults to 0.5
+ */
+type ElasticInPlace = `elasticInPlace` | `elasticInPlace(${number})` | `elasticInPlace(${number}, ${number})`
+function isElasticInPlace(arg: string): arg is ElasticInPlace {
   return arg === 'elasticInPlace' || (arg.startsWith('elasticInPlace(') && arg.endsWith(')'))
 }
 
 type EaseDeclaration =
   | ((t: number) => number)
-  | SimpleEasingDeclaration
-  | CubicBezierEasingDeclaration
-  | CustomInOutEasingDeclaration
-  | ElasticInPlaceEasingDeclaration
-
+  | Simple
+  | CubicBezier
+  | CustomOut
+  | CustomIn
+  | CustomInOut
+  | ElasticInPlace
 
 const easeCache = new Map<string, (x: number) => number>()
 
@@ -61,6 +90,30 @@ function cacheCubicBezier(declaration: string) {
     .split(/\s*,\s*/)
     .map(s => Number.parseFloat(s))
   const ease = (x: number) => solveCubicEase(x1, y1, x2, y2, x)
+  easeCache.set(declaration, ease)
+  return ease
+}
+
+function cacheCustomIn(declaration: string) {
+  const power = Number.parseFloat(
+    declaration
+      .trim()
+      .slice(3, -1)
+      .trim()
+  )
+  const ease = (x: number) => transition.in(x, power)
+  easeCache.set(declaration, ease)
+  return ease
+}
+
+function cacheCustomOut(declaration: string) {
+  const power = Number.parseFloat(
+    declaration
+      .trim()
+      .slice(4, -1)
+      .trim()
+  )
+  const ease = (x: number) => transition.out(x, power)
   easeCache.set(declaration, ease)
   return ease
 }
@@ -88,21 +141,31 @@ function cacheElasticInPlace(declaration: string) {
 }
 
 function fromEaseDeclaration(declaration: EaseDeclaration): (value: number) => number {
-  if (typeof declaration === 'function') {
+  if (typeof declaration === 'function')
     return declaration
-  }
-  if (isSimpleEasingDeclaration(declaration)) {
+
+  if (isSimple(declaration))
     return simple[declaration]
-  }
-  if (isCubicBezierEasingDeclaration(declaration)) {
-    return easeCache.get(declaration) ?? cacheCubicBezier(declaration)
-  }
-  if (isCustomInOutEasingDeclaration(declaration)) {
-    return easeCache.get(declaration) ?? cacheCustomInOut(declaration)
-  }
-  if (isElasticInPlaceEasingDeclaration(declaration)) {
-    return easeCache.get(declaration) ?? cacheElasticInPlace(declaration)
-  }
+
+  const cached = easeCache.get(declaration)
+  if (cached)
+    return cached
+
+  if (isCubicBezier(declaration))
+    return cacheCubicBezier(declaration)
+
+  if (isCustomIn(declaration))
+    return cacheCustomIn(declaration)
+
+  if (isCustomOut(declaration))
+    return cacheCustomOut(declaration)
+
+  if (isCustomInOut(declaration))
+    return cacheCustomInOut(declaration)
+
+  if (isElasticInPlace(declaration))
+    return cacheElasticInPlace(declaration)
+
   throw new Error(`Invalid argument for Animation.ease(): "${declaration}"`)
 }
 
