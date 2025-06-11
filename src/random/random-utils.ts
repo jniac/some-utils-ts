@@ -1,4 +1,4 @@
-import { Vector2Like, Vector3Like } from '../types'
+import { Vector2Like, Vector3Like, Vector4Like } from '../types'
 import * as parkmiller from './algorithm/parkmiller-c-iso'
 
 type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number]
@@ -96,8 +96,24 @@ type RandomUtilsType = {
    */
   createPicker: <T>(options: [weight: number, value: T][]) => () => T
 
+  /**
+   * Generates a random 2D direction vector with a length of 1.
+   */
   direction2: <T extends Vector2Like>(out?: T) => T
+
+  /**
+   * Generates a random 3D direction vector with a length of 1.
+   * 
+   * The vector is uniformly distributed over the surface of a unit sphere.
+   */
   direction3: <T extends Vector3Like>(out?: T) => T
+
+  /**
+   * Generates a random quaternion.
+   * 
+   * The quaternion is uniformly distributed over the surface of a unit sphere.
+   */
+  quaternion: <T extends Vector4Like>(out?: T) => T
 }
 
 function createRandomUtils(): RandomUtilsType {
@@ -230,6 +246,22 @@ function createRandomUtils(): RandomUtilsType {
     return out
   }
 
+  function quaternion<T extends Vector4Like>(out: T = { x: 0, y: 0, z: 0, w: 1 } as T): T {
+    const u1 = random()
+    const u2 = random()
+    const u3 = random()
+
+    const sqrt1MinusU1 = Math.sqrt(1 - u1)
+    const sqrtU1 = Math.sqrt(u1)
+
+    out.x = sqrt1MinusU1 * Math.sin(2 * Math.PI * u2)
+    out.y = sqrt1MinusU1 * Math.cos(2 * Math.PI * u2)
+    out.z = sqrtU1 * Math.sin(2 * Math.PI * u3)
+    out.w = sqrtU1 * Math.cos(2 * Math.PI * u3)
+
+    return out
+  }
+
   const instance: RandomUtilsType = {
     new: _new,
     setRandom,
@@ -248,6 +280,7 @@ function createRandomUtils(): RandomUtilsType {
     createPicker,
     direction2,
     direction3,
+    quaternion,
   }
 
   return instance
