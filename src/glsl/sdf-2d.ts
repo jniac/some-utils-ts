@@ -42,6 +42,14 @@ export const glsl_sdf2d = /* glsl */`
                                   abs(length(p)-ra)) - rb;
   }
 
+  float sdRing( in vec2 p, in vec2 n, in float r, in float th )
+  {
+    p.x = abs(p.x);
+    p = mat2(n.x,n.y,-n.y,n.x)*p;
+    return max( abs(length(p)-r)-th*0.5,
+                length(vec2(p.x,max(0.0,abs(r-p.y)-th*0.5)))*sign(p.x) );
+  }
+
   float opRound( in float d, in float r )
   {
     return d - r;
