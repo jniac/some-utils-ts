@@ -4,6 +4,9 @@ import { generics } from './tools/generics'
 export const glsl_utils = /* glsl */`
 ${glsl_basic}
 
+#ifndef GLSL_UTILS
+#define GLSL_UTILS
+
 float sin01(float x) {
   return 0.5 + 0.5 * sin(x * 6.283185307179586);
 }
@@ -186,4 +189,6 @@ ${generics('vecX', /* glsl */`
     return min(min(a, b), min(c, d));
   }
 `)}
+
+#endif // GLSL_UTILS
 `
