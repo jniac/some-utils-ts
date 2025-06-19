@@ -236,7 +236,7 @@ export class ObservableNumber extends Observable<number> {
     const [step, options, callback] = solveArgs(args)
     let stepValue = NaN
     return this.onChange(options, () => {
-      let newStepValue = this.stepValue(step)
+      const newStepValue = this.stepValue(step)
       if (stepValue !== newStepValue) {
         stepValue = newStepValue
         callback(stepValue, this)
@@ -254,6 +254,10 @@ export class ObservableNumber extends Observable<number> {
 
   increment(delta = 1): boolean {
     return this.setValue(this._value + delta)
+  }
+
+  decrement(delta = 1): boolean {
+    return this.setValue(this._value - delta)
   }
 
   /**
