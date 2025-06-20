@@ -114,7 +114,7 @@ export function isVector2Declaration<BaseType = number>(arg: any, isBaseType = i
 }
 
 export function fromVector2Declaration<BaseType = number, T extends Vector2Like<BaseType> = Vector2Like<BaseType>>(
-  arg: Vector2Declaration<BaseType>,
+  arg: Partial<Vector2Declaration<BaseType>>,
   out?: T,
   defaultValue?: BaseType,
   isBaseType?: IsBaseType<BaseType>,
@@ -140,25 +140,25 @@ export function fromVector2Declaration<BaseType = number, T extends Vector2Like<
     }
   }
   if (isBaseType(arg)) {
-    out.x = arg
-    out.y = arg
+    out.x = arg ?? defaultValue
+    out.y = arg ?? defaultValue
     return out
   }
   if (Array.isArray(arg)) {
     const [x, y] = arg
-    out.x = x
-    out.y = y
+    out.x = x ?? defaultValue
+    out.y = y ?? defaultValue
     return out
   }
-  if ('width' in (arg as any)) {
+  if ('width' in (arg as any) || 'height' in (arg as any)) {
     const { width, height } = arg as any
-    out.x = width
-    out.y = height
+    out.x = width ?? defaultValue
+    out.y = height ?? defaultValue
     return out
   }
   const { x, y } = arg as T
-  out.x = x
-  out.y = y
+  out.x = x ?? defaultValue
+  out.y = y ?? defaultValue
   return out
 }
 
@@ -198,7 +198,7 @@ export function isVector3Declaration<BaseType = number>(arg: any, isBaseType = i
 
 
 export function fromVector3Declaration<BaseType = number, T extends Vector3Like<BaseType> = Vector3Like<BaseType>>(
-  arg: Vector3Declaration<BaseType>,
+  arg: Partial<Vector3Declaration<BaseType>>,
   out?: T,
   defaultValue?: BaseType,
   isBaseType?: IsBaseType<BaseType>,
@@ -237,23 +237,23 @@ export function fromVector3Declaration<BaseType = number, T extends Vector3Like<
     return out
   }
   if (Array.isArray(arg)) {
-    const [x, y, z = defaultValue] = arg
-    out.x = x
-    out.y = y
-    out.z = z
+    const [x, y, z] = arg
+    out.x = x ?? defaultValue
+    out.y = y ?? defaultValue
+    out.z = z ?? defaultValue
     return out
   }
-  if ('width' in arg) {
-    const { width, height = defaultValue, depth = defaultValue } = arg
-    out.x = width
-    out.y = height
-    out.z = depth
+  if ('width' in arg || 'height' in arg || 'depth' in arg) {
+    const { width, height, depth } = arg as any
+    out.x = width ?? defaultValue
+    out.y = height ?? defaultValue
+    out.z = depth ?? defaultValue
     return out
   }
-  const { x = defaultValue, y = defaultValue, z = defaultValue } = arg as T
-  out.x = x
-  out.y = y
-  out.z = z
+  const { x, y, z } = arg as T
+  out.x = x ?? defaultValue
+  out.y = y ?? defaultValue
+  out.z = z ?? defaultValue
   return out
 }
 
@@ -293,7 +293,7 @@ export function isVector4Declaration<BaseType = number>(arg: any, isBaseType = i
 }
 
 export function fromVector4Declaration<BaseType = number, T extends Vector4Like<BaseType> = Vector4Like<BaseType>>(
-  arg: Vector4Declaration<BaseType>,
+  arg: Partial<Vector4Declaration<BaseType>>,
   out?: T,
   defaultValue?: BaseType,
   isBaseType?: IsBaseType<BaseType>,
@@ -342,28 +342,28 @@ export function fromVector4Declaration<BaseType = number, T extends Vector4Like<
     return out
   }
   if (Array.isArray(arg)) {
-    const [x, y, z = defaultValue, w = defaultValue] = arg
-    out.x = x
-    out.y = y
-    out.z = z
-    out.w = w
+    const [x, y, z, w] = arg
+    out.x = x ?? defaultValue
+    out.y = y ?? defaultValue
+    out.z = z ?? defaultValue
+    out.w = w ?? defaultValue
     return out
   }
-  if ('width' in arg) {
-    const { width, height = defaultValue, depth = defaultValue, time = defaultValue } = arg
-    out.x = width
-    out.y = height
-    out.z = depth
-    out.w = time
+  if ('width' in arg || 'height' in arg || 'depth' in arg || 'time' in arg) {
+    const { width, height, depth, time } = arg
+    out.x = width ?? defaultValue
+    out.y = height ?? defaultValue
+    out.z = depth ?? defaultValue
+    out.w = time ?? defaultValue
     return out
   }
-  if ('top' in arg) {
-    const { top, right = defaultValue, bottom = defaultValue, left = defaultValue } = arg
+  if ('top' in arg || 'right' in arg || 'bottom' in arg || 'left' in arg) {
+    const { top, right, bottom, left } = arg
     // top, right, bottom, left (CSS order)
-    out.x = top
-    out.y = right
-    out.z = bottom
-    out.w = left
+    out.x = top ?? defaultValue
+    out.y = right ?? defaultValue
+    out.z = bottom ?? defaultValue
+    out.w = left ?? defaultValue
     return out
   }
   const { x = defaultValue, y = defaultValue, z = defaultValue, w = defaultValue } = arg as T

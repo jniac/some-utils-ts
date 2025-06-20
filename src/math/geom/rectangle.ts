@@ -18,12 +18,16 @@ const alignOptions = {
   'bottom-right': { x: 1, y: 1 },
 }
 
+function isAlignDeclaration(declaration: AlignDeclaration): declaration is keyof typeof alignOptions {
+  return typeof declaration === 'string' && declaration in alignOptions
+}
+
 type AlignDeclaration =
   | Vector2Declaration
   | keyof typeof alignOptions
 
 function solveAlignDeclaration(declaration: AlignDeclaration): Vector2Like {
-  return typeof declaration === 'string' && declaration in alignOptions
+  return isAlignDeclaration(declaration)
     ? alignOptions[declaration as keyof typeof alignOptions]
     : fromVector2Declaration(declaration)
 }
@@ -327,6 +331,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   constructor(x: number, y: number, width: number, height: number)
   constructor(...args: any) {
     if (args.length > 0) {
+      // eslint-disable-next-line prefer-spread
       this.set.apply(this, args)
     }
   }
