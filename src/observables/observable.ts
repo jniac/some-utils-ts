@@ -336,6 +336,7 @@ class Observable<T = any> implements ObservableCore<T> {
   // Short syntax:
   get: () => T = () => this._value
   set: (typeof this)['setValue'] = this.setValue.bind(this)
+  equals: (value: T) => boolean = (value: T) => this._value === value
 
   // Debug
   log(value?: (value: T) => string): DestroyableObject
