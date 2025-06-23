@@ -1,3 +1,4 @@
+import { gcd } from '../math/number-theory/lcm'
 import { Vector2Like, Vector3Like, Vector4Like } from '../types'
 import * as parkmiller from './algorithm/parkmiller-c-iso'
 
@@ -114,6 +115,15 @@ type RandomUtilsType = {
    * The quaternion is uniformly distributed over the surface of a unit sphere.
    */
   quaternion: <T extends Vector4Like>(out?: T) => T
+
+  /**
+   * Returns a generator that yields pseudo-random indexes from 0 to n-1.
+   * 
+   * Note:
+   * - The generator uses number theory to produce a sequence of pseudo-random indexes.
+   * - Memory-efficient: does not require storing the entire array in memory.
+   */
+  shuffleIndexes: (length: number) => Generator<number>
 }
 
 function createRandomUtils(): RandomUtilsType {
@@ -262,6 +272,25 @@ function createRandomUtils(): RandomUtilsType {
     return out
   }
 
+  function* shuffleIndexes(n: number): Generator<number> {
+    if (n <= 0)
+      throw new Error('N must be greater than 0')
+
+    let count = 0
+    let a = Math.floor((2 + 2 * random()) * n)
+    while (gcd(n, a) !== 1) {
+      if (++count > 1000) {
+        throw new Error('Failed to find a suitable a value after 1000 attempts')
+      }
+      a = n + Math.floor(random() * n)
+    }
+
+    const offset = Math.floor(random() * n)
+    for (let i = 0; i < n; i++) {
+      yield (offset + (i * a)) % n
+    }
+  }
+
   const instance: RandomUtilsType = {
     new: _new,
     setRandom,
@@ -281,6 +310,7 @@ function createRandomUtils(): RandomUtilsType {
     direction2,
     direction3,
     quaternion,
+    shuffleIndexes,
   }
 
   return instance
