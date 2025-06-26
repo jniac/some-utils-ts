@@ -40,6 +40,18 @@ git submodule add https://github.com/jniac/some-utils-dom
 git submodule add https://github.com/jniac/some-utils-react
 ```
 
+inside some app package.json, add:
+
+```json
+{
+  "dependencies": {
+    "some-utils-ts": "workspace:*",
+    "some-utils-three": "workspace:*",
+    "some-utils-dom": "workspace:*",
+    "some-utils-react": "workspace:*",
+  },
+}
+
 ## Dev
 
 To rebuild the dist folder after any change (dev), run:
