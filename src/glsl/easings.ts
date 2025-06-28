@@ -78,22 +78,22 @@ ${Array.from({ length: 10 }, (_, i) => {
   const p = i + 1
   return /* glsl */`
 
-float easeIn${p} (float x) {
-  return easePow${p}(clamp01(x));
-}
-float easeOut${p} (float x) {
-  return 1.0 - easePow${p}(clamp01(1.0 - x));
-}
-float easeInOut${p} (float x) {
-  return x < 0.5 
-    ? 0.5 * easePow${p}(2.0 * x) 
-    : 1.0 - 0.5 * easePow${p}(2.0 * (1.0 - x));
-}
-float easeOutIn${p} (float x) {
-  return x < 0.5
-    ? 0.5 * (1.0 - easePow${p}(1.0 - x * 2.0))
-    : 1.0 - 0.5 * (1.0 - easePow${p}(2.0 * x - 1.0));
-}
+  float easeIn${p} (float x) {
+    return easePow${p}(clamp01(x));
+  }
+  float easeOut${p} (float x) {
+    return 1.0 - easePow${p}(clamp01(1.0 - x));
+  }
+  float easeInOut${p} (float x) {
+    return x < 0.5 
+      ? 0.5 * easePow${p}(2.0 * x) 
+      : 1.0 - 0.5 * easePow${p}(2.0 * (1.0 - x));
+  }
+  float easeOutIn${p} (float x) {
+    return x < 0.5
+      ? 0.5 * (1.0 - easePow${p}(1.0 - x * 2.0))
+      : 1.0 - 0.5 * (1.0 - easePow${p}(2.0 * x - 1.0));
+  }
 
 `.trim()
 }).join('\n\n')}
