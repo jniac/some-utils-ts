@@ -23,11 +23,11 @@ float greyscaleFloat(vec3 color) {
 }
 
 vec3 greyscale(vec3 color) {
-    return vec3(greyscaleFloat(color));
+	return vec3(greyscaleFloat(color));
 }
 
 vec3 greyscale(vec3 color, float alpha) {
-    return mix(color, greyscale(color), alpha);
+	return mix(color, greyscale(color), alpha);
 }
 
 `
