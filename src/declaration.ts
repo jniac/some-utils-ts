@@ -25,6 +25,7 @@ type Vector3DeclarationBase<T> =
   | [x: T, y: T, z?: T, ...any[]]
   | { x: T; y: T; z?: T }
   | { width: T; height: T; depth?: T }
+  | `sph(${number}, ${AngleDeclaration}, ${AngleDeclaration})`
 
 export type Vector3Declaration<T = number> = ReadonlyOrNot<Vector3DeclarationBase<T>>
 
@@ -171,8 +172,15 @@ export function isVector3Declaration<BaseType = number>(arg: any, isBaseType = i
   if (isBaseType(arg))
     return true
 
-  if (typeof arg === 'string')
-    return arg === 'x' || arg === 'y' || arg === 'z'
+  if (typeof arg === 'string') {
+    if (arg === 'x' || arg === 'y' || arg === 'z')
+      return true
+    if (arg.startsWith('sph(') && arg.endsWith(')')) {
+      const parts = arg.slice(4, -1).split(',').map(p => p.trim())
+      return parts.length === 3
+    }
+    throw new Error(`Invalid vector3 declaration: ${arg}`)
+  }
 
   if (Array.isArray(arg))
     return (
@@ -210,6 +218,19 @@ export function fromVector3Declaration<BaseType = number, T extends Vector3Like<
     return out
   }
   if (typeof arg === 'string') {
+    if (arg.startsWith('sph(') && arg.endsWith(')')) {
+      const parts = arg.slice(4, -1).split(',').map(p => p.trim())
+      if (parts.length !== 3)
+        throw new Error(`Invalid vector3 declaration: ${arg}`)
+      const [radiusStr, thetaStr, phiStr] = parts
+      const radius = Number.parseFloat(radiusStr)
+      const theta = fromAngleDeclaration(thetaStr as AngleDeclaration, 'rad')
+      const phi = fromAngleDeclaration(phiStr as AngleDeclaration, 'rad')
+      out.x = radius * Math.sin(theta) * Math.cos(phi) as BaseType
+      out.z = radius * Math.sin(theta) * Math.sin(phi) as BaseType
+      out.y = radius * Math.cos(theta) as BaseType
+      return out
+    }
     switch (arg) {
       case 'x':
         out.x = 1 as BaseType

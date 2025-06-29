@@ -6,7 +6,7 @@
  * ```typescript
  * class Color extends Enum {
  *   static values: Color[] = []
- *   static parse = (value: string): Color | null => Enum._parse(Color.values, value)
+ *   static parse = (value: any) => Enum._parse(Color.values, value)
  * 
  *   static Red = new Color(this, 'red')
  *   static Green = new Color(this, 'green')
