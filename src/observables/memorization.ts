@@ -2,81 +2,98 @@
  * Small wrapper around a Float64Array that allows to watch over numeral changes.
  */
 export class Memorization {
-  private _array: Float64Array
-  private _index: number
-  private _sum: number
+  #array: Float64Array
+  #index: number
+  #sum: number
   derivative: Memorization | null = null
 
   get value(): number { return this.getValue() }
+  get length(): number { return this.#array.length }
+  get sum() { return this.#sum }
+  get average() { return this.#sum / this.#array.length }
 
   constructor(length: number, initialValue: number, derivativeCount: number = 0) {
-    this._array = new Float64Array(length)
-    this._array.fill(initialValue)
-    this._sum = length * initialValue
-    this._index = 0
+    this.#array = new Float64Array(length)
+    this.#array.fill(initialValue)
+    this.#sum = length * initialValue
+    this.#index = 0
     if (derivativeCount > 0) {
       this.derivative = new Memorization(length, 0, derivativeCount - 1)
     }
   }
 
   getValue(): number {
-    const { _array, _index } = this
-    return _array[_index]
+    return this.#array[this.#index]
   }
 
   setValue(value: number, asNewValue: boolean): this {
-    const { _array, _index } = this
+    const array = this.#array
+    const index = this.#index
 
     if (this.derivative) {
-      const valueOld = _array[_index]
+      const valueOld = array[index]
       const delta = value - valueOld
       this.derivative.setValue(delta, asNewValue)
     }
 
-    const indexNew = asNewValue ? (_index + 1 < _array.length ? _index + 1 : 0) : _index
-    this._sum += value - _array[indexNew]
+    const indexNew = asNewValue ? (index + 1 < array.length ? index + 1 : 0) : index
+    this.#sum += value - array[indexNew]
 
     // At the end, update:
-    _array[indexNew] = value
-    this._index = indexNew
+    array[indexNew] = value
+    this.#index = indexNew
 
     return this
   }
 
   *values(): Generator<number, void, unknown> {
-    const { _array, _index } = this
-    const { length } = _array
+    const array = this.#array
+    const index = this.#index
+    const { length } = array
     for (let i = 0; i < length; i++) {
-      const valueIndex = (_index - i + length) % length
-      yield _array[valueIndex]
+      const valueIndex = (index - i + length) % length
+      yield array[valueIndex]
     }
   }
 
-  valuesArray(): number[] {
-    const { _array, _index } = this
-    const { length } = _array
-    const result: number[] = new Array(length)
+  valuesArray(out?: number[]): number[] {
+    const array = this.#array
+    const index = this.#index
+    const { length } = array
+    out ??= new Array(length)
     for (let i = 0; i < length; i++) {
-      const valueIndex = (_index - i + length) % length
-      result[i] = _array[valueIndex]
+      const valueIndex = (index - i + length) % length
+      out[i] = array[valueIndex]
     }
-    return result
+    return out
   }
 
-  getAverage(count = this._array.length): number {
-    count = count > this._array.length
-      ? this._array.length : count < 1
-        ? 1 : count
-    const { _array, _index } = this
-    const { length } = _array
+  valuesFloat64Array(out?: Float64Array): Float64Array {
+    const array = this.#array
+    const index = this.#index
+    const { length } = array
+    out ??= new Float64Array(length)
+    for (let i = 0; i < length; i++) {
+      const valueIndex = (index - i + length) % length
+      out[i] = array[valueIndex]
+    }
+    return out
+  }
+
+  getAverage(count = this.#array.length): number {
+    const array = this.#array
+    const index = this.#index
+    const { length } = array
+    count = count > length
+      ? length
+      : count < 1
+        ? 1
+        : count
     let sum = 0
     for (let i = 0; i < count; i++) {
-      const valueIndex = (_index - i + length) % length
-      sum += _array[valueIndex]
+      const valueIndex = (index - i + length) % length
+      sum += array[valueIndex]
     }
     return sum / count
   }
-
-  get sum() { return this._sum }
-  get average() { return this._sum / this._array.length }
 }
