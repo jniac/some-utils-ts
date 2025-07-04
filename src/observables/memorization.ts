@@ -5,7 +5,9 @@ export class Memorization {
   private _array: Float64Array
   private _index: number
   private _sum: number
-  derivative: Memorization | null = null;
+  derivative: Memorization | null = null
+
+  get value(): number { return this.getValue() }
 
   constructor(length: number, initialValue: number, derivativeCount: number = 0) {
     this._array = new Float64Array(length)
@@ -15,6 +17,11 @@ export class Memorization {
     if (derivativeCount > 0) {
       this.derivative = new Memorization(length, 0, derivativeCount - 1)
     }
+  }
+
+  getValue(): number {
+    const { _array, _index } = this
+    return _array[_index]
   }
 
   setValue(value: number, asNewValue: boolean): this {
