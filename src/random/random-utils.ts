@@ -2,7 +2,7 @@ import { gcd } from '../math/number-theory/lcm'
 import { Vector2Like, Vector3Like, Vector4Like } from '../types'
 import * as parkmiller from './algorithm/parkmiller-c-iso'
 
-type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number]
+type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number | string]
 
 type RandomUtilsType = {
   /**
@@ -17,7 +17,7 @@ type RandomUtilsType = {
    * algorithm with the given seed, resetting the state of the generator.
    * @param seed - The seed for the random number generator.
    */
-  seed: (seed?: number | 'reset') => RandomUtilsType
+  seed: (seed?: number | string) => RandomUtilsType
 
   /**
    * Creates a new instance of RandomUtils. This is useful if you want to create
@@ -134,8 +134,18 @@ function createRandomUtils(): RandomUtilsType {
     return createRandomUtils().setRandom(...args)
   }
 
+  function hashString(str: string): number {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash + char) | 0 // hash * 31 + char
+    }
+    return hash
+  }
+
   function setRandom(...args: SetRandomParameters) {
-    const [newRandom, seed = 0] = args
+    const [newRandom, seedArg = 0] = args
+    const seed = typeof seedArg === 'string' ? hashString(seedArg) : seedArg
     if (newRandom === 'parkmiller') {
       let state = parkmiller.init(seed)
       random = () => {
@@ -155,8 +165,8 @@ function createRandomUtils(): RandomUtilsType {
     return instance
   }
 
-  function seed(seed?: number | 'reset') {
-    doResetRandom(seed === 'reset' ? 0 : seed ?? 0)
+  function seed(seed?: number | string) {
+    doResetRandom(typeof seed === 'string' ? hashString(seed) : seed ?? 0)
     return instance
   }
 
