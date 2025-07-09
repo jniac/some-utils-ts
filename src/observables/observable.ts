@@ -7,7 +7,13 @@ import { Delay, clearDelay, withDelay } from './delay'
  * existing observables and hooks).
  */
 type ObservableCore<T> = {
+  /**
+   * The current value of the observable.
+   */
   value: T
+  /**
+   * Allows to provide a callback that will be called when the value changes.
+   */
   onChange(callback: () => void): DestroyableObject
 }
 
