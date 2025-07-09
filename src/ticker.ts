@@ -41,6 +41,10 @@ export class Tick {
     return this.time - this.deltaTime
   }
 
+  get activeProgress() {
+    return clamp01(this.activeTime / this.activeDuration)
+  }
+
   /**
    * Convenient method to get the cosine of the time.
    */
