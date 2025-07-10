@@ -504,6 +504,10 @@ export class Ticker implements DestroyableObject {
     requestActivation: true,
     inactivityWaitDurationMinimum: <number | null>null,
     /**
+     * @deprecated Use `inactivityWaitDurationMinimum` instead.
+     */
+    minActiveDuration: <number | null>null,
+    /**
      * @deprecated Use `inactivityWaitDuration` instead.
      */
     activeDuration: <number | null>null,
@@ -514,12 +518,13 @@ export class Ticker implements DestroyableObject {
   }
   set(props: Partial<typeof Ticker.defaultProps & typeof Ticker.defaultSetOptions>): this {
     const {
-      requestActivation,
-      inactivityWaitDurationMinimum,
-      order,
-
       activeDuration,
+      minActiveDuration,
       activeFadeDuration,
+
+      requestActivation,
+      inactivityWaitDurationMinimum = minActiveDuration,
+      order,
 
       ...rest
     } = { ...Ticker.defaultSetOptions, ...props }
