@@ -401,7 +401,7 @@ export class Ticker implements DestroyableObject {
     caughtErrors: false,
     timeScale: 1,
     activeLastRequest: 0,
-    memorization: new Memorization(60, 0),
+    memorization: new Memorization(60, 1 / 60),
 
     updateRegister: new ListenerRegister(),
     deactivationRegister: new ListenerRegister(),
