@@ -32,17 +32,21 @@ export class Tick {
     public readonly unscaledTime: number = 0,
     public readonly unscaledDeltaTime: number = 0,
 
-    public readonly activeTimeScale: number = 1,
-    public readonly activeTime: number = 0,
-    public readonly activeDuration: number = Ticker.defaultProps.activeDuration,
+    public readonly inactivityTimeScale: number = 1,
+    public readonly inactivityTime: number = 0,
+    public readonly inactivityDuration: number = Ticker.defaultProps.inactivityWaitDuration,
   ) { }
 
   get previousTime() {
     return this.time - this.deltaTime
   }
 
-  get activeProgress() {
-    return clamp01(this.activeTime / this.activeDuration)
+  /**
+   * Returns the "inactivity" progress of the ticker. When `1` is reached, the 
+   * ticker is considered inactive and slows down to stop.
+   */
+  get inactivityProgress() {
+    return clamp01(this.inactivityTime / this.inactivityDuration)
   }
 
   /**
@@ -135,6 +139,20 @@ export class Tick {
   toString() {
     return `frame: ${this.frame}, time: ${this.time.toFixed(2)}, deltaTime: ${this.deltaTime.toFixed(4)}`
   }
+
+  // Deprecated
+  /**
+   * @deprecated Use "inactivity" properties instead.
+   */
+  get activeTimeScale() { return this.inactivityTimeScale }
+  /**
+   * @deprecated Use "inactivity" properties instead.
+   */
+  get activeTime() { return this.inactivityTime }
+  /**
+   * @deprecated Use "inactivity" properties instead.
+   */
+  get activeDuration() { return this.inactivityDuration }
 }
 
 export type TickCallback = (tick: Tick) => (void | OnTickStopSignal | Promise<void>)
@@ -362,13 +380,13 @@ export class Ticker implements DestroyableObject {
      * 
      * Set to `Infinity` to keep the ticker always active.
      */
-    activeDuration: 10,
+    inactivityWaitDuration: 10,
     /**
      * The duration of the fade-out of the active state of the ticker. This allows
      * to make a smooth transition when the ticker deactivates itself (the application
      * will smoothly stop updating).
      */
-    activeFadeDuration: 4,
+    inactivityFadeDuration: 4,
   }
 
   readonly id = tickerNextId++
@@ -397,6 +415,8 @@ export class Ticker implements DestroyableObject {
   get time() { return this.tick.time }
   get deltaTime() { return this.tick.deltaTime }
   get timeScale() { return this.internal.timeScale }
+  get inactivityProgress() { return this.tick.inactivityProgress }
+  get inactivityTimeScale() { return this.tick.inactivityTimeScale }
   set timeScale(value: number) {
     this.internal.timeScale = value
   }
@@ -482,13 +502,25 @@ export class Ticker implements DestroyableObject {
 
   static defaultSetOptions = {
     requestActivation: true,
-    minActiveDuration: <number | null>null,
+    inactivityWaitDurationMinimum: <number | null>null,
+    /**
+     * @deprecated Use `inactivityWaitDuration` instead.
+     */
+    activeDuration: <number | null>null,
+    /**
+     * @deprecated Use `inactivityFadeDuration` instead.
+     */
+    activeFadeDuration: <number | null>null,
   }
   set(props: Partial<typeof Ticker.defaultProps & typeof Ticker.defaultSetOptions>): this {
     const {
       requestActivation,
-      minActiveDuration,
+      inactivityWaitDurationMinimum,
       order,
+
+      activeDuration,
+      activeFadeDuration,
+
       ...rest
     } = { ...Ticker.defaultSetOptions, ...props }
 
@@ -498,15 +530,20 @@ export class Ticker implements DestroyableObject {
       flags.orderChanged = true
     }
 
-    if (minActiveDuration !== null) {
-      this.props.activeDuration = Math.max(this.props.activeDuration, minActiveDuration)
-    }
+    // Handle deprecated properties
+    if (activeDuration !== null)
+      this.props.inactivityWaitDuration = activeDuration
+    if (activeFadeDuration !== null)
+      this.props.inactivityFadeDuration = activeFadeDuration
+
+    // Minimum inactivity wait duration
+    if (inactivityWaitDurationMinimum !== null)
+      this.props.inactivityWaitDuration = Math.max(this.props.inactivityWaitDuration, inactivityWaitDurationMinimum)
 
     Object.assign(this.props, rest)
 
-    if (requestActivation) {
+    if (requestActivation)
       this.requestActivation()
-    }
 
     return this
   }
@@ -549,7 +586,8 @@ export class Ticker implements DestroyableObject {
 
     if (frameInterval > 0) {
       return this.onTick({ order }, tick => {
-        if (tick.frame % frameInterval === 0) {
+        const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
+        if (lastTickBeforeInactivity || tick.frame % frameInterval === 0) {
           return callback(tick)
         }
       })
@@ -559,7 +597,8 @@ export class Ticker implements DestroyableObject {
       let cumulativeTime = timeInterval
       return this.onTick({ order }, tick => {
         cumulativeTime += tick.deltaTime
-        if (cumulativeTime >= timeInterval) {
+        const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
+        if (lastTickBeforeInactivity || cumulativeTime >= timeInterval) {
           cumulativeTime += -timeInterval
           return callback(tick)
         }
@@ -567,6 +606,7 @@ export class Ticker implements DestroyableObject {
     }
 
     this.internal.updateRegister.add(order, callback)
+    this.internal.deactivationRegister
     const destroy = () => {
       this.internal.updateRegister.remove(callback)
     }
@@ -639,24 +679,24 @@ export class Ticker implements DestroyableObject {
    * ```
    * 
    * @param deltaTime The time that has passed since the last tick.
-   * @param activeTime The current "active" time. It's the time that has passed since the ticker was activated OR the last request of activation. It's used internally to calculate the activeTimeScale. For manual use, `0` can be passed.
+   * @param inactivityTime The current "inactive" time. It's the time that has passed since the ticker was activated OR the last request of activation. It's used internally to calculate the inactivityTimeScale. For manual use, `0` can be passed.
    * @returns 
    */
-  nextTick(deltaTime = 1 / 60, activeTime = 0, unscaledDeltaTime = deltaTime): this {
+  nextTick(deltaTime = 1 / 60, inactivityTime = 0, unscaledDeltaTime = deltaTime): this {
     const { timeScale } = this.internal
     const { tickMaxCount } = this.staticProps
-    const { activeDuration, activeFadeDuration } = this.props
+    const { inactivityWaitDuration, inactivityFadeDuration } = this.props
 
     const { tick: previousTick } = this
 
-    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
-    const activeTimeScale = 1 - activeExtraTime * activeExtraTime // ease-out-2
+    const inactivityExtraTime = clamp01((inactivityTime - inactivityWaitDuration) / inactivityFadeDuration)
+    const inactivityTimeScale = 1 - inactivityExtraTime * inactivityExtraTime // ease-out-2
 
     const frame = previousTick.frame + 1
     const time = previousTick.time + deltaTime
     const unscaledTime = previousTick.unscaledTime + unscaledDeltaTime
 
-    this.internal.memorization.setValue(deltaTime, true)
+    this.internal.memorization.setValue(unscaledDeltaTime, true)
 
     this.tick = new Tick(
       previousTick,
@@ -669,9 +709,9 @@ export class Ticker implements DestroyableObject {
       unscaledTime,
       unscaledDeltaTime,
 
-      activeTimeScale,
-      activeTime,
-      activeDuration,
+      inactivityTimeScale,
+      inactivityTime,
+      inactivityWaitDuration,
     )
 
     let currentTick: Tick | null = previousTick
@@ -692,7 +732,7 @@ export class Ticker implements DestroyableObject {
       this.internal.caughtErrors = true
     }
 
-    if (activeTimeScale === 0) {
+    if (inactivityTimeScale === 0) {
       this.internal.active = false
       this.internal.deactivationRegister.call(this.tick)
     }
@@ -703,8 +743,16 @@ export class Ticker implements DestroyableObject {
   /**
    * Returns the average deltaTime of the last ticks (the last 60 ticks by default).
    */
-  getAverageDeltaTime() {
+  get averageDeltaTime() {
     return this.internal.memorization.average
+  }
+
+  /**
+   * Returns the average FPS of the last ticks (the last 60 ticks by default).
+   */
+  get averageFps() {
+    const averageDeltaTime = this.internal.memorization.average
+    return averageDeltaTime > 0 ? 1 / averageDeltaTime : 0
   }
 
   /**
@@ -761,20 +809,20 @@ function update(ms: number) {
     }
 
     const { maxDeltaTime } = ticker.staticProps
-    const { activeDuration, activeFadeDuration } = ticker.props
+    const { inactivityWaitDuration, inactivityFadeDuration } = ticker.props
 
-    const activeTime = globalTime - activeLastRequest
-    const activeExtraTime = clamp01((activeTime - activeDuration) / activeFadeDuration)
-    const activeTimeScale = 1 - activeExtraTime ** 2 // ease-out-2
+    const inactivityTime = globalTime - activeLastRequest - globalDeltaTime
+    const inactivityExtraTime = clamp01((inactivityTime - inactivityWaitDuration) / inactivityFadeDuration)
+    const inactivityTimeScale = 1 - inactivityExtraTime ** 2 // ease-out-2
 
     let unscaledDeltaTime = Math.min(globalDeltaTime, maxDeltaTime)
 
     // Smooth deltaTime
     unscaledDeltaTime = lerp(ticker.tick.unscaledDeltaTime, unscaledDeltaTime, .05)
 
-    const deltaTime = unscaledDeltaTime * timeScale * activeTimeScale
+    const deltaTime = unscaledDeltaTime * timeScale * inactivityTimeScale
 
-    ticker.nextTick(deltaTime, activeTime, unscaledDeltaTime)
+    ticker.nextTick(deltaTime, inactivityTime, unscaledDeltaTime)
   }
 }
 
