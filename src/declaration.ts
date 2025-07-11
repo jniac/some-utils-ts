@@ -10,6 +10,8 @@ const vector2DeclarationStrings = ['x', 'y'] as const
 type Vector2DeclarationString = typeof vector2DeclarationStrings[number]
 type Vector2DeclarationBase<T> =
   | Vector2DeclarationString
+  | `+${Vector2DeclarationString}`
+  | `-${Vector2DeclarationString}`
   | T
   | [x: T, y: T, ...any[]]
   | { x: T; y: T }
@@ -21,6 +23,8 @@ const vector3DeclarationStrings = ['x', 'y', 'z'] as const
 type Vector3DeclarationString = typeof vector3DeclarationStrings[number]
 type Vector3DeclarationBase<T> =
   | Vector3DeclarationString
+  | `+${Vector3DeclarationString}`
+  | `-${Vector3DeclarationString}`
   | T
   | [x: T, y: T, z?: T, ...any[]]
   | { x: T; y: T; z?: T }
@@ -33,6 +37,8 @@ const vector4DeclarationStrings = ['x', 'y', 'z', 'w'] as const
 type Vector4DeclarationString = typeof vector4DeclarationStrings[number]
 type Vector4DeclarationBase<T> =
   | Vector4DeclarationString
+  | `+${Vector4DeclarationString}`
+  | `-${Vector4DeclarationString}`
   | T
   | [x: T, y: T, z?: T, w?: T, ...any[]]
   | { x: T; y: T; z?: T, w?: T }
@@ -93,7 +99,7 @@ export function isVector2Declaration<BaseType = number>(arg: any, isBaseType = i
     return true
 
   if (typeof arg === 'string')
-    return arg === 'x' || arg === 'y'
+    return /^[+-]?[xy]$/i.test(arg)
 
   if (Array.isArray(arg))
     return (
@@ -127,17 +133,21 @@ export function fromVector2Declaration<BaseType = number, T extends Vector2Like<
     return out
   }
   if (typeof arg === 'string') {
-    switch (arg) {
-      case 'x':
-        out.x = 1 as BaseType
-        out.y = 0 as BaseType
-        return out
-      case 'y':
-        out.x = 0 as BaseType
-        out.y = 1 as BaseType
-        return out
-      default:
-        throw new Error(`Invalid vector2 declaration: ${arg}`)
+    if (/^[+-]?[xy]/i.test(arg)) {
+      const s = arg.startsWith('-') ? -1 : 1 // sign
+      const a = arg[arg.length - 1].toLowerCase() // axis
+      switch (a) {
+        case 'x':
+          out.x = s as BaseType
+          out.y = 0 as BaseType
+          return out
+        case 'y':
+          out.x = 0 as BaseType
+          out.y = s as BaseType
+          return out
+        default:
+          throw new Error(`Invalid vector2 declaration: ${arg}`)
+      }
     }
   }
   if (isBaseType(arg)) {
@@ -173,7 +183,7 @@ export function isVector3Declaration<BaseType = number>(arg: any, isBaseType = i
     return true
 
   if (typeof arg === 'string') {
-    if (arg === 'x' || arg === 'y' || arg === 'z')
+    if (/^[+-]?[xyz]$/i.test(arg))
       return true
     if (arg.startsWith('sph(') && arg.endsWith(')')) {
       const parts = arg.slice(4, -1).split(',').map(p => p.trim())
@@ -231,21 +241,24 @@ export function fromVector3Declaration<BaseType = number, T extends Vector3Like<
       out.y = radius * Math.cos(theta) as BaseType
       return out
     }
-    switch (arg) {
+
+    const s = arg.startsWith('-') ? -1 : 1 // sign
+    const a = arg[arg.length - 1].toLowerCase() // axis
+    switch (a) {
       case 'x':
-        out.x = 1 as BaseType
+        out.x = s as BaseType
         out.y = 0 as BaseType
         out.z = 0 as BaseType
         return out
       case 'y':
         out.x = 0 as BaseType
-        out.y = 1 as BaseType
+        out.y = s as BaseType
         out.z = 0 as BaseType
         return out
       case 'z':
         out.x = 0 as BaseType
         out.y = 0 as BaseType
-        out.z = 1 as BaseType
+        out.z = s as BaseType
         return out
       default:
         throw new Error(`Invalid vector2 declaration: ${arg}`)
@@ -288,7 +301,7 @@ export function isVector4Declaration<BaseType = number>(arg: any, isBaseType = i
     return true
 
   if (typeof arg === 'string')
-    return arg === 'x' || arg === 'y' || arg === 'z' || arg === 'w'
+    return /^[+-]?[xyzw]$/i.test(arg)
 
   if (Array.isArray(arg))
     return (
@@ -326,30 +339,32 @@ export function fromVector4Declaration<BaseType = number, T extends Vector4Like<
     return out
   }
   if (typeof arg === 'string') {
-    switch (arg) {
+    const s = arg.startsWith('-') ? -1 : 1 // sign
+    const a = arg[arg.length - 1].toLowerCase() // axis
+    switch (a) {
       case 'x':
-        out.x = 1 as BaseType
+        out.x = s as BaseType
         out.y = 0 as BaseType
         out.z = 0 as BaseType
         out.w = 0 as BaseType
         return out
       case 'y':
         out.x = 0 as BaseType
-        out.y = 1 as BaseType
+        out.y = s as BaseType
         out.z = 0 as BaseType
         out.w = 0 as BaseType
         return out
       case 'z':
         out.x = 0 as BaseType
         out.y = 0 as BaseType
-        out.z = 1 as BaseType
+        out.z = s as BaseType
         out.w = 0 as BaseType
         return out
       case 'w':
         out.x = 0 as BaseType
         out.y = 0 as BaseType
         out.z = 0 as BaseType
-        out.w = 1 as BaseType
+        out.w = s as BaseType
         return out
       default:
         throw new Error(`Invalid vector2 declaration: ${arg}`)
