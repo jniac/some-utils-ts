@@ -85,6 +85,22 @@ const _p1: Vector2Like = { x: 0, y: 0 }
 const _line1 = new Line2()
 const _line2 = new Line2()
 
+/**
+ * Computes the winding order of a closed path.
+ * @param points Points of the closed path.
+ * @returns True if the path is clockwise, false if it is counter-clockwise.
+ */
+function computeClosedPathWindingOrder(points: Vector2Like[]): boolean {
+  let area = 0
+  const n = points.length
+  for (let i = 0; i < n; i++) {
+    const { x: p0x, y: p0y } = points[i]
+    const { x: p1x, y: p1y } = points[(i + 1) % n]
+    area += p0x * p1y - p1x * p0y
+  }
+  return area < 0
+}
+
 function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}): T[] {
   return points
     // Remove duplicate points
@@ -307,6 +323,17 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
   set(points: T[], closed = this.closed): this {
     this.points = points
     this.closed = closed
+    return this
+  }
+
+  isCCW(): boolean {
+    return this.closed && computeClosedPathWindingOrder(this.points) === false
+  }
+
+  makeCCW(): this {
+    if (this.isCCW() === false) {
+      this.points.reverse()
+    }
     return this
   }
 
