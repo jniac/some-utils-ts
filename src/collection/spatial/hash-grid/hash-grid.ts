@@ -1,3 +1,4 @@
+import { fromVector2Declaration, Vector2Declaration } from '../../../declaration'
 import { hash2 } from './hash'
 
 type Entry2<T> = [x: number, y: number, value: T]
@@ -59,6 +60,8 @@ function* yieldSingleEntryOrLinkedList2<T>(e?: SingleEntry2<T> | LinkedList2<T>)
   }
 }
 
+const _point = { x: 0, y: 0 }
+
 /**
  * A hash grid that uses a hash function to map 2D coordinates (x, y) to a 32-bit 
  * integer map.
@@ -90,9 +93,8 @@ export class HashGrid2<T> {
     this.#cellHash = (cellSize === 0)
       ? hash2
       : (x, y) => hash2(
-        Math.floor(x / cellSize),
-        Math.floor(y / cellSize))
-    // @ts-ignore
+        Math.round(x / cellSize),
+        Math.round(y / cellSize))
 
     // Hack for memo:
     // raw string hash function has quite the same performance as the number hash 
@@ -100,7 +102,8 @@ export class HashGrid2<T> {
     // not that easy to implement with a low rate collision, but hey, at least
     // `hash2` is a good hash function, compatible with other more-lower-level 
     // languages.
-    // this.#hash = (cellSize === 0)
+    // @ts-ignore
+    // this.#cellHash = (cellSize === 0)
     //   ? (x: number, y: number) => `${x},${y}`
     //   : (x: number, y: number) => {
     //     x = Math.floor(x / this.#cellSize)
@@ -114,15 +117,51 @@ export class HashGrid2<T> {
     this.#valueCount = 0
   }
 
+  /**
+   * Reset the cell size of the grid and clear the grid.
+   */
+  resetCellSize(cellSize: number): void {
+    this.#cellSize = cellSize
+    this.#cellHash = (cellSize === 0)
+      ? hash2
+      : (x, y) => hash2(
+        Math.round(x / cellSize),
+        Math.round(y / cellSize))
+    this.clear()
+  }
+
   hasCell(x: number, y: number): boolean {
     return this.#map.has(this.#cellHash(x, y))
   }
 
-  has(x: number, y: number): boolean {
-    return this.get(x, y) !== undefined
+
+  /**
+   * Directly checks if the grid has a value at the given coordinates.
+   */
+  hasXY(x: number, y: number): boolean {
+    return this.getXY(x, y) !== undefined
   }
 
-  get(x: number, y: number): T | undefined {
+  /**
+   * Overloaded method to check if the grid has a value at the given coordinates.
+   * 
+   * @param value The value to check.
+   * @param x The x coordinate.
+   * @param y The y coordinate.
+   */
+  has(value: Vector2Declaration): boolean
+  has(x: number, y: number): boolean
+  has(...args: [Vector2Declaration] | [x: number, y: number]): boolean {
+    if (args.length === 1) {
+      fromVector2Declaration(args[0], _point)
+      return this.hasXY(_point.x, _point.y)
+    } else {
+      const [x, y] = args
+      return this.hasXY(x, y)
+    }
+  }
+
+  getXY(x: number, y: number): T | undefined {
     const h = this.#cellHash(x, y)
     const e = this.#map.get(h)
     if (e === undefined) {
@@ -141,6 +180,18 @@ export class HashGrid2<T> {
       return (e.x === x && e.y === y)
         ? e.value
         : undefined
+    }
+  }
+
+  get(value: Vector2Declaration): T | undefined
+  get(x: number, y: number): T | undefined
+  get(...args: [Vector2Declaration] | [x: number, y: number]): T | undefined {
+    if (args.length === 1) {
+      fromVector2Declaration(args[0], _point)
+      return this.getXY(_point.x, _point.y)
+    } else {
+      const [x, y] = args
+      return this.getXY(x, y)
     }
   }
 
