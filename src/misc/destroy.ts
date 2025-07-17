@@ -44,9 +44,8 @@ export class DestroyableInstance<T = null> {
 
   customData: T
 
-  get destroyed() {
-    return this.#destroyed
-  }
+  get destroyed() { return this.#destroyed }
+  get alive() { return !this.#destroyed }
 
   constructor(customData?: T) {
     this.customData = (customData ?? null) as T
