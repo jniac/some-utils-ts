@@ -1,4 +1,5 @@
 import { DeepPartial } from '../../types'
+import { isObject } from '../common'
 import { Path, deepGet, deepSet, deepWalk } from './deep'
 
 export class DeepDiffResult<TypeA = any, TypeB = any> {
@@ -134,4 +135,15 @@ export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
   })
 
   return diff
+}
+
+export function deepEqual<TypeA, TypeB>(objectA: TypeA, objectB: TypeB): boolean {
+  const aIsObject = isObject(objectA)
+  const bIsObject = isObject(objectB)
+  if (!aIsObject || !bIsObject) {
+    // @ts-ignore
+    return objectA === objectB
+  }
+  const diff = deepDiff(objectA, objectB)
+  return diff.totalChangeCount === 0
 }
