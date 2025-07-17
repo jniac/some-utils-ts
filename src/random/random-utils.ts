@@ -50,10 +50,9 @@ type RandomUtilsType = {
   number(min: number, max: number): number
 
   /**
-   * Generates a random hex color string in the format '#RRGGBB'.
-   * @returns A random hex color string.
+   * Generates a random sign, either -1 or 1.
    */
-  hexColor(): string
+  sign(): -1 | 1
 
   /**
    * Generates a random integer between 0 and max, or between min and max if provided.
@@ -64,6 +63,12 @@ type RandomUtilsType = {
    */
   int(max: number): number
   int(min: number, max: number): number
+
+  /**
+   * Generates a random hex color string in the format '#RRGGBB'.
+   * @returns A random hex color string.
+   */
+  hexColor(): string
 
   /**
    * Picks a random index from an array of weights based on their relative probabilities.
@@ -179,6 +184,10 @@ function createRandomUtils(): RandomUtilsType {
     if (args.length === 1) return random() * args[0]
     if (args.length === 2) return random() * (args[1] - args[0]) + args[0]
     throw new Error('Invalid arguments')
+  }
+
+  function sign(): -1 | 1 {
+    return random() < 0.5 ? -1 : 1
   }
 
   function int(...args: number[]): number {
@@ -312,6 +321,7 @@ function createRandomUtils(): RandomUtilsType {
 
     chance,
     number,
+    sign,
     int,
     hexColor,
     pickIndex,
