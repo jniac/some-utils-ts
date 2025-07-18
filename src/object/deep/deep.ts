@@ -97,7 +97,7 @@ export function deepClone<T>(target: T): T {
  *
  * Returns `true` if the destination object has changed.
  */
-export function deepCopy<T extends object>(
+export function deepCopy<T extends object = any>(
   source: DeepPartial<T>,
   destination: T,
   allowNewKeys = false,
