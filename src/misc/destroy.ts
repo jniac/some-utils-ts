@@ -38,7 +38,7 @@ export function flatDestroyables(
   return result
 }
 
-export class DestroyableInstance<T = null> {
+export class DestroyableInstance<T = null> implements DestroyableObject {
   #destroyables = new Set<Destroyable>()
   #destroyed = false
 
@@ -62,12 +62,18 @@ export class DestroyableInstance<T = null> {
     if (this.#destroyed)
       return this
 
-    parentInstance.collect(this)
+    parentInstance.onDestroy(this)
 
     return this
   }
 
-  collect(...values: (Destroyable | null | undefined | Iterable<Destroyable | null | undefined>)[]): DestroyableObject {
+  /**
+   * Collects destroyables to be destroyed when this instance is destroyed.
+   * 
+   * @param values - Values to collect. Can be a single value, an array, or 
+   * multiple values.
+   */
+  onDestroy(...values: (Destroyable | null | undefined | Iterable<Destroyable | null | undefined>)[]): DestroyableObject {
     if (this.#destroyed)
       return { destroy: () => { } }
 
@@ -85,11 +91,13 @@ export class DestroyableInstance<T = null> {
   }
 
   /**
-   * Destroy all collected destroyables.
-   * 
-   * NOTE: This method is bound to the instance and can be passed as a callback.
+   * @deprecated Use `onDestroy` instead.
    */
-  destroy = () => {
+  collect(...args: Parameters<DestroyableInstance['onDestroy']>): DestroyableObject {
+    return this.onDestroy(...args)
+  }
+
+  destroySelf() {
     if (this.#destroyed)
       return
 
@@ -103,6 +111,18 @@ export class DestroyableInstance<T = null> {
       }
     }
     this.#destroyables.clear()
+  }
+
+  /**
+   * Destroy all collected destroyables.
+   * 
+   * NOTE: 
+   * - This is not a method of the `DestroyableInstance` class, but a property, 
+   *   a "pure" callback function that can be used even if the reference to the instance is lost.
+   * - For inheritance purposes, do not use `destroy()` but `destroySelf()` instead.
+   */
+  destroy = () => {
+    this.destroySelf()
   }
 }
 
