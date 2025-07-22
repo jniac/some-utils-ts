@@ -51,6 +51,15 @@ inside some app package.json, add:
     "some-utils-react": "workspace:*",
   },
 }
+```
+
+To (force) update the submodules, run:
+
+```
+git submodule foreach --recursive "git checkout main"
+git submodule foreach --recursive "git fetch --all"
+git submodule foreach --recursive "git reset --hard origin/main"
+```
 
 ## Dev
 
