@@ -85,20 +85,24 @@ const _p1: Vector2Like = { x: 0, y: 0 }
 const _line1 = new Line2()
 const _line2 = new Line2()
 
-/**
- * Computes the winding order of a closed path.
- * @param points Points of the closed path.
- * @returns True if the path is clockwise, false if it is counter-clockwise.
- */
-function computeClosedPathWindingOrder(points: Vector2Like[]): boolean {
+function computeSignedArea(points: Vector2Like[]): number {
   let area = 0
   const n = points.length
   for (let i = 0; i < n; i++) {
     const { x: p0x, y: p0y } = points[i]
     const { x: p1x, y: p1y } = points[(i + 1) % n]
-    area += p0x * p1y - p1x * p0y
+    area += (p1x - p0x) * (p1y + p0y)
   }
-  return area < 0
+  return area / 2
+}
+
+/**
+ * Computes the winding of a closed path.
+ * @param points Points of the closed path.
+ * @returns True if the path is clockwise, false if it is counter-clockwise.
+ */
+function computeClosedPathWinding(points: Vector2Like[]): boolean {
+  return computeSignedArea(points) < 0
 }
 
 function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}): T[] {
@@ -138,8 +142,8 @@ function offsetClosedPath<T extends Vector2Like>(points: T[], amount: number): T
     const a = points[(i + n - 1) % n]
     const b = points[i]
     const c = points[(i + 1) % n]
-    _line1.fromStartEnd(a, b).offset(amount)
-    _line2.fromStartEnd(b, c).offset(amount)
+    _line1.fromStartEnd(a, b).offset(-amount)
+    _line2.fromStartEnd(b, c).offset(-amount)
     if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
       p.x = _line2.ox
       p.y = _line2.oy
@@ -293,6 +297,12 @@ function handleError<T>(instance: T, message: string, onError: OnError): T {
   return instance
 }
 
+/**
+ * A linear path is a sequence of points that can be used to represent a path in 2D space.
+ * 
+ * Note: 
+ * - "2" in "LinearPath2" is for 2D (aka "Vector2"), not for version.
+ */
 export class LinearPath2<T extends Vector2Like = Vector2Like> {
   points: T[]
   closed: boolean
@@ -327,7 +337,7 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
   }
 
   isCCW(): boolean {
-    return this.closed && computeClosedPathWindingOrder(this.points) === false
+    return this.closed && computeClosedPathWinding(this.points) === false
   }
 
   makeCCW(): this {
