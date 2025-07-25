@@ -10,8 +10,10 @@ const init = (seedArg: number = DEFAULT_SEED) => {
   if (Math.abs(seed) < 10)
     seed *= 1000000
 
-  seed = seed % MAX
-  seed = seed < 0 ? seed + MAX : seed
+  seed %= MAX
+  seed = seed < 0
+    ? seed + MAX
+    : seed
 
   if (seed > 1)
     return seed & MAX
