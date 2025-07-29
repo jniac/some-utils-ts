@@ -157,17 +157,37 @@ export class Tick {
 
 export type TickCallback = (tick: Tick) => (void | OnTickStopSignal | Promise<void>)
 
+/**
+ * Listeners are used to register callbacks that will be called on every tick.
+ * 
+ * They are sorted by `phase` and `order` properties. 
+ * - `phase` is used to sort listeners in the first place.
+ * - `order` is used to sort listeners within the same phase.
+ */
 type Listener = Readonly<{
+  /**
+   * Unique identifier of the listener.
+   */
   id: number
+  /**
+   * Phase of the listener. Used to sort the listeners.
+   */
+  phase: number
+  /**
+   * Order of the listener. Used to sort the listeners.
+   */
   order: number
+  /**
+   * Callback of the listener.
+   */
   callback: TickCallback
 }>
 
 class ListenerRegister {
-  static listenerNextId = 0
+  static #listenerNextId = 0
 
-  private _sortDirty = true
-  private _countDirty = true
+  #sortDirty = true
+  #countDirty = true
 
   /**
    * The list of listeners. Note that this array is not called directly, but
@@ -175,35 +195,37 @@ class ListenerRegister {
    * method is used to copy the listeners to the `_lockedListeners` array only
    * when needed.
    */
-  private readonly _listeners: Listener[] = []
+  readonly #listeners: Listener[] = []
 
   /**
    * A copy of the listeners that is used to iterate over the listeners.
    */
-  private _lockedListeners: Listener[] = []
+  #lockedListeners: Listener[] = []
 
-  add(order: number, callback: TickCallback): Listener {
+  add(phase: number, order: number, callback: TickCallback): Listener {
     // NOTE: Optimization: we don't need to sort the listeners if the new listener
     // can be appended at the end of the list.
     // NOTE: If the sortDirty flag is already set, it means that the listeners are
     // already not sorted, so we don't need to check the order.
     // So we have to use the "or assign" operator (||=) here.
-    this._sortDirty ||= this._listeners.length > 0
-      && order < this._listeners[this._listeners.length - 1].order
+    this.#sortDirty ||= this.#listeners.length > 0 && (
+      order < this.#listeners[this.#listeners.length - 1].order ||
+      phase < this.#listeners[this.#listeners.length - 1].phase
+    )
 
-    this._countDirty = true
+    this.#countDirty = true
 
-    const id = ListenerRegister.listenerNextId++
-    const listener = { id, order, callback }
-    this._listeners.push(listener)
+    const id = ListenerRegister.#listenerNextId++
+    const listener = { id, phase, order, callback }
+    this.#listeners.push(listener)
     return listener
   }
 
   remove(callback: TickCallback): boolean {
-    const index = this._listeners.findIndex(listener => listener.callback === callback)
+    const index = this.#listeners.findIndex(listener => listener.callback === callback)
     if (index !== - 1) {
-      this._listeners.splice(index, 1)
-      this._countDirty = true
+      this.#listeners.splice(index, 1)
+      this.#countDirty = true
       return true
     } else {
       return false
@@ -211,30 +233,30 @@ class ListenerRegister {
   }
 
   removeById(id: number): boolean {
-    const index = this._listeners.findIndex(listener => listener.id === id)
+    const index = this.#listeners.findIndex(listener => listener.id === id)
     if (index !== - 1) {
-      this._listeners.splice(index, 1)
-      this._countDirty = true
+      this.#listeners.splice(index, 1)
+      this.#countDirty = true
       return true
     } else {
       return false
     }
   }
 
-  private _clearDirty() {
-    if (this._sortDirty) {
-      this._listeners.sort((A, B) => A.order - B.order)
-      this._sortDirty = false
+  #clearDirty() {
+    if (this.#sortDirty) {
+      this.#listeners.sort((A, B) => A.order - B.order)
+      this.#sortDirty = false
     }
-    if (this._countDirty) {
-      this._lockedListeners = [...this._listeners]
-      this._countDirty = false
+    if (this.#countDirty) {
+      this.#lockedListeners = [...this.#listeners]
+      this.#countDirty = false
     }
   }
 
   call(tick: Tick) {
-    this._clearDirty()
-    for (const { callback } of this._lockedListeners) {
+    this.#clearDirty()
+    for (const { callback } of this.#lockedListeners) {
       const result = callback(tick)
       if (isOnTickStopSignal(result)) {
         this.remove(callback)
@@ -243,11 +265,11 @@ class ListenerRegister {
   }
 
   toDebugString() {
-    this._clearDirty()
+    this.#clearDirty()
 
     const map = new Map<number, Listener[]>()
     let longestOrderStr = ''
-    for (const listener of this._lockedListeners) {
+    for (const listener of this.#lockedListeners) {
       const orderStr = listener.order.toString()
       if (orderStr.length > longestOrderStr.length) {
         longestOrderStr = orderStr
@@ -275,15 +297,28 @@ class ListenerRegister {
   }
 
   clear() {
-    this._listeners.length = 0
-    this._countDirty = true
+    this.#listeners.length = 0
+    this.#countDirty = true
   }
 }
 
 export type OnTickOptions = Partial<{
   /**
+   * Phase of the listener. The lower the phase, the earlier the listener will be
+   * called.
+   * 
+   * Note:
+   * - `phase` is used to sort the listeners in the first place.
+   * - `order` is used to sort the listeners within the same phase.
+   */
+  phase: number
+  /**
    * Order of the callback. The lower the order, the earlier the callback will be
    * called.
+   * 
+   * Note:
+   * - `phase` is used to sort the listeners in the first place.
+   * - `order` is used to sort the listeners within the same phase.
    */
   order: number
   /**
@@ -575,6 +610,7 @@ export class Ticker implements DestroyableObject {
 
     const [options, callback] = solveArgs(args)
     const {
+      phase = 0,
       order = 0,
       frameInterval = 0,
       timeInterval = 0,
@@ -610,7 +646,7 @@ export class Ticker implements DestroyableObject {
       })
     }
 
-    this.internal.updateRegister.add(order, callback)
+    this.internal.updateRegister.add(phase, order, callback)
     this.internal.deactivationRegister
     const destroy = () => {
       this.internal.updateRegister.remove(callback)
@@ -625,7 +661,7 @@ export class Ticker implements DestroyableObject {
 
   onActivate(callback: TickCallback): DestroyableObject {
     this.requestActivation()
-    this.internal.activationRegister.add(0, callback)
+    this.internal.activationRegister.add(0, 0, callback)
     const destroy = () => {
       this.internal.activationRegister.remove(callback)
     }
@@ -633,7 +669,7 @@ export class Ticker implements DestroyableObject {
   }
 
   onDeactivate(callback: TickCallback): DestroyableObject {
-    this.internal.deactivationRegister.add(0, callback)
+    this.internal.deactivationRegister.add(0, 0, callback)
     const destroy = () => {
       this.internal.deactivationRegister.remove(callback)
     }
@@ -646,13 +682,13 @@ export class Ticker implements DestroyableObject {
    * It's intended to be used in the same way as window.requestAnimationFrame,
    * and helps to use the Ticker instead of window.requestAnimationFrame.
    *
-   * Since an order option is available, it's possible to insert the callback
+   * Since `phase` and `order` options are available, it's possible to insert the callback
    * to a specific position among the other callbacks.
    */
-  requestAnimationFrame = (callback: (ms: number) => void, { order = 0 } = {}): number => {
+  requestAnimationFrame = (callback: (ms: number) => void, { phase = 0, order = 0 } = {}): number => {
     this.requestActivation() // Request activation to ensure the callback is called.
     const { updateRegister: updateListeners } = this.internal
-    const listener = updateListeners.add(order, tick => {
+    const listener = updateListeners.add(phase, order, tick => {
       updateListeners.removeById(listener.id)
       callback(tick.time * 1e3)
     })
