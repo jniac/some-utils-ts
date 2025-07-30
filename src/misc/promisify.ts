@@ -1,5 +1,13 @@
 
-export type Promisified<T> = T & PromiseLike<T>
+export type Promisified<T> = T & PromiseLike<T> & { resolve: () => T, reject: (reason?: any) => void }
+
+const defaultOptions = {
+  /**
+   * If true, the promise will be resolved immediately.
+   * @default false
+   */
+  resolved: false,
+}
 
 /**
  * Turns an object into a promise-like object. 
@@ -24,26 +32,52 @@ export type Promisified<T> = T & PromiseLike<T>
  * await value
  * console.log(value.x) // 2
  * ```
- * 
- * NOTE: Since the object is modified in-place, it is recommended to use this
  */
-export function promisify<T extends object>(value: T): Promisified<T> & { resolve: () => void, reject: (reason?: any) => void } {
-  let resolve: () => void
-  let reject: (reason?: any) => void
+export function promisify<T extends object>(value: T, options?: typeof defaultOptions): Promisified<T> {
+  let { resolved = false } = { ...defaultOptions, ...options }
+  const memo = {
+    resolve: () => value,
+    reject: (reason?: any) => { },
+  }
   const promise = new Promise<T>((_resolve, _reject) => {
-    resolve = () => {
+    memo.resolve = () => {
+      done()
       _resolve(value)
+      return value
     }
-    reject = (reason?: any) => {
-      _reject(reason)
+    memo.reject = (reason: any) => {
+      done()
+      _reject(new Error(reason))
     }
   })
+  const done = () => {
+    delete (memo as any).resolve
+    delete (memo as any).reject
+    delete (value as any).then
+    delete (value as any).catch
+    delete (value as any).finally
+    delete (value as any).resolve
+    delete (value as any).reject
+  }
+  const thenFn = (onFulfilled?: (value: T) => any, onRejected?: (reason: any) => any) => {
+    if (resolved) {
+      memo.resolve()
+      resolved = false
+    }
+    return promise.then(onFulfilled, onRejected)
+  }
+  const catchFn = (onRejected?: (reason: any) => any) => {
+    return promise.catch(onRejected)
+  }
+  const finallyFn = (onFinally?: () => void) => {
+    return promise.finally(onFinally)
+  }
   Object.assign(value, {
-    then: promise.then.bind(promise),
-    catch: promise.catch.bind(promise),
-    finally: promise.finally.bind(promise),
-    resolve: resolve!,
-    reject: reject!,
+    then: thenFn,
+    catch: catchFn,
+    finally: finallyFn,
+    resolve: () => memo.resolve(),
+    reject: () => memo.reject(),
   })
   return value as any
 }
