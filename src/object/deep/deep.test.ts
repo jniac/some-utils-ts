@@ -1,7 +1,26 @@
 import { describe, expect, test } from 'vitest'
 
-import { deepCopy, deepSet } from './deep'
-import { deepDiff, deepEqual } from './diff'
+import { deepCopy, deepEqual, deepSet } from './deep'
+import { deepDiff } from './diff'
+
+describe('deepEqual', () => {
+  test('should be ok', () => {
+    expect(deepEqual(1, 1)).toBe(true)
+    expect(deepEqual(1, 2)).toBe(false)
+    expect(deepEqual('a', 'a')).toBe(true)
+    expect(deepEqual('a', 'b')).toBe(false)
+    expect(deepEqual(null, null)).toBe(true)
+    expect(deepEqual(undefined, undefined)).toBe(true)
+    expect(deepEqual(null, undefined)).toBe(false)
+    expect(deepEqual({}, {})).toBe(true)
+    expect(deepEqual({ a: 1 }, { a: 1 })).toBe(true)
+    expect(deepEqual({ a: 1 }, { a: 2 })).toBe(false)
+    expect(deepEqual({ a: 1 }, { b: 1 })).toBe(false)
+    expect(deepEqual({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true)
+    expect(deepEqual({ a: 1, b: 2 }, { a: 1, b: 2, c: 3 })).toBe(false)
+    expect(deepEqual({ a: 1, b: 2, c: 3 }, { a: 1, b: 2 })).toBe(false)
+  })
+})
 
 describe('deepSet', () => {
   test('should set deep properties with string and array paths', () => {
@@ -135,5 +154,25 @@ describe('deepDiff', () => {
 
     expect(diff.a?.z?.c?.e).toBe(6) // e changed
     expect(diff.b?.z?.c?.e).toBe(7)
+  })
+
+  test('should rely on "copy()" method for objects with it', () => {
+    class CustomObject {
+      copyHasBeenCalled = false
+      constructor(public value: number) { }
+      copy(source: CustomObject) {
+        this.value = source.value
+        this.copyHasBeenCalled = true
+      }
+    }
+
+    const a = new CustomObject(1)
+    const b = new CustomObject(2)
+
+    expect(deepEqual(a, b)).toBe(false)
+    const hasChanged = deepCopy(a, b)
+    expect(hasChanged).toBe(true)
+    expect(b.value).toBe(1) // b should now have the value of a
+    expect(b.copyHasBeenCalled).toBe(true) // Ensure copy method was called
   })
 })

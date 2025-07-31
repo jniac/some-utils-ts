@@ -31,6 +31,23 @@ function isObject(value: any): value is any {
   return value !== null && typeof value === 'object'
 }
 
+export function deepEqual(a: any, b: any): boolean {
+  if ((isObject(a) && isObject(b)) === false)
+    return a === b
+
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+
+  if (aKeys.length !== bKeys.length)
+    return false
+
+  for (const key of aKeys) {
+    if (key in b === false || !deepEqual(a[key], b[key]))
+      return false
+  }
+  return true
+}
+
 const deepCloneMap = new Map<any, (source: any) => any>()
 
 deepCloneMap.set(Date, (source: Date) => new Date(source.getTime()))
@@ -96,6 +113,9 @@ export function deepClone<T>(target: T): T {
  * Performs a deep copy of the `source` object into the `destination` object.
  *
  * Returns `true` if the destination object has changed.
+ * 
+ * Note:
+ * - If the `destination` object has a `copy()` method, it will be used to copy the source.
  */
 export function deepCopy<T extends object = any>(
   source: DeepPartial<T>,
@@ -120,6 +140,13 @@ export function deepCopy<T extends object = any>(
       }
     }
   } else {
+    if ('copy' in (destination as any) && typeof (destination as any).copy === 'function') {
+      // If the destination has a `copy` method, use it to copy the source.
+      const hasChanged = deepEqual(source, destination) === false;
+      (destination as any).copy(source)
+      return hasChanged
+    }
+
     for (const [key, srcValue] of Object.entries(source)) {
       if (allowNewKeys === false && key in destination === false) {
         continue
