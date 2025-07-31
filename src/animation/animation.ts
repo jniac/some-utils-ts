@@ -619,7 +619,7 @@ function createTweenEntries(target: any, from: any, to: any, entries: TweenEntry
       if (isObject(valueFrom) === false) {
         throw new Error(`Tween from/to pair association error!`)
       } else {
-        createTweenEntries(target[key], from && valueFrom, to && valueTo, entries)
+        createTweenEntries((target as any)[key], from && valueFrom, to && valueTo, entries)
       }
     } else {
       entries.push({ from: valueFrom, to: valueTo, key, target })

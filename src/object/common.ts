@@ -1,5 +1,5 @@
 
-export function isObject(value: any): value is Record<string | number | symbol, any> {
+export function isObject(value: any): value is object {
   return value !== null && typeof value === 'object'
 }
 
