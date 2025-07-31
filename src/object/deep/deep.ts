@@ -121,7 +121,6 @@ export function deepCopy<T extends object = any>(
     }
   } else {
     for (const [key, srcValue] of Object.entries(source)) {
-      console.log(key, srcValue)
       if (allowNewKeys === false && key in destination === false) {
         continue
       }
