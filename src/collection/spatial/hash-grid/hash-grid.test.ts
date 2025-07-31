@@ -43,18 +43,37 @@ describe('HashGrid2', () => {
     expect(grid.cellCount).toBe(0)
   })
 
-  test('cellSize should group values into cells', () => {
-    const grid = new HashGrid2<string>(10)
+  test('cellAlignment should align cells correctly', () => {
+    const grid = new HashGrid2<string>({ cellSize: 10, cellAlignment: 'min' })
     grid.set(1, 2, 'a')
     grid.set(3, 4, 'b')
     grid.set(5, 6, 'c')
-    expect(grid.hasCell(5, 5)).toBe(true)
-    expect(grid.hasCell(15, 15)).toBe(false)
+    expect(grid.hasCell(4, 4)).toBe(true)
+    expect(grid.hasCell(6, 6)).toBe(true)
+    expect(grid.hasCell(11, 11)).toBe(false)
+    expect(grid.cellCount).toBe(1) // Only one entry in the map because of cell size and alignment
+
+    grid.reset({ cellSize: 10, cellAlignment: 'center' })
+    grid.set(1, 2, 'a')
+    grid.set(3, 4, 'b')
+    grid.set(-1, -2, 'c')
+    expect(grid.hasCell(4, 4)).toBe(true)
+    expect(grid.hasCell(6, 6)).toBe(false)
+    expect(grid.cellCount).toBe(1) // Only one entry in the map because of cell size and alignment
+  })
+
+  test('cellSize should group values into cells', () => {
+    const grid = new HashGrid2<string>({ cellSize: 10, cellAlignment: 'center' })
+    grid.set(1, 2, 'a')
+    grid.set(3, 4, 'b')
+    grid.set(-1, -2, 'c')
+    expect(grid.hasCell(4, 4)).toBe(true)
+    expect(grid.hasCell(6, 6)).toBe(false)
     expect(grid.get(1, 2)).toBe('a')
     expect(grid.get(3, 4)).toBe('b')
-    expect(grid.get(5, 6)).toBe('c')
+    expect(grid.get(-1, -2)).toBe('c')
     expect(grid.valueCount).toBe(3) // Three unique entries
-    expect(grid.cellCount).toBe(1) // Only one entry in the map because of cell size
+    expect(grid.cellCount).toBe(1) // Only one entry in the map because of cell size and alignment
     expect([...grid.cellValues(1, 1)]).toEqual([...'abc'])
   })
 

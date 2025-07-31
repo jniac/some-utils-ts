@@ -60,6 +60,21 @@ function* yieldSingleEntryOrLinkedList2<T>(e?: SingleEntry2<T> | LinkedList2<T>)
   }
 }
 
+type CellAlignment = 'min' | 'center'
+
+function hash2WithSize(cellSize: number, cellAlignment: CellAlignment): (x: number, y: number) => number {
+  switch (cellAlignment) {
+    case 'center':
+      return (x, y) => hash2(
+        Math.floor(x / cellSize - .5),
+        Math.floor(y / cellSize - .5))
+    default:
+      return (x, y) => hash2(
+        Math.floor(x / cellSize),
+        Math.floor(y / cellSize))
+  }
+}
+
 const _point = { x: 0, y: 0 }
 
 /**
@@ -82,19 +97,30 @@ const _point = { x: 0, y: 0 }
  *   than 1 value in the same cell.
  */
 export class HashGrid2<T> {
-  #map = new Map<number, SingleEntry2<T> | LinkedList2<T>>()
+  static defaultOptions = {
+    /**
+     * The size of each cell in the grid. The bigger the cell size, the fewer
+     * cells there will be, and the more values will be grouped into the same cell.
+     */
+    cellSize: 0,
+    /**
+     * The alignment of the cell. If 'min', the cell will be aligned to the minimum
+     * coordinate of the value. If 'center', the cell will be aligned to the center
+     * of the value.
+     */
+    cellAlignment: <CellAlignment>'min',
+  }
+
+  #cells = new Map<number, SingleEntry2<T> | LinkedList2<T>>()
   #valueCount = 0
-  #cellSize: number
+  #options!: typeof HashGrid2.defaultOptions
   // @ts-ignore
   #cellHash: (x: number, y: number) => number
 
-  constructor(cellSize = 0) {
-    this.#cellSize = cellSize
-    this.#cellHash = (cellSize === 0)
-      ? hash2
-      : (x, y) => hash2(
-        Math.round(x / cellSize),
-        Math.round(y / cellSize))
+  constructor(cellSize: number)
+  constructor(options?: Partial<typeof HashGrid2.defaultOptions>)
+  constructor(arg?: number | Partial<typeof HashGrid2.defaultOptions>) {
+    this.reset(arg as any)
 
     // Hack for memo:
     // raw string hash function has quite the same performance as the number hash 
@@ -113,27 +139,29 @@ export class HashGrid2<T> {
   }
 
   clear(): void {
-    this.#map.clear()
+    this.#cells.clear()
     this.#valueCount = 0
   }
 
   /**
-   * Reset the cell size of the grid and clear the grid.
+   * Reset the options of the grid and clear the grid.
    */
-  resetCellSize(cellSize: number): void {
-    this.#cellSize = cellSize
+  reset(cellSize: number): void
+  reset(options?: Partial<typeof HashGrid2.defaultOptions>): void
+  reset(options?: number | Partial<typeof HashGrid2.defaultOptions>): void {
+    this.#options = typeof options === 'number'
+      ? { cellSize: options, cellAlignment: 'min' }
+      : { ...HashGrid2.defaultOptions, ...options }
+    const { cellSize, cellAlignment } = this.#options
     this.#cellHash = (cellSize === 0)
       ? hash2
-      : (x, y) => hash2(
-        Math.round(x / cellSize),
-        Math.round(y / cellSize))
+      : hash2WithSize(cellSize, cellAlignment)
     this.clear()
   }
 
   hasCell(x: number, y: number): boolean {
-    return this.#map.has(this.#cellHash(x, y))
+    return this.#cells.has(this.#cellHash(x, y))
   }
-
 
   /**
    * Directly checks if the grid has a value at the given coordinates.
@@ -163,7 +191,7 @@ export class HashGrid2<T> {
 
   getXY(x: number, y: number): T | undefined {
     const h = this.#cellHash(x, y)
-    const e = this.#map.get(h)
+    const e = this.#cells.get(h)
     if (e === undefined) {
       return undefined
     }
@@ -202,10 +230,10 @@ export class HashGrid2<T> {
     }
 
     const h = this.#cellHash(x, y)
-    const e = this.#map.get(h)
+    const e = this.#cells.get(h)
 
     if (e === undefined) {
-      this.#map.set(h, { x, y, value })
+      this.#cells.set(h, { x, y, value })
       this.#valueCount++
     } else if (e instanceof LinkedList2) {
       e.insert(x, y, value)
@@ -216,7 +244,7 @@ export class HashGrid2<T> {
       } else {
         const list = new LinkedList2<T>(e.x, e.y, e.value)
         list.insert(x, y, value)
-        this.#map.set(h, list)
+        this.#cells.set(h, list)
         this.#valueCount++
       }
     }
@@ -224,7 +252,7 @@ export class HashGrid2<T> {
 
   delete(x: number, y: number): boolean {
     const h = this.#cellHash(x, y)
-    const e = this.#map.get(h)
+    const e = this.#cells.get(h)
 
     if (e === undefined)
       return false
@@ -232,9 +260,9 @@ export class HashGrid2<T> {
     if (e instanceof LinkedList2) {
       if (e.x === x && e.y === y) {
         if (e.next) {
-          this.#map.set(h, e.next)
+          this.#cells.set(h, e.next)
         } else {
-          this.#map.delete(h)
+          this.#cells.delete(h)
         }
         this.#valueCount--
         return true
@@ -244,7 +272,7 @@ export class HashGrid2<T> {
       }
     } else {
       if (e.x === x && e.y === y) {
-        this.#map.delete(h)
+        this.#cells.delete(h)
         this.#valueCount--
         return true
       }
@@ -256,19 +284,19 @@ export class HashGrid2<T> {
    * Returns a generator of all values in the cell at (x, y).
    */
   *cellEntries(x: number, y: number): Generator<Entry2<T>, void, unknown> {
-    const e = this.#map.get(this.#cellHash(x, y))
+    const e = this.#cells.get(this.#cellHash(x, y))
     yield* yieldSingleEntryOrLinkedList2(e)
   }
 
   cellFirstEntry(x: number, y: number): Entry2<T> | undefined {
-    const e = this.#map.get(this.#cellHash(x, y))
+    const e = this.#cells.get(this.#cellHash(x, y))
     return e && [e.x, e.y, e.value]
   }
 
   *cellNeighborEntries(x: number, y: number, neighborExtent = 1): Generator<Entry2<T>, void, unknown> {
-    const map = this.#map
+    const map = this.#cells
     const hash = this.#cellHash
-    const cellSize = this.#cellSize
+    const { cellSize } = this.#options
     for (let i = -neighborExtent; i <= neighborExtent; i++) {
       for (let j = -neighborExtent; j <= neighborExtent; j++) {
         const cx = x + i * cellSize
@@ -280,13 +308,28 @@ export class HashGrid2<T> {
   }
 
   *entries(): Generator<Entry2<T>, void, unknown> {
-    for (const e of this.#map.values())
+    for (const e of this.#cells.values())
       yield* yieldSingleEntryOrLinkedList2(e)
   }
 
+  /**
+   * Returns a generator of all values in the cell at (x, y).
+   * @param x The x coordinate of the cell.
+   * @param y The y coordinate of the cell.
+   */
   *cellValues(x: number, y: number): Generator<T, void, unknown> {
     for (const [, , value] of this.cellEntries(x, y))
       yield value
+  }
+
+  /**
+   * Returns the first value in the cell at (x, y).
+   * @param x The x coordinate of the cell.
+   * @param y The y coordinate of the cell.
+   */
+  cellFirstValue(x: number, y: number): T | undefined {
+    const e = this.cellFirstEntry(x, y)
+    return e ? e[2] : undefined
   }
 
   *values(): Generator<T, void, unknown> {
@@ -307,7 +350,7 @@ export class HashGrid2<T> {
    */
   *query(x: number, y: number, radius: number): Generator<Entry2<T>, void, unknown> {
     const radius2 = radius * radius
-    for (const [px, py, value] of this.cellNeighborEntries(x, y, Math.ceil(radius / this.#cellSize))) {
+    for (const [px, py, value] of this.cellNeighborEntries(x, y, Math.ceil(radius / this.#options.cellSize))) {
       const dx = px - x
       const dy = py - y
       if (dx * dx + dy * dy <= radius2)
@@ -350,7 +393,7 @@ export class HashGrid2<T> {
   // Readonly properties & Utils
 
   get cellCount(): number {
-    return this.#map.size
+    return this.#cells.size
   }
 
   get valueCount(): number {
@@ -358,7 +401,7 @@ export class HashGrid2<T> {
   }
 
   get cellSize(): number {
-    return this.#cellSize
+    return this.#options.cellSize
   }
 
   /**
@@ -370,20 +413,20 @@ export class HashGrid2<T> {
   }
 
   floor(x: number) {
-    return Math.floor(x / this.#cellSize) * this.#cellSize
+    return Math.floor(x / this.#options.cellSize) * this.#options.cellSize
   }
 
   ceil(x: number) {
-    return Math.ceil(x / this.#cellSize) * this.#cellSize
+    return Math.ceil(x / this.#options.cellSize) * this.#options.cellSize
   }
 
   round(x: number) {
-    return Math.round(x / this.#cellSize) * this.#cellSize
+    return Math.round(x / this.#options.cellSize) * this.#options.cellSize
   }
 
   computeMaxValueCountPerCell(): number {
     let max = 0
-    for (const e of this.#map.values()) {
+    for (const e of this.#cells.values()) {
       if (e instanceof LinkedList2) {
         let count = 0
         let current: LinkedList2<T> | undefined = e

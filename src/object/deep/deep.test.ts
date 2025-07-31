@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
-import { deepSet } from './deep'
-import { deepDiff } from './diff'
+import { deepCopy, deepSet } from './deep'
+import { deepDiff, deepEqual } from './diff'
 
 describe('deepSet', () => {
   test('should set deep properties with string and array paths', () => {
@@ -58,6 +58,32 @@ describe('deepSet', () => {
       deepSet(obj, ['x', mySymbol, 2], 1)
       expect(Array.isArray(obj.x[mySymbol])).toBe(true)
     }
+  })
+})
+
+describe('deepCopy', () => {
+  test('should correctly copy nested objects', () => {
+    const create = () => ({
+      x: Math.random(),
+      y: Math.random(),
+      z: {
+        a: Math.random(),
+        b: Math.random(),
+        c: {
+          d: Math.random(),
+          e: Math.random(),
+        },
+      },
+    })
+
+    const a = create()
+    const b = create()
+
+    expect(deepEqual(a, b)).toBe(false)
+    deepCopy(a, b)
+    expect(a.z.c === b.z.c).toBe(false) // Ensure nested objects are not the same reference
+    expect(a.z.c.d === b.z.c.d).toBe(true) // Ensure primitive values are copied correctly
+    expect(deepEqual(a, b)).toBe(true) // All of them!
   })
 })
 

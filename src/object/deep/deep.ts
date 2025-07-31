@@ -104,47 +104,36 @@ export function deepCopy<T extends object = any>(
 ): boolean {
   let hasChanged = false
 
-  function clone(srcValue: any, key: string | number) {
-    // Objects:
-    if (isObject(srcValue)) {
-      // Dates:
-      if (srcValue instanceof Date) {
-        const destDate = (destination as any)[key] as Date
-        if ((destDate instanceof Date) === false || destDate.getTime() !== srcValue.getTime()) {
-          (destination as any)[key] = new Date(srcValue.getTime())
+  if (Array.isArray(source)) {
+    const len = source.length;
+    (destination as any[]).length = len
+    for (let i = 0; i < len; i++) {
+      const srcValue = source[i]
+      if (isObject(srcValue)) {
+        const childHasChanged = deepCopy(srcValue, (destination as any)[i], allowNewKeys)
+        hasChanged = childHasChanged || hasChanged
+      } else {
+        if ((destination as any)[i] !== srcValue) {
+          (destination as any)[i] = srcValue
           hasChanged = true
         }
       }
-
-      // Regular objects:
-      else {
-        hasChanged = deepCopy(srcValue, (destination as any)[key]) || hasChanged
-      }
-    }
-
-    // Primitives:
-    else {
-      if ((destination as any)[key] !== srcValue) {
-        (destination as any)[key] = srcValue
-        hasChanged = true
-      }
-    }
-  }
-
-  if (Array.isArray(source)) {
-    const len = allowNewKeys
-      ? source.length
-      : Math.min(source.length, (destination as any).length)
-    for (let i = 0; i < len; i++) {
-      const srcValue = source[i]
-      clone(srcValue, i)
     }
   } else {
     for (const [key, srcValue] of Object.entries(source)) {
+      console.log(key, srcValue)
       if (allowNewKeys === false && key in destination === false) {
         continue
       }
-      clone(srcValue, key)
+      if (isObject(srcValue)) {
+        const childHasChanged = deepCopy(srcValue, (destination as any)[key], allowNewKeys)
+        hasChanged = childHasChanged || hasChanged
+      } else {
+        if ((destination as any)[key] !== srcValue) {
+          (destination as any)[key] = srcValue
+          hasChanged = true
+        }
+      }
     }
   }
 
