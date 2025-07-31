@@ -80,10 +80,16 @@ describe('deepCopy', () => {
     const b = create()
 
     expect(deepEqual(a, b)).toBe(false)
-    deepCopy(a, b)
+    const hasChanged = deepCopy(a, b)
+    expect(hasChanged).toBe(true) // Ensure deepCopy returns true if values are different
     expect(a.z.c === b.z.c).toBe(false) // Ensure nested objects are not the same reference
     expect(a.z.c.d === b.z.c.d).toBe(true) // Ensure primitive values are copied correctly
     expect(deepEqual(a, b)).toBe(true) // All of them!
+
+    expect(deepCopy(b, a)).toBe(false) // Should return false if no changes are made
+    a.z.c.e = 100 // Change a
+    expect(deepCopy(a, b)).toBe(true) // Should return true since a has changed
+    expect(b.z.c.e).toBe(100) // Ensure b is updated
   })
 })
 
