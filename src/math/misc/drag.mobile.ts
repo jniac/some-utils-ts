@@ -34,7 +34,9 @@ export class DragMobile {
   }
 
   set({
-    position = this.position, velocity = this.velocity, drag = this.drag,
+    position = this.position,
+    velocity = this.velocity,
+    drag = this.drag,
   } = {}): this {
     this.position = position
     this.velocity = velocity
