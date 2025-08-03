@@ -9,10 +9,10 @@ const defaultOptions = {
   resolved: false,
 }
 
+export const promisifySymbol = Symbol('promisify')
+
 /**
  * Turns an object into a promise-like object. 
- * 
- * The following methods will be added:
  * 
  * The following methods will be added:
  * - then (promise-like implementation)
@@ -20,6 +20,13 @@ const defaultOptions = {
  * - finally (promise-like implementation)
  * - resolve (controls the promise)
  * - reject (controls the promise)
+ * 
+ * Note:
+ * - The promisified object will be modified in place two times:
+ *   - 1. When the promise is created.
+ *   - 2. When the promise is resolved or rejected.  
+ * - Be aware that the "promisified" object can mutate to the original "unpromisified" 
+ *   object because of the `resolve` or `reject` methods being called somewhere else in the code.
  * 
  * Usage:
  * ```
@@ -34,6 +41,10 @@ const defaultOptions = {
  * ```
  */
 export function promisify<T extends object>(value: T, options?: typeof defaultOptions): Promisified<T> {
+  // Important: If the value is already promisified, we should not promisify it again. Return it as is.
+  if (promisifySymbol in value)
+    return value as any
+
   let { resolved = false } = { ...defaultOptions, ...options }
   const memo = {
     resolve: () => value,
@@ -58,6 +69,7 @@ export function promisify<T extends object>(value: T, options?: typeof defaultOp
     delete (value as any).finally
     delete (value as any).resolve
     delete (value as any).reject
+    delete (value as any)[promisifySymbol]
   }
   const thenFn = (onFulfilled?: (value: T) => any, onRejected?: (reason: any) => any) => {
     if (resolved) {
@@ -78,6 +90,7 @@ export function promisify<T extends object>(value: T, options?: typeof defaultOp
     finally: finallyFn,
     resolve: () => memo.resolve(),
     reject: () => memo.reject(),
+    [promisifySymbol]: true,
   })
   return value as any
 }
