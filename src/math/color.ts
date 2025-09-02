@@ -139,6 +139,18 @@ export class Color4 {
     yield this.a
   }
 
+  copy(other: Color4Like): this {
+    this.r = other.r
+    this.g = other.g
+    this.b = other.b
+    this.a = other.a
+    return this
+  }
+
+  clone(): this {
+    return new (this.constructor as new () => this)().copy(this)
+  }
+
   set(r: number, g: number, b: number, a = 1) {
     this.r = r
     this.g = g
