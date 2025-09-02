@@ -132,6 +132,13 @@ export class Color4 {
     }
   }
 
+  *[Symbol.iterator]() {
+    yield this.r
+    yield this.g
+    yield this.b
+    yield this.a
+  }
+
   set(r: number, g: number, b: number, a = 1) {
     this.r = r
     this.g = g
