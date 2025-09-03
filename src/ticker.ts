@@ -157,6 +157,8 @@ export class Tick {
 
 export type TickCallback = (tick: Tick) => (void | OnTickStopSignal | Promise<void>)
 
+const DEFAULT_LISTENER_NAME = '<anonymous>'
+
 /**
  * Listeners are used to register callbacks that will be called on every tick.
  * 
@@ -169,6 +171,10 @@ type Listener = Readonly<{
    * Unique identifier of the listener.
    */
   id: number
+  /**
+   * Name of the listener.
+   */
+  name?: string
   /**
    * Phase of the listener. Used to sort the listeners.
    */
@@ -202,7 +208,7 @@ class ListenerRegister {
    */
   #lockedListeners: Listener[] = []
 
-  add(phase: number, order: number, callback: TickCallback): Listener {
+  add(phase: number, order: number, name: string | undefined, callback: TickCallback): Listener {
     // NOTE: Optimization: we don't need to sort the listeners if the new listener
     // can be appended at the end of the list.
     // NOTE: If the sortDirty flag is already set, it means that the listeners are
@@ -216,7 +222,7 @@ class ListenerRegister {
     this.#countDirty = true
 
     const id = ListenerRegister.#listenerNextId++
-    const listener = { id, phase, order, callback }
+    const listener = { id, name, phase, order, callback }
     this.#listeners.push(listener)
     return listener
   }
@@ -245,7 +251,11 @@ class ListenerRegister {
 
   #clearDirty() {
     if (this.#sortDirty) {
-      this.#listeners.sort((A, B) => A.order - B.order)
+      this.#listeners.sort((A, B) => (
+        A.phase !== B.phase
+          ? A.phase - B.phase
+          : A.order - B.order
+      ))
       this.#sortDirty = false
     }
     if (this.#countDirty) {
@@ -267,29 +277,55 @@ class ListenerRegister {
   toDebugString() {
     this.#clearDirty()
 
-    const map = new Map<number, Listener[]>()
-    let longestOrderStr = ''
+    const phaseHeadStr = 'Phase'
+    const orderHeadStr = 'Order'
+    const nameHeadStr = 'Name'
+    const idHeadStr = 'ID'
+    let longestPhaseStr = phaseHeadStr
+    let longestOrderStr = orderHeadStr
+    let longestNameStr = nameHeadStr
+    let longestIdStr = idHeadStr
     for (const listener of this.#lockedListeners) {
+      const phaseStr = listener.phase.toString()
       const orderStr = listener.order.toString()
-      if (orderStr.length > longestOrderStr.length) {
+      const idStr = listener.id.toString()
+      const nameStr = listener.name?.toString() ?? DEFAULT_LISTENER_NAME
+
+      if (nameStr.length > longestNameStr.length)
+        longestNameStr = nameStr
+
+      if (phaseStr.length > longestPhaseStr.length)
+        longestPhaseStr = phaseStr
+
+      if (orderStr.length > longestOrderStr.length)
         longestOrderStr = orderStr
-      }
-      if (map.has(listener.order) === false) {
-        map.set(listener.order, [listener])
-      } else {
-        map.get(listener.order)!.push(listener)
-      }
+
+      if (idStr.length > longestIdStr.length)
+        longestIdStr = idStr
+
+      if (nameStr.length > longestNameStr.length)
+        longestNameStr = nameStr
     }
 
-    const orders = [...map.keys()].sort((A, B) => A - B)
+    const indexLongestStr = this.#lockedListeners.length.toString()
+    const separator = ' | '
+    const headLine = [
+      ''.padStart(indexLongestStr.length, '-'),
+      phaseHeadStr.padStart(longestPhaseStr.length),
+      orderHeadStr.padStart(longestOrderStr.length),
+      idHeadStr.padStart(longestIdStr.length),
+      nameHeadStr.padEnd(longestNameStr.length)
+    ].join(separator)
+    const lines = this.#lockedListeners.map((listener, index) => {
+      const indexStr = (index + 1).toString().padStart(indexLongestStr.length)
+      const phaseStr = listener.phase.toString().padStart(longestPhaseStr.length)
+      const orderStr = listener.order.toString().padStart(longestOrderStr.length)
+      const idStr = listener.id.toString().padStart(longestIdStr.length)
+      const nameStr = (listener.name?.toString() ?? DEFAULT_LISTENER_NAME).padEnd(longestNameStr.length)
+      return [indexStr, phaseStr, orderStr, idStr, nameStr].join(separator)
+    })
 
-    const str = orders.map(order => {
-      const listeners = map.get(order)!
-      const orderStr = `${order.toString().padStart(longestOrderStr.length)}:`
-      return `${orderStr} (${listeners.length})`
-    }).join('\n')
-
-    return str
+    return [headLine, ...lines].join('\n')
   }
 
   logDebugString() {
@@ -303,6 +339,10 @@ class ListenerRegister {
 }
 
 export type OnTickOptions = Partial<{
+  /**
+   * Name of the listener. For debugging purposes.
+   */
+  name: string
   /**
    * Phase of the listener. The lower the phase, the earlier the listener will be
    * called.
@@ -430,6 +470,9 @@ export class Ticker implements DestroyableObject {
   staticProps: typeof Ticker.defaultStaticProps
   props: typeof Ticker.defaultProps
 
+  /**
+   * Internal state of the ticker. Should be private but kept public for debugging purposes.
+   */
   internal = {
     active: true,
     stopped: false,
@@ -612,6 +655,7 @@ export class Ticker implements DestroyableObject {
     const {
       phase = 0,
       order = 0,
+      name = undefined,
       frameInterval = 0,
       timeInterval = 0,
       once = false,
@@ -646,7 +690,7 @@ export class Ticker implements DestroyableObject {
       })
     }
 
-    this.internal.updateRegister.add(phase, order, callback)
+    this.internal.updateRegister.add(phase, order, name, callback)
     this.internal.deactivationRegister
     const destroy = () => {
       this.internal.updateRegister.remove(callback)
@@ -661,7 +705,7 @@ export class Ticker implements DestroyableObject {
 
   onActivate(callback: TickCallback): DestroyableObject {
     this.requestActivation()
-    this.internal.activationRegister.add(0, 0, callback)
+    this.internal.activationRegister.add(0, 0, undefined, callback)
     const destroy = () => {
       this.internal.activationRegister.remove(callback)
     }
@@ -669,7 +713,7 @@ export class Ticker implements DestroyableObject {
   }
 
   onDeactivate(callback: TickCallback): DestroyableObject {
-    this.internal.deactivationRegister.add(0, 0, callback)
+    this.internal.deactivationRegister.add(0, 0, undefined, callback)
     const destroy = () => {
       this.internal.deactivationRegister.remove(callback)
     }
@@ -685,10 +729,10 @@ export class Ticker implements DestroyableObject {
    * Since `phase` and `order` options are available, it's possible to insert the callback
    * to a specific position among the other callbacks.
    */
-  requestAnimationFrame = (callback: (ms: number) => void, { phase = 0, order = 0 } = {}): number => {
+  requestAnimationFrame = (callback: (ms: number) => void, { phase = 0, order = 0, name = <string | undefined>undefined } = {}): number => {
     this.requestActivation() // Request activation to ensure the callback is called.
     const { updateRegister: updateListeners } = this.internal
-    const listener = updateListeners.add(phase, order, tick => {
+    const listener = updateListeners.add(phase, order, name, tick => {
       updateListeners.removeById(listener.id)
       callback(tick.time * 1e3)
     })
