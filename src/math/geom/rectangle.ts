@@ -104,11 +104,12 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
 
   if ('size' in restDeclaration) {
     const { center, position = 0, size } = restDeclaration
-    const p = center
+    const centerIsDefined = center !== undefined
+    const p = centerIsDefined
       ? fromVector2Declaration(center)
       : fromVector2Declaration(position)
     const s = fromVector2Declaration(size)
-    if (center) {
+    if (centerIsDefined) {
       p.x -= s.x / 2
       p.y -= s.y / 2
     }
