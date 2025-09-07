@@ -33,11 +33,13 @@ New iteration, one big repository is no more maintainable:
 
 In a PNPM monorepo, inside the "packages" folder:
 
-```
+```shell
 git submodule add https://github.com/jniac/some-utils-ts
 git submodule add https://github.com/jniac/some-utils-three
 git submodule add https://github.com/jniac/some-utils-dom
 git submodule add https://github.com/jniac/some-utils-react
+# OR, if already added:
+git submodule update --init --remote --recursive
 ```
 
 inside some app package.json, add:
