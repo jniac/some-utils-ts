@@ -27,6 +27,14 @@ function nested(path: string | Path, value: any) {
 /**
  * An observable that "deeply" tracks changes to its value.
  * 
+ * Note:
+ * - The value must be an object... or not! You can still use it with primitive 
+ * values (for convenience), even though there's no "deep" tracking in that case.
+ * - This observable is quite expensive to use since any change set with 
+ * `setMutation` will trigger a deep diff and  a deep clone. Use with caution. 
+ * - For frequent changes (e.g. multiple mutation), consider using `enqueueMutation`
+ * and `flushMutations` instead.
+ * 
  * Usage: 
  * ```
  * const o = new ObservableTree({ foo: { bar: 2, qux: 3 } })
@@ -39,13 +47,7 @@ function nested(path: string | Path, value: any) {
  * o.setMutation({ foo: { bar: 12 } })
  * ```
  * 
- * NOTE: 
- * 
- * This observable is quite expensive to use since any change set with 
- * `setMutation` will trigger a deep diff and  a deep clone. Use with caution. 
- * For frequent changes (e.g. multiple mutation), consider using `enqueueMutation`
- * and `flushMutations` instead.
- * 
+ * Usage of `enqueueMutation` and `flushMutations`:
  * ```
  * const o = new ObservableTree({ foo: { bar: 2, qux: 3 } })
  * o.onMutation('foo', (v, { partialValueOld, path }) => {
@@ -70,7 +72,7 @@ export class ObservableTree<T> extends Observable<T> {
 
   setMutation(mutation: DeepPartial<T> | [path: string | Path, value: any], options?: SetValueOptions): boolean {
     if (!mutation || typeof mutation !== 'object') {
-      throw new Error('Mutation must be an object.')
+      throw new Error('Mutation must be an object. For primitive values, use setValue instead.')
     }
 
     const { value: currentValue } = this
@@ -122,6 +124,10 @@ export class ObservableTree<T> extends Observable<T> {
   }
 
   override setValue(incomingValue: T, options?: SetValueOptions): boolean {
+    const isPrimitive = !incomingValue || typeof incomingValue !== 'object'
+    if (isPrimitive) {
+      return super.setValue(incomingValue, options)
+    }
     return this.setMutation(incomingValue as any, options)
   }
 
