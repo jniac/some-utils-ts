@@ -6,8 +6,10 @@ describe('UniqueValueMap', () => {
   test('should associate a value with a key', () => {
     const map = new UniqueValueMap<string, number>()
     map.set('a', 1)
+    expect(map.hasValue(1)).toBe(true)
     expect(map.sizeOf('a')).toBe(1)
     expect(map.getKey(1)).toBe('a')
+    expect(map.valueAt('a', 0)).toBe(1)
   })
 
   test('should remove a value', () => {
@@ -81,7 +83,7 @@ describe('UniqueValueMap', () => {
 
       expect(map.moveBy('a', 2, 1)).toBe(false) // No move (already at end)
 
-      expect(map.moveAt('a', 3, 0)).toBe(true) // Move '3' to index 0
+      expect(map.moveTo('a', 3, 0)).toBe(true) // Move '3' to index 0
       expect([...map.valuesOf('a')]).toEqual([3, 1, 2])
     })
 

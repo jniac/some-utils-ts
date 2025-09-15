@@ -81,9 +81,39 @@ export class UniqueValueMap<K, V> {
     return count
   }
 
+  hasValue(value: V): boolean {
+    return this.#valueToKey.has(value)
+  }
+
+  /**
+   * Returns the value at a specific index for a key, or undefined if not found.
+   * Negative indices count from the end (-1 is last element).
+   */
+  valueAt(key: K, index: number): V | undefined {
+    const values = this.#keyToValues.get(key)
+    if (!values) {
+      return undefined
+    }
+
+    // Handle negative indices
+    if (index < 0) {
+      index = values.length + index
+    }
+
+    return values[index]
+  }
+
   *valuesOf(key: K): Generator<V> {
     const values = this.#keyToValues.get(key)
     if (values) {
+      for (const value of values) {
+        yield value
+      }
+    }
+  }
+
+  *allValues(): Generator<V> {
+    for (const values of this.#keyToValues.values()) {
       for (const value of values) {
         yield value
       }
@@ -135,7 +165,7 @@ export class UniqueValueMap<K, V> {
    * Negative indices count from the end (-1 is last element).
    * Returns true if the value was moved, false if it was not found or no move occurred.
    */
-  moveAt(key: K, value: V, toIndex: number): boolean {
+  moveTo(key: K, value: V, toIndex: number): boolean {
     const values = this.#keyToValues.get(key)
     if (!values) {
       return false
