@@ -44,10 +44,10 @@ export class UniqueValueMap<K, V> {
   }
 
   /**
-   * Removes a value from the collection entirely.
+   * Deletes a value from the collection entirely.
    * Returns true if the value was found and removed.
    */
-  remove(value: V): boolean {
+  delete(value: V): boolean {
     const key = this.#valueToKey.get(value)
     if (key === undefined) {
       return false
@@ -59,10 +59,10 @@ export class UniqueValueMap<K, V> {
   }
 
   /**
-   * Removes all values associated with a key.
+   * Deletes all values associated with a key.
    * Returns the number of items removed.
    */
-  removeAll(key: K): number {
+  deleteAll(key: K): number {
     const values = this.#keyToValues.get(key)
     if (!values) {
       return 0

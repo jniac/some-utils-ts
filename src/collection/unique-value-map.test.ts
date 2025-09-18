@@ -12,12 +12,12 @@ describe('UniqueValueMap', () => {
     expect(map.valueAt('a', 0)).toBe(1)
   })
 
-  test('should remove a value', () => {
+  test('should delete a value', () => {
     const map = new UniqueValueMap<string, number>()
     map.set('a', 1)
     map.set('a', 2)
     expect(map.sizeOf('a')).toBe(2)
-    expect(map.remove(1)).toBe(true)
+    expect(map.delete(1)).toBe(true)
     expect(map.getKey(1)).toBeUndefined()
     expect(map.sizeOf('a')).toBe(1)
   })
@@ -58,7 +58,7 @@ describe('UniqueValueMap', () => {
     const map = new UniqueValueMap<string, number>()
     expect(map.getKey(99)).toBeUndefined()
     expect(map.sizeOf('nonexistent')).toBe(0)
-    expect(map.remove(99)).toBe(false)
+    expect(map.delete(99)).toBe(false)
   })
 
   describe('value management', () => {
