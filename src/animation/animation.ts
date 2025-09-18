@@ -346,6 +346,12 @@ class AnimationInstance implements DestroyableObject {
   didPass(props: Partial<{ time: number, progress: number }>) {
     return this.didPassAbove(props) || this.didPassBelow(props)
   }
+
+  waitForCompletion(): Promise<this> {
+    return new Promise(resolve => {
+      this.onComplete(() => resolve(this))
+    })
+  }
 }
 
 let instances: AnimationInstance[] = []
