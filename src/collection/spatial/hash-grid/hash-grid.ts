@@ -93,6 +93,7 @@ const _point = { x: 0, y: 0 }
  * 
  * Note: 
  * - Cell size can be omitted or set to 0 for exact coordinates, it's ok.
+ * - If cell size is 0, cellNeighborEntries() will not work.
  * - The grid is memory-optimized and use linked lists only when there are more 
  *   than 1 value in the same cell.
  */
@@ -293,12 +294,12 @@ export class HashGrid2<T> {
     return e && [e.x, e.y, e.value]
   }
 
-  *cellNeighborEntries(x: number, y: number, neighborExtent = 1): Generator<Entry2<T>, void, unknown> {
+  *cellNeighborEntries(x: number, y: number, cellNeighborExtent = 1): Generator<Entry2<T>, void, unknown> {
     const map = this.#cells
     const hash = this.#cellHash
     const { cellSize } = this.#options
-    for (let i = -neighborExtent; i <= neighborExtent; i++) {
-      for (let j = -neighborExtent; j <= neighborExtent; j++) {
+    for (let i = -cellNeighborExtent; i <= cellNeighborExtent; i++) {
+      for (let j = -cellNeighborExtent; j <= cellNeighborExtent; j++) {
         const cx = x + i * cellSize
         const cy = y + j * cellSize
         const e = map.get(hash(cx, cy))

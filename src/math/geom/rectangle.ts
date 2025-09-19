@@ -318,8 +318,22 @@ class RectangleCastResult {
  * - contains methods
  */
 export class Rectangle implements RectangleLike, Iterable<number> {
-  static from(source?: RectangleDeclaration): Rectangle {
-    return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, new Rectangle())
+  static from(source?: RectangleDeclaration, out = new Rectangle()): Rectangle {
+    return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, out)
+  }
+
+  /**
+   * Returns a `Rectangle` instance from various types of input.
+   * 
+   * If `source` is already a `Rectangle` instance, it is returned as-is.
+   * 
+   * @param out The fallback rectangle to use if `source` is not already a `Rectangle` instance.
+   */
+  static ensure(source?: RectangleDeclaration, out = new Rectangle()): Rectangle {
+    if (source instanceof Rectangle) {
+      return source
+    }
+    return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, out)
   }
 
   x: number = 0
@@ -396,7 +410,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  /**
+   * @deprecated Use `from()` instead.
+   */
   fromDeclaration(declaration: RectangleDeclaration): this {
+    return this.from(declaration)
+  }
+
+  from(declaration: RectangleDeclaration): this {
     fromRectangleDeclaration(declaration, this)
     return this
   }
@@ -746,6 +767,21 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       mode: 'grow',
       ...options,
     })
+  }
+
+  shrink(padding: PaddingDeclaration, options?: Partial<Omit<typeof Rectangle.applyPaddingDefaultOptions, 'mode'>>): this {
+    return this.applyPadding(padding, {
+      mode: 'shrink',
+      ...options,
+    })
+  }
+
+  round(step = 1): this {
+    this.x = Math.round(this.x / step) * step
+    this.y = Math.round(this.y / step) * step
+    this.width = Math.round(this.width / step) * step
+    this.height = Math.round(this.height / step) * step
+    return this
   }
 
   toBoundingInt(): this {
