@@ -1057,6 +1057,20 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   }
 
   static #side = { side: new Line2() };
+  side(sideIndex: 0 | 1 | 2 | 3, out = Rectangle.#side.side): Line2 {
+    const { x, y, width: w, height: h } = this
+    switch (sideIndex) {
+      default:
+      case 0:
+        return out.set(x, y, w, 0)
+      case 1:
+        return out.set(x + w, y, 0, h)
+      case 2:
+        return out.set(x + w, y + h, -w, 0)
+      case 3:
+        return out.set(x, y + h, 0, -h)
+    }
+  }
   /**
    * Iterates over the sides of the rectangle in clockwise order.
    * 
