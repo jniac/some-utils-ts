@@ -50,6 +50,16 @@ type RandomUtilsType = {
   number(min: number, max: number): number
 
   /**
+   * Alias for number() method.
+   */
+  float: (...args: Parameters<RandomUtilsType['number']>) => number
+
+  /**
+   * Alias for number() method.
+   */
+  f: (...args: Parameters<RandomUtilsType['number']>) => number
+
+  /**
    * Generates a random sign, either -1 or 1.
    */
   sign(): -1 | 1
@@ -63,6 +73,11 @@ type RandomUtilsType = {
    */
   int(max: number): number
   int(min: number, max: number): number
+
+  /**
+   * Alias for int() method.
+   */
+  i: (...args: Parameters<RandomUtilsType['int']>) => number
 
   /**
    * Generates a random hex color string in the format '#RRGGBB'.
@@ -321,8 +336,11 @@ function createRandomUtils(): RandomUtilsType {
 
     chance,
     number,
+    float: number,
+    f: number,
     sign,
     int,
+    i: int,
     hexColor,
     pickIndex,
     pick,
