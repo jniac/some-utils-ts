@@ -401,6 +401,9 @@ export class HashGrid2<T> {
     return this.#valueCount
   }
 
+  /**
+   * The size of each cell in the grid.
+   */
   get cellSize(): number {
     return this.#options.cellSize
   }
