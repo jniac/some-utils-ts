@@ -9,8 +9,12 @@ export async function waitNextFrame(): Promise<void> {
 const defaultWaitSecondsOptions = {
   /**
    * The frequency at which the generator will yield.
+   * 
+   * If 'max', it will yield every frame.
+   * 
+   * @default 'max'
    */
-  frequency: 10,
+  frequency: <number | 'max'>'max',
 }
 
 /**
@@ -29,7 +33,7 @@ const defaultWaitSecondsOptions = {
  */
 export async function* waitForSeconds(seconds: number, options?: Partial<typeof defaultWaitSecondsOptions>) {
   const { frequency } = { ...defaultWaitSecondsOptions, ...options }
-  const interval = 1 / frequency
+  const interval = frequency === 'max' ? 0 : 1 / frequency
   const start = Date.now()
   let progress = 0
   let elapsed = 0
