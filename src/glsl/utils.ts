@@ -83,9 +83,16 @@ float positiveModulo(float x) {
   return x < 0.0 ? x + 1.0 : x;
 }
 
+// Modulo that keeps the result in the range [0, modulo]
 float positiveModulo(float x, float modulo) {
   x = mod(x, modulo);
   return x < 0.0 ? x + modulo : x;
+}
+
+// Modulo that keeps the result in the range [-m/2, m/2]
+float middleModulo(float x, float modulo) {
+  x = mod(x, modulo);
+  return x < -modulo / 2.0 ? x + modulo : x > modulo / 2.0 ? x - modulo : x;
 }
 
 // Limit a value to a maximum that the function tends to reach when x -> ∞

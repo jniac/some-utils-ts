@@ -52,7 +52,9 @@ type RandomUtilsType = {
   /**
    * Alias for number() method.
    */
-  float: (...args: Parameters<RandomUtilsType['number']>) => number
+  float(): number
+  float(max: number): number
+  float(min: number, max: number): number
 
   /**
    * Alias for number() method.
