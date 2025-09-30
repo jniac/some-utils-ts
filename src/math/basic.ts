@@ -11,6 +11,10 @@ export function clamp(x: number, min: number, max: number) {
 
 export { saturate as clamp01 }
 
+export function almostEqual(a: number, b: number, epsilon = 1e-6) {
+  return Math.abs(a - b) <= epsilon
+}
+
 export function spow(x: number, p: number) {
   return x >= 0 ? Math.pow(x, p) : -Math.pow(-x, p)
 }
