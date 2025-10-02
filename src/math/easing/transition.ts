@@ -117,33 +117,165 @@ export const inLinearOut = (x: number, p: number, q: number, s: number) => {
   return (x * w - p1 + p2) / a
 }
 
+/**
+ * https://www.desmos.com/calculator/113c430742
+ */
 export const asymmetricalInOut = (x: number, a: number, b: number) => {
   return Math.pow(x, a) / (Math.pow(x, a) + Math.pow(1 - x, b))
 }
 
-export const transition = {
+/**
+ * A collection of simple transition functions.
+ * 
+ * Note: "simple" means that they only take the input value `x` as argument.
+ */
+export const simpleTransition = {
   linear,
-  in: _in,
   in1,
   in2,
   in3,
   in4,
   in5,
   in6,
-  out,
   out1,
   out2,
   out3,
   out4,
   out5,
   out6,
-  inOut,
   inOut1,
   inOut2,
   inOut3,
   inOut4,
   inOut5,
   inOut6,
+}
+
+export const transition = {
+  ...simpleTransition,
+  in: _in,
+  out,
+  inOut,
   inLinearOut,
   asymmetricalInOut,
+}
+
+type NumberDeclaration =
+  | `${number}`
+  | `${number}/${number}`
+
+export type TransitionDeclaration =
+  | ((x: number) => number)
+  | keyof typeof simpleTransition
+  | `in(${NumberDeclaration})`
+  | `out(${NumberDeclaration})`
+  | `inout(${NumberDeclaration})`
+  | `inout(${NumberDeclaration}${','}${NumberDeclaration})`
+  | `asym(${NumberDeclaration}${','}${NumberDeclaration})`
+  | `in-linear-out(${NumberDeclaration}${','}${NumberDeclaration}${','}${NumberDeclaration})`
+
+/**
+ * Extracts numbers from a transition declaration string.
+ * 
+ * e.g. 
+ * - "3" => [3]
+ * - "5/2" => [2.5]
+ * - "3, 3/4" => [3, 0.75]
+ */
+function extractNumbers(arg: string): number[] {
+  return arg
+    .split(',')
+    .map((v) => {
+      const parts = v.split('/').map((p) => p.trim())
+      if (parts.length === 1) {
+        return Number(parts[0])
+      }
+      if (parts.length === 2) {
+        const n = Number(parts[0])
+        const d = Number(parts[1])
+        if (d === 0)
+          throw new Error(`Invalid transition declaration: ${arg} (division by zero)`)
+        return n / d
+      }
+      throw new Error(`Invalid transition declaration: ${arg} (too many '/')`)
+    })
+}
+
+function split(arg: string): [name: string, params: number[]] {
+  const open = arg.indexOf('(')
+  const close = arg.lastIndexOf(')')
+  if (open === -1 || close === -1 || close < open)
+    throw new Error(`Invalid transition declaration: ${arg}`)
+  const name = arg.slice(0, open).toLowerCase()
+  const params = arg.slice(open + 1, close)
+  return [name, extractNumbers(params)]
+}
+
+const cache = new Map<TransitionDeclaration, (x: number) => number>()
+
+export function fromTransitionDeclaration(arg: TransitionDeclaration): (x: number) => number {
+  if (typeof arg === 'function')
+    return arg
+
+  if (typeof arg === 'string') {
+    if (arg in simpleTransition)
+      return simpleTransition[arg as keyof typeof simpleTransition]
+
+    const cached = cache.get(arg)
+    if (cached)
+      return cached
+
+    const [name, params] = split(arg)
+    switch (name) {
+      case 'in': {
+        const p = params[0] ?? 3
+        const fn = (x: number) => _in(x, p)
+        cache.set(arg, fn)
+        return fn
+      }
+
+      case 'out': {
+        const p = params[0] ?? 3
+        const fn = (x: number) => out(x, p)
+        cache.set(arg, fn)
+        return fn
+      }
+
+      case 'inout':
+      case 'inOut': {
+        const p = params[0] ?? 3
+        const i = params[1] ?? .5
+        const fn = (x: number) => inOut(x, p, i)
+        cache.set(arg, fn)
+        return fn
+      }
+
+      case 'asym':
+      case 'asymmetrical':
+      case 'asymmetricalInOut':
+      case 'asymInOut': {
+        const a = params[0] ?? 2
+        const b = params[1] ?? 2
+        const fn = (x: number) => asymmetricalInOut(x, a, b)
+        cache.set(arg, fn)
+        return fn
+      }
+
+      case 'in-linear-out':
+      case 'inLinearOut': {
+        const p = params[0] ?? 3
+        const q = params[1] ?? 3
+        const s = params[2] ?? 0
+        const fn = (x: number) => inLinearOut(x, p, q, s)
+        cache.set(arg, fn)
+        return fn
+      }
+
+      default:
+        throw new Error(`Unknown transition function name: ${arg}`)
+    }
+
+  }
+
+  throw new Error(`Invalid transition declaration: ${arg}`)
 }
