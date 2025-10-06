@@ -15,7 +15,7 @@
   "license": "ISC",
   "devDependencies": {
     "tsc-watch": "^6.2.1",
-    "typescript": "^5.5.4",
+    "typescript": "^5.9.3",
     "vitest": "^3.0.8"
   },
   "exports": {
