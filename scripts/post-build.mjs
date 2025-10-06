@@ -2,6 +2,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
+import { generateDistPackage } from './generate-dist-package.mjs'
 import { generateShortImports } from './generate-short-imports.mjs'
 
 /**
@@ -88,9 +89,10 @@ async function processDirectory(dir) {
 }
 
 // Start processing from the current directory (or specify a folder)
-const targetFolder = process.argv[2] || './dist' // Default to './dist' if no folder is provided
+const distDir = process.argv[2] || './dist' // Default to './dist' if no folder is provided
 const now = Date.now()
-const count = await processDirectory(targetFolder)
-console.log(`Changed ${count} import paths in ${targetFolder} (${Date.now() - now}ms)`)
+const count = await processDirectory(distDir)
+console.log(`Changed ${count} import paths in ${distDir} (${Date.now() - now}ms)`)
 
-await generateShortImports(targetFolder)
+await generateShortImports(distDir)
+await generateDistPackage(distDir)

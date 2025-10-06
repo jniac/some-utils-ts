@@ -2,7 +2,7 @@
   "name": "some-utils-ts",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "repository": "https://github.com/jniac/some-utils-ts",
   "type": "module",
   "scripts": {
     "postinstall": "pnpm build && node -e \"console.log('Memo: Use \\\"pnpm build\\\" to keep the dist folder sync with source after any pull.')\"",
