@@ -135,7 +135,7 @@ export function computeChildrenRect(space: Space) {
     height: innerHeight,
   } = _innerRect
     .copy(space.rect)
-    .applyPadding(_padding)
+    .shrink(_padding)
   const gap = space.gap.compute(innerWidth, innerHeight)
 
   // flowChildren = regularChildren + shareChildren
