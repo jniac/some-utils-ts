@@ -1,9 +1,41 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-export async function generateDistPackage(distDir, {
-  dryRun = false,
-} = {}) {
+async function getSomeUtilsVersion() {
+  return '1.0.0' // Placeholder for actual version retrieval logic
+}
+
+/**
+ * Replace pnpm workspace references with actual versions.
+ * @param {object} scope 
+ */
+async function replacePnpmWorkspaceReferences(scope) {
+  for (const key of Object.keys(scope)) {
+    const value = scope[key]
+
+    if (key === 'exports')
+      continue
+
+    if (!value)
+      continue
+
+    switch (typeof value) {
+      case 'object': {
+        await replacePnpmWorkspaceReferences(value)
+        break
+      }
+
+      case 'string': {
+        if (key.startsWith('some-utils-') && value.startsWith('workspace:')) {
+          const version = await getSomeUtilsVersion()
+          scope[key] = version
+        }
+      }
+    }
+  }
+}
+
+export async function getExportsMap(distDir) {
   const exportsMap = {}
 
   // Recursively walk dist
@@ -28,11 +60,18 @@ export async function generateDistPackage(distDir, {
 
   await walk(distDir)
 
+  return exportsMap
+}
+
+export async function generateDistPackage(distDir, {
+  dryRun = false,
+} = {}) {
+
+
   // Update package.json
   const originalPackageJsonPath = path.join(distDir, '../package.json')
   const pkgRaw = await fs.readFile(originalPackageJsonPath, 'utf-8')
   const pkg = JSON.parse(pkgRaw)
-  pkg.exports = exportsMap
 
   delete pkg.main
   delete pkg.module
@@ -40,7 +79,12 @@ export async function generateDistPackage(distDir, {
   delete pkg.devDependencies
   delete pkg.scripts
   delete pkg.files
+
+  await replacePnpmWorkspaceReferences(pkg)
+
   pkg.type = 'module'
+  pkg.exports = await getExportsMap(distDir)
+
 
   if (dryRun) {
     console.log('Dry run mode - dist/package.json would be:')

@@ -2,7 +2,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
-import { generateDistPackage } from './generate-dist-package.mjs'
+import { generateDistPackage } from './generate-dist-package-json.mjs'
 import { generateShortImports } from './generate-short-imports.mjs'
 
 /**
