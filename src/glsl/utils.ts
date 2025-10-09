@@ -39,9 +39,11 @@ float remap1101(in float x) {
   return clamp01(0.5 + 0.5 * x);
 }
 
-float oneMinus(in float x) {
-  return 1.0 - x;
-}
+${generics('vecX', /* glsl */`
+  T oneMinus(in T x) {
+    return 1.0 - x;
+  }
+`)}
 
 // Returns x^p, but handles negative x values correctly.
 float spow(in float x, in float p) {
