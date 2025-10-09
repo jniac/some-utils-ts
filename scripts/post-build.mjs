@@ -89,10 +89,13 @@ async function processDirectory(dir) {
 }
 
 // Start processing from the current directory (or specify a folder)
-const distDir = process.argv[2] || './dist' // Default to './dist' if no folder is provided
+const { program } = await import('./program.mjs')
+const { dir, dryRun } = program.parse().opts()
+const distDir = path.join(import.meta.dirname, '..', dir)
+
 const now = Date.now()
 const count = await processDirectory(distDir)
 console.log(`Changed ${count} import paths in ${distDir} (${Date.now() - now}ms)`)
 
 await generateShortImports(distDir)
-await generateDistPackage(distDir)
+await generateDistPackage(distDir, { dryRun })

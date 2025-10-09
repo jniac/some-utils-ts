@@ -8,12 +8,14 @@
     "postinstall": "pnpm build && node -e \"console.log('Memo: Use \\\"pnpm build\\\" to keep the dist folder sync with source after any pull.')\"",
     "dev": "rm -rf dist && tsc-watch --onSuccess \"node scripts/post-build.mjs\"",
     "build": "tsc && node scripts/post-build.mjs",
+    "build:npm": "rm -rf npm-dist && tsc --outDir ./dist-npm --declarationMap false --sourceMap false && node scripts/post-build.mjs -d dist-npm",
     "test": "vitest"
   },
   "keywords": [],
   "author": "jniac",
   "license": "ISC",
   "devDependencies": {
+    "commander": "^14.0.1",
     "tsc-watch": "^6.2.1",
     "typescript": "^5.9.3",
     "vitest": "^3.0.8"

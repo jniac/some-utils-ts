@@ -56,9 +56,11 @@ export async function generateDistPackage(distDir, {
 const isMain = import.meta.url === `file://${process.argv[1]}`
 
 if (isMain) {
-  const mainDir = path.join(import.meta.dirname, '..')
-  const dryRun = process.argv.includes('--dry-run')
-  generateDistPackage(mainDir, { dryRun })
+  const { program } = await import('./program.mjs')
+  const { dir, dryRun } = program.parse().opts()
+  const distDir = path.join(import.meta.dirname, '..', dir)
+
+  generateDistPackage(distDir, { dryRun })
     .catch(err => {
       console.error(err)
       process.exit(1)
