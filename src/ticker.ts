@@ -670,9 +670,12 @@ export class Ticker implements DestroyableObject {
     }
 
     if (frameInterval > 0) {
+      let frame = 0
       return this.onTick({ order }, tick => {
         const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
-        if (lastTickBeforeInactivity || tick.frame % frameInterval === 0) {
+        const shoudCallback = (frame % frameInterval) === 0
+        frame++
+        if (lastTickBeforeInactivity || shoudCallback) {
           return callback(tick)
         }
       })
@@ -681,10 +684,12 @@ export class Ticker implements DestroyableObject {
     if (timeInterval > 0) {
       let cumulativeTime = timeInterval
       return this.onTick({ order }, tick => {
-        cumulativeTime += tick.deltaTime
         const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
-        if (lastTickBeforeInactivity || cumulativeTime >= timeInterval) {
-          cumulativeTime += -timeInterval
+        const shoudCallback = cumulativeTime <= 0
+        cumulativeTime = cumulativeTime + tick.deltaTime > timeInterval
+          ? cumulativeTime - timeInterval
+          : cumulativeTime + tick.deltaTime
+        if (lastTickBeforeInactivity || shoudCallback) {
           return callback(tick)
         }
       })
