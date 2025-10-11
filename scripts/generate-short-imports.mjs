@@ -51,10 +51,10 @@ async function doGenerateShortImports(dir, head = { logs: [], parent: null }) {
   if (head.parent === null) {
     // If this is the top-level call, print the logs
     if (head.logs.length === 0) {
-      console.log('No short imports generated.')
+      console.log('✅ No short imports generated.')
     }
     else {
-      console.log(`Short imports generated:\n${head.logs.join("\n")}`)
+      console.log(`✅ Short imports generated:\n${head.logs.join("\n")}`)
     }
   }
 }
