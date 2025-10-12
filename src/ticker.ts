@@ -372,6 +372,14 @@ export type OnTickOptions = Partial<{
    */
   frameInterval: number
   /**
+   * Initial delay before the callback is called for the first time, in seconds.
+   */
+  timeDelay: number
+  /**
+   * Initial delay before the callback is called for the first time, in frames.
+   */
+  frameDelay: number
+  /**
    * If `true`, the callback will be removed after the first call.
    */
   once: boolean
@@ -658,6 +666,8 @@ export class Ticker implements DestroyableObject {
       name = undefined,
       frameInterval = 0,
       timeInterval = 0,
+      timeDelay = 0,
+      frameDelay = 0,
       once = false,
     } = options
 
@@ -667,6 +677,31 @@ export class Ticker implements DestroyableObject {
         callback(tick)
       })
       return listener
+    }
+
+    // NOTE: timeDelay and frameDelay currently involve a bit of overhead (a check per tick).
+    // But they are not expected to be used a lot, so it's acceptable.
+    // Possible optimization would be to have a different callback for the waiting phase,
+    // but since cancelling must be supported whatever the waiting phase, it would complicate
+    // a bit the implementation.
+    if (timeDelay > 0) {
+      let initialTime = this.tick.time
+      return this.onTick({ ...options, timeDelay: 0 }, tick => {
+        const deltaTime = tick.time - initialTime
+        if (deltaTime >= timeDelay) {
+          return callback(tick)
+        }
+      })
+    }
+
+    if (frameDelay > 0) {
+      let initialFrame = this.tick.frame
+      return this.onTick({ ...options, frameDelay: 0 }, tick => {
+        const deltaFrame = tick.frame - initialFrame
+        if (deltaFrame >= frameDelay) {
+          return callback(tick)
+        }
+      })
     }
 
     if (frameInterval > 0) {
