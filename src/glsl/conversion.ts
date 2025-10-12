@@ -1,4 +1,3 @@
-import { toff } from '../math/basic'
 
 type Vec3Declaration =
   | string
@@ -60,4 +59,3 @@ export function vec3(arg: Vec3Declaration, {
 
   return 'vec3(1.0, 0.0, 1.0)'
 }
-toff
