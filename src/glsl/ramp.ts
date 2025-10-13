@@ -31,25 +31,41 @@ ${generics('vecX', type => {
   const Type = type[0].toUpperCase() + type.slice(1) + 'Ramp'
   return /* glsl */`
 
+// 1 stop (simple linear interpolation)
 ${Type} ramp(float t, T a, T b) {
   return ${Type}(a, b, t);
 }
 
+// 2 stops
 ${Type} ramp(float t, T a, T b, T c) {
-  if (t < .5) {
+  if (t < 0.5) {
     return ${Type}(a, b, t * 2.0);
   } else {
-    return ${Type}(b, c, (t - 0.5) * 2.0);
+    return ${Type}(b, c, t * 2.0 - 1.0);
   }
 }
 
+// 4 stops
 ${Type} ramp(float t, T a, T b, T c, T d) {
-  if (t < .33) {
+  if (t < 0.333) {
     return ${Type}(a, b, t * 3.0);
-  } else if (t < .66) {
-    return ${Type}(b, c, (t - 0.33) * 3.0);
+  } else if (t < 0.666) {
+    return ${Type}(b, c, t * 3.0 - 1.0);
   } else {
-    return ${Type}(c, d, (t - 0.66) * 3.0);
+    return ${Type}(c, d, t * 3.0 - 2.0);
+  }
+}
+
+// 5 stops
+${Type} ramp(float t, T a, T b, T c, T d, T e) {
+  if (t < 0.25) {
+    return ${Type}(a, b, t * 4.0);
+  } else if (t < 0.5) {
+    return ${Type}(b, c, t * 4.0 - 1.0);
+  } else if (t < 0.75) {
+    return ${Type}(c, d, t * 4.0 - 2.0);
+  } else {
+    return ${Type}(d, e, t * 4.0 - 3.0);
   }
 }
 
