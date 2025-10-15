@@ -81,7 +81,7 @@ export class ObservableTree<T> extends Observable<T> {
     // Check if the mutation is really mutating the tree.
     let doReallyMutate = false
     deepWalk(mutationObject, {
-      treatConstructedObjectAsValue: false, // F***ing important! Since we are comparing the final primitive values.
+      constructedAsValue: false, // F***ing important! Since we are comparing the final primitive values.
       onValue(mutationValue, path) {
         const { value: existingValue, exists } = deepGet(currentValue, path)
         if (!exists || mutationValue !== existingValue) {

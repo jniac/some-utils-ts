@@ -178,7 +178,11 @@ const deepWalkOptions = {
    * 
    * Default: `true`.
    */
-  treatConstructedObjectAsValue: true,
+  constructedAsValue: true,
+  /**
+   * @deprecated Use `constructedAsValue` instead.
+   */
+  treatConstructedObjectAsValue: <undefined | boolean>undefined,
   onValue: <((value: any, path: Path, ascendants: any[]) => void | 'break') | null>null,
   onObject: <((value: any, path: Path, ascendants: any[]) => void | 'break') | null>null,
 }
@@ -192,8 +196,8 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
   const {
     path = [],
     ascendants = [],
-    dateAsValue: dateAsValue = deepWalkOptions.dateAsValue,
-    treatConstructedObjectAsValue: withConstructorAsValue = deepWalkOptions.treatConstructedObjectAsValue,
+    dateAsValue = deepWalkOptions.dateAsValue,
+    constructedAsValue = options.treatConstructedObjectAsValue ?? deepWalkOptions.constructedAsValue,
   } = options
   if (dateAsValue && target instanceof Date) {
     const result = options.onValue?.(target, path, ascendants)
@@ -207,7 +211,7 @@ export function deepWalk(target: any, options: Partial<typeof deepWalkOptions> =
       return
     }
   }
-  else if (withConstructorAsValue && target.constructor !== Object && target.constructor !== Array) {
+  else if (constructedAsValue && target.constructor !== Object && target.constructor !== Array) {
     const result = options.onValue?.(target, path, ascendants)
     if (result === 'break') {
       return
@@ -386,6 +390,12 @@ export function deepAssignWithOptions<T = any>(options: Partial<typeof defaultDe
   const { ignoreUndefined } = { ...defaultDeepAssignOptions, ...options }
   for (const source of sources) {
     deepWalk(source, {
+      // F***ing important!
+      // "Constructed objects" must be traversed, otherwise we do not mutate deeply enough.
+      // For example, THREE.Color must be traversed to get the r, g, b values.
+      // If we treat it as a value, we would just assign the reference (and a scope
+      // referencing the original object will miss the changes).
+      constructedAsValue: false,
       onValue(value, path) {
         // Skip undefined values.
         if (ignoreUndefined && value === undefined) {

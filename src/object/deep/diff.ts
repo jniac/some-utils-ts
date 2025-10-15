@@ -107,7 +107,7 @@ export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
   const diff = new DeepDiffResult(objectA, objectB)
 
   deepWalk(objectA, {
-    treatConstructedObjectAsValue: false, // F***ing important! Since we are comparing the final primitive values.
+    constructedAsValue: false, // F***ing important! Since we are comparing the final primitive values.
     onValue(aValue, path) {
       const { value: bValue, exists } = deepGet(objectB, path)
       if (!exists || aValue !== bValue) {
@@ -121,7 +121,7 @@ export function deepDiff<TypeA, TypeB>(objectA: TypeA, objectB: TypeB) {
   })
 
   deepWalk(objectB, {
-    treatConstructedObjectAsValue: false, // F***ing important! Since we are comparing the final primitive values.
+    constructedAsValue: false, // F***ing important! Since we are comparing the final primitive values.
     onValue(bValue, path) {
       const { value: aValue, exists } = deepGet(objectA, path)
       if (!exists || bValue !== aValue) {
