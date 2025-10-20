@@ -72,6 +72,7 @@ function fromSpacingDeclaration(arg: SpacingDeclaration): SpacingTupleDeclaratio
 }
 
 type SetProps = Partial<{
+  name: string
   direction: DirectionDeclaration
   positioning: PositioningDeclaration
   offset: Scalar2Declaration
@@ -101,6 +102,25 @@ type SetProps = Partial<{
   spacing: SpacingDeclaration
   userData: Record<string, any>
 }>
+
+type SpacePredicate =
+  | ((space: Space) => boolean)
+  | '*'
+  | string
+  | RegExp
+
+function parseSpacePredicate(arg: SpacePredicate): (space: Space) => boolean {
+  if (arg === '*')
+    return () => true
+
+  if (typeof arg === 'string')
+    return (space: Space) => space.name === arg
+
+  if (arg instanceof RegExp)
+    return (space: Space) => arg.test(space.name)
+
+  return arg
+}
 
 /**
  * `some-utilz/layout/flex` is a naive yet robust flex layout system.
@@ -172,6 +192,8 @@ type SetProps = Partial<{
  */
 export class Space {
   enabled: boolean = true
+
+  name: string = ''
 
   root: Space = this
   parent: Space | null = null
@@ -250,6 +272,9 @@ export class Space {
   }
 
   set(props: SetProps): this {
+    if (props.name !== undefined) {
+      this.name = props.name
+    }
     if (props.direction !== undefined) {
       this.direction = parseDirection(props.direction)
     }
@@ -544,7 +569,8 @@ export class Space {
     return current
   }
 
-  find(predicate: (space: Space) => boolean, { includeSelf = true } = {}): Space | null {
+  find(predicate: SpacePredicate, { includeSelf = true } = {}): Space | null {
+    predicate = parseSpacePredicate(predicate)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
         return space
@@ -553,7 +579,8 @@ export class Space {
     return null
   }
 
-  *findAll(predicate: (space: Space) => boolean, { includeSelf = true } = {}): Generator<Space> {
+  *findAll(predicate: SpacePredicate, { includeSelf = true } = {}): Generator<Space> {
+    predicate = parseSpacePredicate(predicate)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
         yield space
