@@ -651,6 +651,20 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  /**
+   * Simple affine transform: translate and scale.
+   * 
+   * Matrix 3x3 may be support later.
+   */
+  transform(...args: [tx: number, ty: number, sx: number, sy: number]): this {
+    const [tx, ty, sx, sy] = args
+    this.x = this.x * sx + tx
+    this.y = this.y * sy + ty
+    this.width *= sx
+    this.height *= sy
+    return this
+  }
+
   setPosition(x: number, y: number, align?: Vector2Like): this {
     const alignX = align?.x ?? 0
     const alignY = align?.y ?? 0
