@@ -195,7 +195,6 @@ export class Space {
 
   name: string = ''
 
-  root: Space = this
   parent: Space | null = null
   children: Space[] = []
 
@@ -267,7 +266,6 @@ export class Space {
       } else {
         this.direction = arg
       }
-      this.root = this
     }
   }
 
@@ -479,7 +477,7 @@ export class Space {
   }
 
   isRoot(): boolean {
-    return this.root === this
+    return this.parent === null
   }
 
   isLeaf(): boolean {
@@ -600,11 +598,18 @@ export class Space {
     return null
   }
 
+  getRoot(): Space {
+    let current: Space = this
+    while (current.parent) {
+      current = current.parent
+    }
+    return current
+  }
+
   add(...spaces: Space[]): this {
     for (const space of spaces) {
       space.removeFromParent()
       space.parent = this
-      space.root = this.root
       this.children.push(space)
     }
     return this
@@ -650,7 +655,6 @@ export class Space {
       s.removeFromParent()
       this.children.unshift(s)
       s.parent = this
-      s.root = this.root
     }
     return this
   }
@@ -664,7 +668,6 @@ export class Space {
     if (this.parent) {
       this.parent.children.splice(this.parent.children.indexOf(this), 1)
       this.parent = null
-      this.root = this
     }
     return this
   }
@@ -705,7 +708,7 @@ export class Space {
 
   // Utils:
   getUvRect(): Rectangle {
-    return this.rect.clone().relativeTo(this.root.rect)
+    return this.rect.clone().relativeTo(this.getRoot().rect)
   }
 
   parse(str: string) {
@@ -765,5 +768,12 @@ export class Space {
     }
 
     return this
+  }
+
+  /**
+   * @deprecated Use `Space.getRoot()` instead.
+   */
+  get root(): Space {
+    throw new Error('Space.root is deprecated. Use Space.getRoot() instead.')
   }
 }
