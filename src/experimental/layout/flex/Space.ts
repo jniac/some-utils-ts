@@ -707,8 +707,13 @@ export class Space {
   }
 
   // Utils:
-  getUvRect(): Rectangle {
-    return this.rect.clone().relativeTo(this.getRoot().rect)
+  getUvRect(options: { out?: Rectangle, flipY?: boolean }): Rectangle {
+    const { out = new Rectangle(), flipY } = options
+    out.copy(this.rect).relativeTo(this.getRoot().rect)
+    if (flipY) {
+      out.y = 1 - out.y - out.height
+    }
+    return out
   }
 
   parse(str: string) {
