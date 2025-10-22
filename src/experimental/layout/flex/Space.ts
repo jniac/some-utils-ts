@@ -259,13 +259,20 @@ export class Space {
    * Create a new Space with the given properties.
    */
   constructor(props?: SetProps)
-  constructor(arg?: Direction | SetProps) {
-    if (arg) {
-      if (typeof arg === 'object') {
-        this.set(arg)
+  constructor(name: string, props?: SetProps)
+  constructor(...args: any[]) {
+    if (args.length === 1) {
+      const arg0 = args[0]
+      if (typeof arg0 === 'object') {
+        this.set(arg0)
       } else {
-        this.direction = arg
+        this.direction = arg0
       }
+    }
+
+    else if (args.length === 2) {
+      this.name = args[0]
+      this.set(args[1])
     }
   }
 
@@ -415,6 +422,30 @@ export class Space {
       this.sizeY.parse(y)
     }
     return this
+  }
+
+  setSizeX(x: ScalarDeclaration): this {
+    this.sizeX.parse(x)
+    return this
+  }
+
+  /**
+   * Alias for `setSizeX`
+   */
+  setWidth(x: ScalarDeclaration): this {
+    return this.setSizeX(x)
+  }
+
+  setSizeY(y: ScalarDeclaration): this {
+    this.sizeY.parse(y)
+    return this
+  }
+
+  /**
+   * Alias for `setSizeY`
+   */
+  setHeight(y: ScalarDeclaration): this {
+    return this.setSizeY(y)
   }
 
   /**
