@@ -159,13 +159,13 @@ class Observable<T = any> implements ObservableCore<T> {
 
   /**
    * `setValue` makes several things:
-   *   - First if a delay is defined, handle the delay.
-   * 	 - Then the incoming value is remapped (eg: by applying min, max bounds).
-   * 	 - Then the remapped value is compared with the inner one.
-   * 	 - If the values are identical, it returns false (meaning: nothing happened)
-   * 	 - Otherwise it changes the inner value, call all the listeners and returns true (meaning: something happened).
+   * - First if a delay is defined, handle the delay.
+   * - Then the incoming value is remapped (eg: by applying min, max bounds).
+   * - Then the remapped value is compared with the inner one.
+   * - If the values are identical, it returns false (meaning: nothing happened)
+   * - Otherwise it changes the inner value, call all the listeners and returns true (meaning: something happened).
    * @param incomingValue
-   * @returns
+   * @returns True if the value has changed, false otherwise.
    */
   setValue(incomingValue: T, options?: SetValueOptions): boolean {
     // Delay special case:
