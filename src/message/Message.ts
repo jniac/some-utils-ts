@@ -100,9 +100,45 @@ function removeListener(id: number, listener: Listener): boolean {
  * ```
  */
 class Message<P = any> {
+  /**
+   * Send a message.
+   */
   static send = send
+
+  /**
+   * Send a message to both the target and the type.
+   * 
+   * When listening, you can listen to either the target (local) or the type (global).
+   * 
+   * ```ts
+   * Message.sendDual(myTarget, 'SOME_TYPE')
+   * 
+   * // Somewhere else:
+   * 
+   * // global (on the type):
+   * Message.on('SOME_TYPE', message => {
+   *   const target = message.assertPayload()
+   *   console.log('(global) React to', message.target, target)
+   * })
+   *
+   * // local (on the target):
+   * Message.on(myTarget, 'SOME_TYPE', message => {
+   *   console.log('(local) React to', message.type, message.target)
+   * })
+   * ```
+   */
+  static sendDual = sendDual
+
+  /**
+   * Listen to messages.
+   */
   static on = on
+
+  /**
+   * Wait for a message to be sent, returns a promise that resolves when the message is sent.
+   */
   static wait = wait
+
   static debug = { listenerMap, idRegister }
 
   private static nextId = 0
@@ -234,6 +270,11 @@ function send<P = any>(target: any, type: string, options: { payload: P }): Mess
 function send<P = any>(...args: any[]): Message<P> {
   const [target, type, payload] = solveSendArgs<P>(args)
   return new Message(target, type, payload)
+}
+
+function sendDual(target: any, type: string) {
+  send(type, { payload: target })
+  send(target, type)
 }
 
 export { Message }
