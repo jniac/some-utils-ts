@@ -877,6 +877,21 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return this
   }
 
+  mirrorX(axisX = 1): this {
+    this.x = axisX - (this.x + this.width)
+    return this
+  }
+
+  /**
+   * Mirrors the rectangle along a given horizontal axis.
+   * 
+   * Useful for converting between different coordinate systems (uv, screen, canvas, etc.).
+   */
+  mirrorY(axisY = 1): this {
+    this.y = axisY - (this.y + this.height)
+    return this
+  }
+
   /**
    * Expands the rectangle to include another rectangle.
    */
