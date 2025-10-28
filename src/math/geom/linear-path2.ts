@@ -212,12 +212,10 @@ const roundCornerOptionsDefaults = {
 type RoundCornerOptions = Partial<typeof roundCornerOptionsDefaults>
 type RoundCornerDelegate = (info: { point: Vector2Like, angle: number, line1: Line2, line2: Line2 }) => RoundCornerOptions
 /**
+ * Rounds the corners of a path.
  * 
- * @param points Points of the polygon
- * @param radius 
- * @param tension 
- * @param resolution The number of segments for Math.PI arc.
- * @returns 
+ * The provided delegate is called for each corner point and should return the 
+ * rounding options for that point.
  */
 function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDelegate): T[] {
   const constructor = points[0].constructor as { new(): T }
