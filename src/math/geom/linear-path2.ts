@@ -101,8 +101,8 @@ function computeSignedArea(points: Vector2Like[]): number {
  * @param points Points of the closed path.
  * @returns True if the path is clockwise, false if it is counter-clockwise.
  */
-function computeClosedPathWinding(points: Vector2Like[]): boolean {
-  return computeSignedArea(points) < 0
+function computeClosedPathIsDirect(points: Vector2Like[]): boolean {
+  return computeSignedArea(points) > 0
 }
 
 function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}): T[] {
@@ -142,8 +142,8 @@ function offsetClosedPath<T extends Vector2Like>(points: T[], amount: number): T
     const a = points[(i + n - 1) % n]
     const b = points[i]
     const c = points[(i + 1) % n]
-    _line1.fromStartEnd(a, b).offset(-amount)
-    _line2.fromStartEnd(b, c).offset(-amount)
+    _line1.fromStartEnd(a, b).offset(amount)
+    _line2.fromStartEnd(b, c).offset(amount)
     if (_line1.intersection(_line2, { out: p }) === null) { // parallel / collinear
       p.x = _line2.ox
       p.y = _line2.oy
@@ -336,12 +336,12 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
-  isCCW(): boolean {
-    return this.closed && computeClosedPathWinding(this.points) === false
+  isDirect(): boolean {
+    return this.closed && computeClosedPathIsDirect(this.points) === false
   }
 
-  makeCCW(): this {
-    if (this.isCCW() === false) {
+  makeIsDirect(): this {
+    if (this.isDirect() === false) {
       this.points.reverse()
     }
     return this
