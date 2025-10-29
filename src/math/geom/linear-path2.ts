@@ -273,10 +273,11 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
       }
     }
 
-    const arc = a2 - a1
-    const count = Math.ceil(Math.abs(arc) / Math.PI * resolution)
+    // Compute control points for the cubic Bezier curve
     cubicBezierArcControlPoints(p, radius, a1, a2, tension, cp)
 
+    const arc = a2 - a1
+    const count = Math.ceil(Math.abs(arc) / Math.PI * resolution)
     for (let j = 0; j < count; j++) {
       const t = j / (count - 1)
       result.push(bezier2(cp, t))
