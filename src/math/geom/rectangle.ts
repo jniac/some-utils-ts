@@ -318,6 +318,12 @@ class RectangleCastResult {
  * - contains methods
  */
 export class Rectangle implements RectangleLike, Iterable<number> {
+  // STATIC:
+  /**
+   * A shared `Rectangle` instance to avoid allocations.
+   */
+  static instance = new Rectangle()
+
   static from(source?: RectangleDeclaration, out = new Rectangle()): Rectangle {
     return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, out)
   }
@@ -336,6 +342,7 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, out)
   }
 
+  // INSTANCE:
   x: number = 0
   y: number = 0
   width: number = 0
