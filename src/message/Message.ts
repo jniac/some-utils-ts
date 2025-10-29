@@ -46,6 +46,10 @@ function removeListener(id: number, listener: Listener): boolean {
   return false
 }
 /**
+ * Message system for intra-application communication.
+ *
+ * ## How to use it?
+ * 
  * ### 1. The easy way:
  * 
  * Send a message:
