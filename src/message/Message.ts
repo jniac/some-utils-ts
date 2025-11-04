@@ -121,7 +121,7 @@ class Message<P = any> {
    * 
    * // global (on the type):
    * Message.on('SOME_TYPE', message => {
-   *   const target = message.assertPayload()
+   *   const { target } = message.assertPayload()
    *   console.log('(global) React to', message.target, target)
    * })
    *
@@ -276,9 +276,10 @@ function send<P = any>(...args: any[]): Message<P> {
   return new Message(target, type, payload)
 }
 
-function sendDual(target: any, type: string) {
-  send(type, { payload: target })
-  send(target, type)
+function sendDual(target: any, type: string, extraPayload: Omit<Record<string, any>, 'target'> = {}) {
+  const payload = { target, ...extraPayload }
+  send(type, { payload })
+  send(target, type, { payload })
 }
 
 export { Message }
