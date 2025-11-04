@@ -22,6 +22,17 @@ export class Memorization {
     }
   }
 
+  reset(initialValue: number): this {
+    const array = this.#array
+    array.fill(initialValue)
+    this.#sum = array.length * initialValue
+    this.#index = 0
+    if (this.derivative) {
+      this.derivative.reset(0)
+    }
+    return this
+  }
+
   getValue(): number {
     return this.#array[this.#index]
   }
@@ -95,5 +106,20 @@ export class Memorization {
       sum += array[valueIndex]
     }
     return sum / count
+  }
+
+  signedMaximum(): number {
+    const array = this.#array
+    const { length } = array
+    let max = 0, sign = 0
+    for (let i = 0; i < length; i++) {
+      const value = array[i]
+      const absValue = Math.abs(value)
+      if (absValue > max) {
+        sign = value >= 0 ? 1 : -1
+        max = absValue
+      }
+    }
+    return max * sign
   }
 }
