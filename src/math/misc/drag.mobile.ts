@@ -15,7 +15,7 @@ export class DragMobile {
    * The velocity of the object, in units per second.
    * A value of 1 means that the object will move 1 unit every second.
    */
-  velocity = 1;
+  velocity = 0;
 
   /**
    * The drag coefficient, where 0 means no drag and 1 means full drag.
@@ -42,6 +42,17 @@ export class DragMobile {
     this.velocity = velocity
     this.drag = drag
     return this
+  }
+
+  copy(other: DragMobile): this {
+    this.position = other.position
+    this.velocity = other.velocity
+    this.drag = other.drag
+    return this
+  }
+
+  clone(): DragMobile {
+    return new DragMobile().copy(this)
   }
 
   setDrag(drag: number, { timeSpan = 1 } = {}): this {
