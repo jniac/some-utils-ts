@@ -739,6 +739,14 @@ export class Ticker implements DestroyableObject {
     return { destroy, value: this }
   }
 
+  onNextTick(callback: TickCallback): DestroyableObject {
+    const listener = this.onTick(tick => {
+      listener.destroy()
+      callback(tick)
+    })
+    return listener
+  }
+
   offTick(callback: TickCallback): boolean {
     return this.internal.updateRegister.remove(callback)
   }
@@ -974,4 +982,20 @@ export function onTick(...args: any[]): DestroyableObject {
 
   // @ts-ignore
   return Ticker.current().onTick(...args)
+}
+
+/**
+ * Shortcut for `Ticker.get("my-ticker").onNextTick(...)`.
+ */
+export function onNextTick(tickerName: string, callback: TickCallback): DestroyableObject
+export function onNextTick(callback: TickCallback): DestroyableObject
+export function onNextTick(...args: any[]): DestroyableObject {
+  if (typeof args[0] === 'string') {
+    const ticker = Ticker.get(args[0], { createIfNotFound: true })
+    // @ts-ignore
+    return ticker.onNextTick(args[1])
+  }
+
+  // @ts-ignore
+  return Ticker.current().onNextTick(args[0])
 }
