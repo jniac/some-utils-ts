@@ -423,6 +423,8 @@ export class Ticker implements DestroyableObject {
     }
   }
 
+  static all() { return [...tickers] }
+
   // Static props
   static defaultStaticProps = {
     /**
@@ -938,7 +940,7 @@ function update(ms: number) {
     const { active, activeLastRequest, stopped, timeScale, caughtErrors } = ticker.internal
 
     if (caughtErrors || active === false || stopped) {
-      return
+      continue // OMG: "return" was written here! 😱
     }
 
     const { maxDeltaTime } = ticker.staticProps
