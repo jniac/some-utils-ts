@@ -87,17 +87,81 @@ export class Float32Variable {
     return this
   }
 
+  createHistory(fn: (time: number) => number) {
+    const { historySize } = this.props
+    // preshot: start from -1 to include the current value
+    this.reset(fn(-1 / (historySize - 1)))
+    for (let i = 0; i < historySize; i++) {
+      const t = i / (historySize - 1)
+      this.push(fn(t), 1 / (historySize - 1))
+    }
+    return this
+  }
+
   get(backstep: number = 0): number {
     const { historySize } = this.props
-    const { index, count } = this.state
-    if (backstep > count)
-      backstep = count
 
-    let i = index - 1 - backstep
-    while (i < 0)
+    if (backstep < 0)
+      backstep = 0
+
+    if (backstep >= historySize)
+      backstep = historySize - 1
+
+    let i = this.state.index - 1 - backstep
+    if (i < 0)
       i += historySize
 
     return this.historyNumber[i]
+  }
+
+  /**
+   * Return a linearly interpolated sample from the variable's history.
+   */
+  linearSample(backstep: number): number {
+    const fract = backstep - Math.floor(backstep)
+    const backstep0 = Math.floor(backstep)
+    const backstep1 = backstep0 + 1
+    const v0 = this.get(backstep0)
+    const v1 = this.get(backstep1)
+    return v0 * (1 - fract) + v1 * fract
+  }
+
+  linearSamples(sampleCount = 10): number[] {
+    const samples: number[] = new Array(sampleCount)
+    for (let i = 0; i < sampleCount; i++) {
+      const t = i / (sampleCount - 1)
+      samples[i] = this.linearSample(t * (this.props.historySize - 1))
+    }
+    return samples
+  }
+
+  /**
+   * Sample the variable's history with a Gaussian smoothing (for noise reduction).
+   */
+  gaussianSmoothSample(backstep: number, { stdDev = 1, sampleCount = 10, sampleHistoryWidth = .1 } = {}): number {
+    const halfWidth = sampleHistoryWidth * this.props.historySize * .5
+    const center = backstep
+    let sum = 0
+    let weightSum = 0
+    for (let i = 0; i < sampleCount; i++) {
+      const t = i / (sampleCount - 1)
+      const delta = halfWidth * (2 * t - 1)
+      const sampleBackstep = center - delta
+      const value = this.linearSample(sampleBackstep)
+      const weight = Math.exp(-0.5 * (delta * delta) / (stdDev * stdDev))
+      sum += value * weight
+      weightSum += weight
+    }
+    return sum / weightSum
+  }
+
+  gaussianSmoothSamples(sampleCount = 10, options?: { stdDev?: number; sampleCount?: number; sampleHistoryWidth?: number }): number[] {
+    const samples: number[] = new Array(sampleCount)
+    for (let i = 0; i < sampleCount; i++) {
+      const t = i / (sampleCount - 1)
+      samples[i] = this.gaussianSmoothSample(t * (this.props.historySize - 1), options)
+    }
+    return samples
   }
 
   *history(historyCount = this.props.historySize, { wrapMode = <'end' | 'repeat'>'end' } = {}): Generator<number> {
@@ -136,12 +200,12 @@ export class Float32Variable {
     }
   }
 
-  toSvgPath({
+  toSvgPathData({
     offsetX = 0,
     offsetY = 0,
     width = 100,
     height = 100,
-    yRange = <'auto' | [number, number]>'auto',
+    yRange = <'auto' | [number, number] | Readonly<[number, number]>>'auto',
   } = {}): string {
     const [minY, maxY] = (() => {
       if (yRange === 'auto') {
