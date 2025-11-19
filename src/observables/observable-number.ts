@@ -190,11 +190,11 @@ export class ObservableNumber extends Observable<number> {
 
   passed(mode: PassMode, threshold: number): boolean {
     const { value, valueOld } = this
-    const isAbove = value >= threshold && valueOld < threshold
+    const isAboveOrEqual = value >= threshold && valueOld < threshold
     const isBelow = value < threshold && valueOld >= threshold
     switch (mode) {
-      case 'through': return isAbove || isBelow
-      case 'above': return isAbove
+      case 'through': return isAboveOrEqual || isBelow
+      case 'above': return isAboveOrEqual
       case 'below': return isBelow
     }
     throw new Error('Impossible! Typescript, where are you?')
