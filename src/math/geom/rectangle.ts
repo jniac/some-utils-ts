@@ -430,6 +430,14 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  setMinMax(minX: number, minY: number, maxX: number, maxY: number): this {
+    this.x = minX
+    this.y = minY
+    this.width = maxX - minX
+    this.height = maxY - minY
+    return this
+  }
+
   /**
    * @deprecated Use `from()` instead.
    */
