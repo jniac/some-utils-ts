@@ -36,9 +36,15 @@ type WithAlignOption<T> = T & {
   align?: AlignDeclaration
 }
 
+export type BBox = { minX: number, minY: number, maxX: number, maxY: number }
+function isBBox(obj: any): obj is BBox {
+  return obj != null && typeof obj === 'object' && 'minX' in obj && 'minY' in obj && 'maxX' in obj && 'maxY' in obj
+}
+
 export type RectangleDeclaration =
   | [x: number, y: number, width: number, height: number]
   | [width: number, height: number]
+  | { minX: number, minY: number, maxX: number, maxY: number }
   | WithAlignOption<Partial<RectangleLike>>
   | WithAlignOption<{ aspect: number, diagonal: number }>
   | WithAlignOption<{ center?: Vector2Declaration, extent: number | Vector2Declaration }>
@@ -62,6 +68,11 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
       return out.set(x, y, width, height)
     }
     throw new Error('Oops. Wrong parameters here.')
+  }
+
+  if (isBBox(declaration)) {
+    const { minX, minY, maxX, maxY } = declaration
+    return out.set(minX, minY, maxX - minX, maxY - minY)
   }
 
   const { align, ...restDeclaration } = declaration
@@ -341,6 +352,8 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     }
     return fromRectangleDeclaration(source ?? defaultRectangleDeclaration, out)
   }
+
+  static isBBox = isBBox
 
   // INSTANCE:
   x: number = 0
