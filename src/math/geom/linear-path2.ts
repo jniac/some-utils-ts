@@ -205,8 +205,23 @@ function offsetOpenPath<T extends Vector2Like>(points: T[], amount: number): T[]
 }
 
 const roundCornerOptionsDefaults = {
+  /**
+   * Tension of the corner curve.
+   * 
+   * Higher values result in a tighter curve.
+   * 
+   * - `1` = circular arc
+   * - `<1` = looser curve
+   * - `>1` = tighter curve
+   */
   tension: 1,
-  resolution: 32,
+  /**
+   * Number of segments per quarter circle.
+   */
+  resolution: 8,
+  /**
+   * Radius of the rounded corner.
+   */
   radius: .1,
 }
 type RoundCornerOptions = Partial<typeof roundCornerOptionsDefaults>
@@ -277,7 +292,7 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
     cubicBezierArcControlPoints(p, radius, a1, a2, tension, cp)
 
     const arc = a2 - a1
-    const count = Math.ceil(Math.abs(arc) / Math.PI * resolution)
+    const count = Math.ceil(Math.abs(arc) / Math.PI * (4 * resolution))
     for (let j = 0; j < count; j++) {
       const t = j / (count - 1)
       result.push(bezier2(cp, t))
