@@ -321,6 +321,27 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
   points: T[]
   closed: boolean
 
+  /**
+   * Cache for various computed properties.
+   * 
+   * Currently used to store whether the path is direct (clockwise) or not.
+   * 
+   * ## Why cache?
+   * Because some operations are cheap when the path is simple (like checking if it's direct),
+   * but become expensive after operations like rounding corners (which can add many points,
+   * but do not change the overall winding of the path).
+   * 
+   * @example
+   * ```ts
+   * const path = new LinearPath2(points).isDirectToCache()
+   * console.log(path.cache.isDirect) // true or false
+   * // or
+   * path.toCache({ foo: 'bar' })
+   * console.log(path.cache.foo) // 'bar'
+   * ```
+   */
+  cache: Partial<{ isDirect: boolean, [key: string]: any }> = {}
+
   constructor(points: T[] = [], closed = true) {
     this.points = points
     this.closed = closed
@@ -350,12 +371,31 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
+  reverse(): this {
+    this.points.reverse()
+    if (this.cache.isDirect !== undefined)
+      this.cache.isDirect = !this.cache.isDirect
+    return this
+  }
+
   isDirect(): boolean {
     return this.closed && computeClosedPathIsDirect(this.points) === false
   }
 
-  makeIsDirect(): this {
-    if (this.isDirect() === false) {
+  toCache(props: LinearPath2['cache']): this {
+    Object.assign(this.cache, props)
+    return this
+  }
+
+  isDirectToCache(): this {
+    if (this.closed) {
+      this.toCache({ isDirect: computeClosedPathIsDirect(this.points) })
+    }
+    return this
+  }
+
+  makeDirect(value = true): this {
+    if (value !== this.isDirect()) {
       this.points.reverse()
     }
     return this
