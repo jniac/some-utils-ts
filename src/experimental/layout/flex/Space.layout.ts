@@ -76,7 +76,9 @@ function computeSize(space: Space, width: number, height: number, direction: Dir
     let useWidth = false
     if (space.sizeX.type === ScalarType.Auto) {
       if (space.sizeY.type === ScalarType.Auto) {
-        useWidth = direction === Direction.Horizontal
+        // useWidth = direction === Direction.Horizontal
+        // Note: the previous line was used before, but it does not make sense to me.
+        useWidth = direction === Direction.Vertical
       } else {
         useWidth = true
       }

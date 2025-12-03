@@ -121,6 +121,8 @@ export class Scalar {
   }
 
   toString(): string {
-    return `${this.value}${scalarExtensionsReverse[this.type]}`
+    return this.type === ScalarType.Auto
+      ? 'auto'
+      : `${this.value}${scalarExtensionsReverse[this.type]}`
   }
 }
