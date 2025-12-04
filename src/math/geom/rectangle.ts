@@ -978,9 +978,13 @@ export class Rectangle implements RectangleLike, Iterable<number> {
   }
 
   /**
+   * Converts the rectangle to be relative to another rectangle.
+   * 
    * Very useful method to calculate, for example, the uv coordinates of a rectangle.
    * 
-   * Warning: Mutates self.
+   * Notes:
+   * - ⚠️ Mutates self.
+   * - The reverse operation is `absoluteFrom()`.
    */
   relativeTo(other: RectangleLike): this {
     this.x -= other.x
@@ -989,6 +993,25 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     this.y /= other.height
     this.width /= other.width
     this.height /= other.height
+    return this
+  }
+
+  /**
+   * Converts the rectangle from relative coordinates to absolute coordinates
+   * based on another rectangle.
+   * 
+   * Very useful method to calculate, for example, the absolute position of a rectangle
+   * defined in uv coordinates.
+   * 
+   * Notes:
+   * - ⚠️ Mutates self.
+   * - The reverse operation is `relativeTo()`.
+   */
+  absoluteFrom(other: RectangleLike): this {
+    this.x = other.x + this.x * other.width
+    this.y = other.y + this.y * other.height
+    this.width *= other.width
+    this.height *= other.height
     return this
   }
 
