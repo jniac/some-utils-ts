@@ -199,12 +199,12 @@ class Message<P = any> {
    * Assert that the message has a payload and return it. This method is. If the 
    * payload is falsy, an error will be thrown.
    */
-  assertPayload(): P {
+  assertPayload(errorMessage?: string): P {
     if (this.payload !== undefined) {
       return this.payload
     }
 
-    throw new Error(`Message.payloadAssert: assertion failed for message with target "${this.target}"`)
+    throw new Error(`Message.assertPayload(${errorMessage ?? ''}): assertion failed for message with target "${this.target}"`)
   }
 }
 
