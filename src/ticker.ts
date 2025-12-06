@@ -50,6 +50,13 @@ export class Tick {
   }
 
   /**
+   * Convenient method to get a sawtooth wave based on the time.
+   */
+  sawtoothTime({ frequency = 1, phase = 0 } = {}) {
+    return (this.time + phase) * frequency % 1
+  }
+
+  /**
    * Convenient method to get the cosine of the time.
    */
   cosTime({ frequency = 1, phase = 0 } = {}) {
