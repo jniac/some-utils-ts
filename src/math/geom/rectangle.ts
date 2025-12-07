@@ -1046,8 +1046,9 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       && y < this.y + this.height
   }
 
-  containsPoint(point: Vector2Like): boolean {
-    return this.containsXY(point.x, point.y)
+  containsPoint(point: Vector2Declaration): boolean {
+    const { x, y } = fromVector2Declaration(point)
+    return this.containsXY(x, y)
   }
 
   containsRectangle(other: RectangleLike): boolean {
