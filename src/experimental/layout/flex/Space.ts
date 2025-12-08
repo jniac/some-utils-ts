@@ -71,7 +71,7 @@ function fromSpacingDeclaration(arg: SpacingDeclaration): SpacingTupleDeclaratio
   return [gap, ...fromBoxSpacingDeclaration(rest)]
 }
 
-type SetProps = Partial<{
+export type SpaceProps = Partial<{
   name: string
   direction: DirectionDeclaration
   positioning: PositioningDeclaration
@@ -258,8 +258,8 @@ export class Space {
   /**
    * Create a new Space with the given properties.
    */
-  constructor(props?: SetProps)
-  constructor(name: string, props?: SetProps)
+  constructor(props?: SpaceProps)
+  constructor(name: string, props?: SpaceProps)
   constructor(...args: any[]) {
     if (args.length === 1) {
       const arg0 = args[0]
@@ -276,7 +276,7 @@ export class Space {
     }
   }
 
-  set(props: SetProps): this {
+  set(props: SpaceProps): this {
     if (props.name !== undefined) {
       this.name = props.name
     }
@@ -663,7 +663,7 @@ export class Space {
    * @param count 
    * @param props 
    */
-  populate(count: number, props?: SetProps): this
+  populate(count: number, props?: SpaceProps): this
   populate(...args: any[]): this {
     if (args.length === 1 && typeof args[0] === 'object') {
       const { count, ...props } = args[0]
@@ -744,6 +744,33 @@ export class Space {
     if (flipY) {
       out.y = 1 - out.y - out.height
     }
+    return out
+  }
+
+  #getTopDownRect_rect: null | Rectangle = null
+  /**
+   * Top-down coordinate system (y goes downwards).
+   * 
+   * Note:
+   * - The returned rectangle instance is reused for performance. If you need to keep it, clone it.
+   */
+  getTopDownRect(options: { out?: Rectangle } = {}): Rectangle {
+    const {
+      out = (this.#getTopDownRect_rect ??= new Rectangle())
+    } = options
+    const root = this.getRoot()
+
+    if (this === root) {
+      out.copy(this.rect)
+      out.y = out.y - out.height
+    } else {
+      out
+        .copy(this.rect)
+        .relativeTo(root.rect)
+        .mirrorY(1)
+        .absoluteFrom(root.getTopDownRect())
+    }
+
     return out
   }
 
