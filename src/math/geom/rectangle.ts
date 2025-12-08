@@ -475,6 +475,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     throw new Error('Oops. Wrong parameters here.')
   }
 
+  hasNaN(): boolean {
+    return Number.isNaN(this.x) || Number.isNaN(this.y) || Number.isNaN(this.width) || Number.isNaN(this.height)
+  }
+
   toRelativePoint<T extends Vector2Like>(point: Vector2Like, out?: T): T {
     out ??= { x: 0, y: 0 } as T
     out.x = (point.x - this.x) / this.width
