@@ -28,6 +28,29 @@ export enum Positioning {
   Detached = All.Detached,
 }
 
+export enum AspectSizeMode {
+  None = 'none',
+  FillTangentSpace = 'fill-tangent-space',
+  FillNormalSpace = 'fill-normal-space',
+}
+
+export type AspectSizeModeDeclaration =
+  | AspectSizeMode
+  | `${AspectSizeMode}`
+
+export function parseAspectSizeMode(value: any): AspectSizeMode {
+  if (value in AspectSizeMode) {
+    return value
+  }
+  if (typeof value === 'string') {
+    for (const mode of Object.values(AspectSizeMode)) {
+      if (value === mode) {
+        return mode
+      }
+    }
+  }
+  throw new Error(`Invalid aspect size mode value: ${value}`)
+}
 
 
 // Declaration & parsing:
@@ -70,3 +93,5 @@ export type SizeDeclaration =
   | ScalarDeclaration
   | [width: ScalarDeclaration, height: ScalarDeclaration]
   | { width: ScalarDeclaration, height: ScalarDeclaration }
+
+

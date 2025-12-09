@@ -4,7 +4,7 @@ import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { computeChildrenRect, computeRootRect } from './Space.layout'
-import { Direction, DirectionDeclaration, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
+import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 export type Scalar2Declaration =
   | ScalarDeclaration
@@ -88,6 +88,8 @@ export type SpaceProps = Partial<{
   alignSelfX: number | null
   alignSelfY: number | null
   aspect: null | number
+  childrenAspectSizeMode: AspectSizeModeDeclaration
+  selfAspectSizeMode: AspectSizeModeDeclaration
   padding: BoxSpacingDeclaration
   paddingTop: ScalarDeclaration
   paddingRight: ScalarDeclaration
@@ -200,7 +202,26 @@ export class Space {
 
   direction: Direction = Direction.Horizontal
   positioning: Positioning = Positioning.Flow
+  /**
+   * Aspect ratio (width / height) of the space (constraint).
+   */
   aspect: number | null = null
+  /**
+   * Determines how the children will be sized if they only have `aspect` constraint.
+   * 
+   * Note:
+   * - If other constraints are defined (size), expect undetermined behavior (for now).
+   */
+  childrenAspectSizeMode: AspectSizeMode | null = null
+  /**
+   * Determines how the space will be sized if it only have `aspect` constraint.
+   * 
+   * Overrides `childrenAspectSizeMode` for the space itself.
+   * 
+   * Note:
+   * - If other constraints are defined (size), expect undetermined behavior (for now).
+   */
+  selfAspectSizeMode: AspectSizeMode | null = null
 
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
@@ -306,6 +327,12 @@ export class Space {
     }
     if (props.aspect !== undefined) {
       this.aspect = props.aspect
+    }
+    if (props.childrenAspectSizeMode !== undefined) {
+      this.childrenAspectSizeMode = parseAspectSizeMode(props.childrenAspectSizeMode)
+    }
+    if (props.selfAspectSizeMode !== undefined) {
+      this.selfAspectSizeMode = parseAspectSizeMode(props.selfAspectSizeMode)
     }
     if (props.alignChildren !== undefined) {
       const { x, y } = fromVector2Declaration(props.alignChildren)

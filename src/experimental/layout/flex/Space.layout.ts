@@ -3,7 +3,7 @@ import { Padding } from '../../../math/geom/padding'
 import { Rectangle } from '../../../math/geom/rectangle'
 import { ScalarType } from './Scalar'
 import { Space } from './Space'
-import { Direction, Positioning } from './types'
+import { AspectSizeMode, Direction, Positioning } from './types'
 
 export function computeRootRect(space: Space) {
   const { offsetX, offsetY, sizeX, sizeY } = space
@@ -76,9 +76,20 @@ function computeSize(space: Space, width: number, height: number, direction: Dir
     let useWidth = false
     if (space.sizeX.type === ScalarType.Auto) {
       if (space.sizeY.type === ScalarType.Auto) {
-        // useWidth = direction === Direction.Horizontal
+        // Both are auto: decide based on the direction
         // Note: the previous line was used before, but it does not make sense to me.
-        useWidth = direction === Direction.Vertical
+        const aspectSizeMode = space.selfAspectSizeMode ?? space.parent?.childrenAspectSizeMode ?? null
+        switch (aspectSizeMode) {
+          case AspectSizeMode.FillTangentSpace:
+            useWidth = true
+            break
+          case AspectSizeMode.FillNormalSpace:
+            useWidth = false
+            break
+          default:
+            useWidth = direction === Direction.Vertical
+            break
+        }
       } else {
         useWidth = true
       }
