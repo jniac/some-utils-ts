@@ -146,6 +146,8 @@ type RandomUtilsType = {
    * - Memory-efficient: does not require storing the entire array in memory.
    */
   shuffleIndexes: (length: number) => Generator<number>
+
+  shuffleArray: <T>(array: T[], options?: { inPlace?: boolean }) => T[]
 }
 
 function createRandomUtils(): RandomUtilsType {
@@ -327,6 +329,16 @@ function createRandomUtils(): RandomUtilsType {
     }
   }
 
+  function shuffleArray<T>(array: T[], { inPlace = false } = {}): T[] {
+    const result = inPlace ? array : array.slice()
+    const n = result.length
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1))
+        ;[result[i], result[j]] = [result[j], result[i]]
+    }
+    return result
+  }
+
   const instance: RandomUtilsType = {
     new: _new,
     setRandom,
@@ -351,6 +363,7 @@ function createRandomUtils(): RandomUtilsType {
     direction3,
     quaternion,
     shuffleIndexes,
+    shuffleArray,
   }
 
   return instance
