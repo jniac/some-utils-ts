@@ -9,6 +9,12 @@ const PL = 3
 
 const AUTO_OR_FRACTION = ScalarType.Auto | ScalarType.Fraction
 
+/**
+ * Internal state used during layout computation.
+ * 
+ * It's essentially a wrapper around Space that caches computed values and provides
+ * helper methods for the layout algorithm for tree traversal.
+ */
 class SState {
   static next_id = 0
 
@@ -37,6 +43,22 @@ class SState {
     this.children = space.children.map(child => new SState(child, this))
   }
 
+  *depthFirst_sizeXFitChildren(): Generator<SState> {
+    for (const child of this.children) {
+      yield* child.depthFirst_sizeXFitChildren()
+    }
+    if (this.space.sizeXFitChildren)
+      yield this
+  }
+
+  *depthFirst_sizeYFitChildren(): Generator<SState> {
+    for (const child of this.children) {
+      yield* child.depthFirst_sizeYFitChildren()
+    }
+    if (this.space.sizeYFitChildren)
+      yield this
+  }
+
   *allChildren_fractionSizeX(yieldsFraction: boolean): Generator<SState> {
     for (const child of this.children) {
       if (this.space.sizeXFitChildren)
@@ -57,11 +79,6 @@ class SState {
         yield child
       }
     }
-  }
-
-  set_avail(sx_avail: number, sy_avail: number) {
-    this.sx_avail = sx_avail
-    this.sy_avail = sy_avail
   }
 
   /**
@@ -122,6 +139,11 @@ class SState {
     for (const child of this.children) {
       child.applyToSpace()
     }
+  }
+
+  set_avail(sx_avail: number, sy_avail: number) {
+    this.sx_avail = sx_avail
+    this.sy_avail = sy_avail
   }
 
   req_x(p_sx: number, p_sy: number) {
@@ -204,27 +226,11 @@ class SState {
   }
 }
 
-function* depthFirst_sizeXFitChildren(s: SState): Generator<SState> {
-  for (const child of s.children) {
-    yield* depthFirst_sizeXFitChildren(child)
-  }
-  if (s.space.sizeXFitChildren)
-    yield s
-}
-
-function* depthFirst_sizeYFitChildren(s: SState): Generator<SState> {
-  for (const child of s.children) {
-    yield* depthFirst_sizeYFitChildren(child)
-  }
-  if (s.space.sizeYFitChildren)
-    yield s
-}
-
 export function computeLayout2(root: Space) {
   SState.next_id = 0
   const sroot = new SState(root)
 
-  for (const s of depthFirst_sizeXFitChildren(sroot)) {
+  for (const s of sroot.depthFirst_sizeXFitChildren()) {
     s.req_gap(true, 0, 0) // direction doesn't matter here
     s.req_pl(0, 0)
     s.req_pr(0, 0)
@@ -244,7 +250,7 @@ export function computeLayout2(root: Space) {
     s.sx = sx
   }
 
-  for (const s of depthFirst_sizeYFitChildren(sroot)) {
+  for (const s of sroot.depthFirst_sizeYFitChildren()) {
     s.req_gap(true, 0, 0) // direction doesn't matter here
     s.req_pt(0, 0)
     s.req_pb(0, 0)
