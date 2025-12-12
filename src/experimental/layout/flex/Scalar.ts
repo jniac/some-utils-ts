@@ -1,11 +1,11 @@
 export enum ScalarType {
-  Auto,
-  Absolute,
-  Relative,
-  OppositeRelative,
-  SmallerRelative,
-  LargerRelative,
-  Fraction,
+  Auto = 1 << 0,
+  Absolute = 1 << 1,
+  Relative = 1 << 2,
+  OppositeRelative = 1 << 3,
+  SmallerRelative = 1 << 4,
+  LargerRelative = 1 << 5,
+  Fraction = 1 << 6,
 }
 
 const scalarExtensions = {
@@ -37,7 +37,7 @@ export type ScalarDeclaration =
   | `${number}${ScalarExtension}`
 
 const scalarExtensionsReverse: Record<ScalarType, ScalarExtension> = Object.fromEntries(
-  Object.entries(allScalarExtensions).map(([k, v]) => [v, k] as [ScalarType, ScalarExtension])) as any
+  Object.entries(scalarExtensions).map(([k, v]) => [v, k] as [ScalarType, ScalarExtension])) as any
 
 export function parseScalar(arg: ScalarDeclaration, out = new Scalar()): Scalar {
   if (arg === 'auto') {

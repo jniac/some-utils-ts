@@ -32,7 +32,10 @@ export function computePadding(space: Space) {
     // Check
     for (const side of space.padding) {
       if (side.type === ScalarType.Fraction) {
-        throw new Error('Share padding is not allowed')
+        throw new Error('Fraction padding is not allowed')
+      }
+      if (side.type === ScalarType.Relative) {
+        throw new Error('Relative padding is not allowed')
       }
     }
   }

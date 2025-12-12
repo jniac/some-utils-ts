@@ -4,29 +4,37 @@ import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { computeChildrenRect, computeRootRect } from './Space.layout'
+import { computeLayout2 } from './Space.layout2'
 import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
-export type Scalar2Declaration =
-  | ScalarDeclaration
-  | [x: ScalarDeclaration, y: ScalarDeclaration]
-  | { x: ScalarDeclaration, y: ScalarDeclaration }
+function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
+  return typeof arg === 'object' && 'x' in arg && 'y' in arg && Object.keys(arg).length === 2
+}
 
-export function fromScalar2Declaration(arg: Scalar2Declaration, outX: Scalar, outY: Scalar): [Scalar, Scalar] {
+export type Declaration2D<T> =
+  | T
+  | [x: T, y: T]
+  | { x: T, y: T }
+
+export type Scalar2Declaration = Declaration2D<ScalarDeclaration>
+
+export function fromDeclaration2D<T>(arg: Declaration2D<T>): [T, T] {
   if (Array.isArray(arg)) {
     const [x, y] = arg
-    outX.parse(x)
-    outY.parse(y)
-    return [outX, outY]
+    return [x, y]
   }
 
-  if (typeof arg === 'object') {
-    outX.parse(arg.x)
-    outY.parse(arg.y)
-    return [outX, outY]
+  if (isPureXYObject<T>(arg)) {
+    return [arg.x, arg.y]
   }
 
-  outX.parse(arg)
-  outY.parse(arg)
+  return [arg, arg]
+}
+
+export function fromScalar2Declaration(arg: Scalar2Declaration, outX: Scalar, outY: Scalar): [Scalar, Scalar] {
+  const [x, y] = fromDeclaration2D(arg)
+  outX.parse(x)
+  outY.parse(y)
   return [outX, outY]
 }
 
@@ -78,9 +86,9 @@ export type SpaceProps = Partial<{
   offset: Scalar2Declaration
   offsetX: ScalarDeclaration
   offsetY: ScalarDeclaration
-  size: Scalar2Declaration
-  sizeX: ScalarDeclaration
-  sizeY: ScalarDeclaration
+  size: Declaration2D<ScalarDeclaration | 'fit-children'>
+  sizeX: ScalarDeclaration | 'fit-children'
+  sizeY: ScalarDeclaration | 'fit-children'
   alignChildren: Vector2Declaration
   alignChildrenX: number
   alignChildrenY: number
@@ -226,7 +234,9 @@ export class Space {
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
   sizeX = new Scalar(1, ScalarType.Auto)
+  sizeXFitChildren = false
   sizeY = new Scalar(1, ScalarType.Auto)
+  sizeYFitChildren = false
 
   extraSizeX = new Scalar(1, ScalarType.Relative)
   extraSizeY = new Scalar(1, ScalarType.Relative)
@@ -316,15 +326,33 @@ export class Space {
     if (props.offsetY !== undefined) {
       this.offsetY.parse(props.offsetY)
     }
-    if (props.size !== undefined) {
-      fromScalar2Declaration(props.size, this.sizeX, this.sizeY)
+
+    // Size:
+    let { size, sizeX, sizeY } = props
+    if (size !== undefined) {
+      const [_sizeX, _sizeY] = fromDeclaration2D(size)
+      sizeX ??= _sizeX
+      sizeY ??= _sizeY
     }
-    if (props.sizeX !== undefined) {
-      this.sizeX.parse(props.sizeX)
+    if (sizeX !== undefined) {
+      if (sizeX === 'fit-children') {
+        this.sizeXFitChildren = true
+        this.sizeX.set(0, ScalarType.Auto)
+      } else {
+        this.sizeXFitChildren = false
+        this.sizeX.parse(sizeX)
+      }
     }
-    if (props.sizeY !== undefined) {
-      this.sizeY.parse(props.sizeY)
+    if (sizeY !== undefined) {
+      if (sizeY === 'fit-children') {
+        this.sizeYFitChildren = true
+        this.sizeY.set(0, ScalarType.Auto)
+      } else {
+        this.sizeYFitChildren = false
+        this.sizeY.parse(sizeY)
+      }
     }
+
     if (props.aspect !== undefined) {
       this.aspect = props.aspect
     }
@@ -542,16 +570,26 @@ export class Space {
     return this.children.length === 0
   }
 
+  isLastChild(): boolean {
+    if (!this.parent) {
+      return false
+    }
+    return this.parent.children[this.parent.children.length - 1] === this
+  }
+
   depth(): number {
     let depth = 0
     let current: Space | null = this
-    while (current) {
+    while (current?.parent) {
       current = current.parent
       depth++
     }
     return depth
   }
 
+  /**
+   * Iterate over all descendants of the space in a depth-first manner.
+   */
   *allDescendants({ includeSelf = false } = {}): Generator<Space> {
     if (includeSelf) {
       yield this
@@ -858,6 +896,38 @@ export class Space {
     }
 
     return this
+  }
+
+  computeLayout2(): this {
+    computeLayout2(this)
+    return this
+  }
+
+  computeTreeString({
+    spaceToString = () => '',
+  }: {
+    spaceToString?: (space: Space) => string
+  } = {}): string {
+    const lines = <string[]>[]
+    let total = 0
+    for (const space of this.allDescendants({ includeSelf: true })) {
+      const indent = space.allAncestors({ includeSelf: false })
+        .map(parentItem => {
+          return parentItem.parent === null || parentItem.isLastChild() ? '   ' : '│  '
+        })
+        .toArray()
+        .reverse()
+        .join('')
+      const relation = space.depth() === 0 ? '->' :
+        space.isLastChild() === false ? '├─' : '└─'
+      const childrenCount = space.children.length > 0 ? `(${space.children.length})` : ''
+      const line = `${indent}${relation} S ${childrenCount} ${spaceToString(space)}`
+      lines.push(line)
+      total++
+    }
+    lines.unshift(`Tree: (${total} spaces)`)
+    const str = lines.join('\n')
+    return str
   }
 
   /**
