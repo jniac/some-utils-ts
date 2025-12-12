@@ -60,23 +60,19 @@ class SState {
   }
 
   *allChildren_fractionSizeX(yieldsFraction: boolean): Generator<SState> {
-    for (const child of this.children) {
-      if (this.space.sizeXFitChildren)
-        continue
-      const is_fr = (child.space.sizeX.type & AUTO_OR_FRACTION) !== 0
+    for (const sc of this.children) {
+      const is_fr = (sc.space.sizeX.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeXFitChildren === false
       if (is_fr === yieldsFraction) {
-        yield child
+        yield sc
       }
     }
   }
 
   *allChildren_fractionSizeY(yieldsFraction: boolean): Generator<SState> {
-    for (const child of this.children) {
-      if (this.space.sizeYFitChildren)
-        continue
-      const is_fr = (child.space.sizeY.type & AUTO_OR_FRACTION) !== 0
+    for (const sc of this.children) {
+      const is_fr = (sc.space.sizeY.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeYFitChildren === false
       if (is_fr === yieldsFraction) {
-        yield child
+        yield sc
       }
     }
   }
@@ -216,11 +212,13 @@ class SState {
       const relation = s.depth() === 0 ? '->' :
         s.isLastChild() === false ? '├─' : '└─'
       const childrenCount = s.children.length > 0 ? `(${s.children.length}) ` : ''
-      const line = `${indent}${relation} s${s.id} ${childrenCount}{${s.x}, ${s.y}, ${s.sx}, ${s.sy}}`
+      const r = `r(${s.x ?? '?'}, ${s.y ?? '?'}, ${s.sx ?? '?'}, ${s.sy ?? '?'})`
+      const avail = `a(${s.sx_avail ?? '?'}, ${s.sy_avail ?? '?'})`
+      const line = `${indent}${relation} s${s.id} ${childrenCount}${r} ${avail}`
       lines.push(line)
       total++
     }
-    lines.unshift(`Tree: (${total} sstates)`)
+    lines.unshift(`Tree: (${total})`)
     const str = lines.join('\n')
     return str
   }
@@ -248,6 +246,7 @@ export function computeLayout2(root: Space) {
     }
     sx += s.pl! + s.pr!
     s.sx = sx
+    s.set_avail(0, 0)
   }
 
   for (const s of sroot.depthFirst_sizeYFitChildren()) {
@@ -268,6 +267,7 @@ export function computeLayout2(root: Space) {
     }
     sy += s.pt! + s.pb!
     s.sy = sy
+    s.set_avail(0, 0)
   }
 
   sroot.req_x(0, 0)
@@ -283,6 +283,8 @@ export function computeLayout2(root: Space) {
   }
 
   // SIZING CHILDREN:
+  // We inspect the children of each SState in a breadth-first manner,
+  // computing their sizes based on available space.
   const size_queue = [sroot]
   while (size_queue.length > 0) {
     const s = size_queue.shift()!
@@ -301,51 +303,57 @@ export function computeLayout2(root: Space) {
 
     if (is_h) {
       // Non-fractional sizing pass
-      for (const s_c of s.allChildren_fractionSizeX(false)) {
-        sx_avail -= s_c.req_sx(sx_inner, sy_inner)
-        sy_avail = Math.min(sy_avail, sy_inner - s_c.req_sy(sx_inner, sy_inner))
+      for (const sc of s.allChildren_fractionSizeX(false)) {
+        sx_avail -= sc.req_sx(sx_inner, sy_inner)
+        sy_avail = Math.min(sy_avail, sy_inner - sc.req_sy(sx_inner, sy_inner))
       }
 
       sx_avail -= s.gap! * Math.max(0, s.children.length - 1)
-      s.set_avail(sx_avail, sy_avail) // Store available space for children, unused for now...
 
       // Fractional sizing pass
       let total_fr = 0
-      for (const s_c of s.allChildren_fractionSizeX(true)) {
-        const fr = s_c.space.sizeX.value
+      for (const sc of s.allChildren_fractionSizeX(true)) {
+        const fr = sc.space.sizeX.value
         total_fr += fr
       }
       const sx_availClamp = Math.max(0, sx_avail)
-      for (const s_c of s.allChildren_fractionSizeX(true)) {
-        const fr = s_c.space.sizeX.value
-        s_c.sx = (fr / total_fr) * sx_availClamp
-        s_c.req_sy(sx_inner, sy_inner)
+      for (const sc of s.allChildren_fractionSizeX(true)) {
+        const fr = sc.space.sizeX.value
+        sc.sx = (fr / total_fr) * sx_availClamp
+        sc.req_sy(sx_inner, sy_inner)
+        sx_avail = 0 // Consumed
       }
+
+      s.set_avail(sx_avail, sy_avail)
     }
 
     else {
       // Non-fractional sizing pass
-      for (const s_c of s.allChildren_fractionSizeY(false)) {
-        sx_avail = Math.min(sx_avail, sx_inner - s_c.req_sx(sx_inner, sy_inner))
-        sy_avail -= s_c.req_sy(sx_inner, sy_inner)
+      for (const sc of s.allChildren_fractionSizeY(false)) {
+        sx_avail = Math.min(sx_avail, sx_inner - sc.req_sx(sx_inner, sy_inner))
+        sy_avail -= sc.req_sy(sx_inner, sy_inner)
       }
 
       sy_avail -= s.gap! * Math.max(0, s.children.length - 1)
-      s.set_avail(sx_avail, sy_avail) // Store available space for children, unused for now...
 
       // Fractional sizing pass
       let total_fr = 0
-      for (const s_c of s.allChildren_fractionSizeY(true)) {
-        const fr = s_c.space.sizeY.value
+      for (const sc of s.allChildren_fractionSizeY(true)) {
+        const fr = sc.space.sizeY.value
         total_fr += fr
       }
       const sy_availClamp = Math.max(0, sy_avail)
-      for (const s_c of s.allChildren_fractionSizeY(true)) {
-        const fr = s_c.space.sizeY.value
-        s_c.sy = (fr / total_fr) * sy_availClamp
-        s_c.req_sx(sx_inner, sy_inner)
+      for (const sc of s.allChildren_fractionSizeY(true)) {
+        const fr = sc.space.sizeY.value
+        sc.sy = (fr / total_fr) * sy_availClamp
+        sc.req_sx(sx_inner, sy_inner)
+        sy_avail = 0 // Consumed
       }
+
+      s.set_avail(sx_avail, sy_avail)
     }
+
+    size_queue.push(...s.children)
   }
 
   // POSITIONING:
@@ -362,27 +370,27 @@ export function computeLayout2(root: Space) {
     let offsetY = y + s.pt!
     const ax = space.alignChildrenX
     const ay = space.alignChildrenY
-    for (const c of s.children) {
-      c.x = offsetX
-      c.y = offsetY
-      const c_sx = c.req_sx(sx, sy)
-      const c_sy = c.req_sy(sx, sy)
-      pos_queue.push(c)
+    for (const sc of s.children) {
+      sc.x = offsetX
+      sc.y = offsetY
+      const sc_sx = sc.req_sx(sx, sy)
+      const sc_sy = sc.req_sy(sx, sy)
+      pos_queue.push(sc)
+      const c_ax = sc.space.alignSelfX
+      const c_ay = sc.space.alignSelfY
       if (is_h) {
-        offsetX += c_sx + s.gap!
-        const fy = sy - s.pt! - s.pb! - c_sy
-        const c_ay = c.space.alignSelfY
-        c.y += fy * (c_ay ?? ay)
+        offsetX += sc_sx + s.gap!
+        const sy_avail = sy - s.pt! - s.pb! - sc_sy // Available space in Y for alignment must be computed per-child
+        sc.y += sy_avail * (c_ay ?? ay)
+        sc.x += s.sx_avail! * (c_ax ?? ax)
       } else {
-        offsetY += c_sy + s.gap!
-        const fx = sx - s.pl! - s.pr! - c_sx
-        const c_ax = c.space.alignSelfX
-        c.x += fx * (c_ax ?? ax)
+        offsetY += sc_sy + s.gap!
+        const sx_avail = sx - s.pl! - s.pr! - sc_sx // Available space in X for alignment must be computed per-child
+        sc.x += sx_avail * (c_ax ?? ax)
+        sc.y += s.sy_avail! * (c_ay ?? ay)
       }
     }
   }
-
-  // console.log(sroot.treeString())
 
   sroot.applyToSpace()
 }
