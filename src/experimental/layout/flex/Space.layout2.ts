@@ -15,13 +15,13 @@ const AUTO_OR_FRACTION = ScalarType.Auto | ScalarType.Fraction
  * It's essentially a wrapper around Space that caches computed values and provides
  * helper methods for the layout algorithm for tree traversal.
  */
-class SState {
+class LayoutNodeSpace {
   static next_id = 0
 
   id: number
   space: Space
-  parent: SState | null
-  children: SState[]
+  parent: LayoutNodeSpace | null
+  children: LayoutNodeSpace[]
 
   x?: number
   y?: number
@@ -36,14 +36,14 @@ class SState {
   sx_avail?: number
   sy_avail?: number
 
-  constructor(space: Space, parent: SState | null = null) {
-    this.id = SState.next_id++
+  constructor(space: Space, parent: LayoutNodeSpace | null = null) {
+    this.id = LayoutNodeSpace.next_id++
     this.space = space
     this.parent = parent
-    this.children = space.children.map(child => new SState(child, this))
+    this.children = space.children.map(child => new LayoutNodeSpace(child, this))
   }
 
-  *depthFirst_sizeXFitChildren(): Generator<SState> {
+  *depthFirst_sizeXFitChildren(): Generator<LayoutNodeSpace> {
     for (const child of this.children) {
       yield* child.depthFirst_sizeXFitChildren()
     }
@@ -51,7 +51,7 @@ class SState {
       yield this
   }
 
-  *depthFirst_sizeYFitChildren(): Generator<SState> {
+  *depthFirst_sizeYFitChildren(): Generator<LayoutNodeSpace> {
     for (const child of this.children) {
       yield* child.depthFirst_sizeYFitChildren()
     }
@@ -59,7 +59,7 @@ class SState {
       yield this
   }
 
-  *allChildren_fractionSizeX(yieldsFraction: boolean): Generator<SState> {
+  *allChildren_fractionSizeX(yieldsFraction: boolean): Generator<LayoutNodeSpace> {
     for (const sc of this.children) {
       const is_fr = (sc.space.sizeX.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeXFitChildren === false
       if (is_fr === yieldsFraction) {
@@ -68,7 +68,7 @@ class SState {
     }
   }
 
-  *allChildren_fractionSizeY(yieldsFraction: boolean): Generator<SState> {
+  *allChildren_fractionSizeY(yieldsFraction: boolean): Generator<LayoutNodeSpace> {
     for (const sc of this.children) {
       const is_fr = (sc.space.sizeY.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeYFitChildren === false
       if (is_fr === yieldsFraction) {
@@ -105,7 +105,7 @@ class SState {
    * 
    * Yields all descendant INCLUDING self.
    */
-  *allDescendants(): Generator<SState> {
+  *allDescendants(): Generator<LayoutNodeSpace> {
     yield this
     for (const child of this.children) {
       yield* child.allDescendants()
@@ -117,7 +117,7 @@ class SState {
    * 
    * Yields all ancestor EXCLUDING self.
    */
-  *allAncestors(): Generator<SState> {
+  *allAncestors(): Generator<LayoutNodeSpace> {
     let current = this.parent
     while (current !== null) {
       yield current
@@ -224,70 +224,32 @@ class SState {
   }
 }
 
-export function computeLayout2(root: Space) {
-  SState.next_id = 0
-  const sroot = new SState(root)
+/**
+  
+  SIZING "REGULAR" CHILDREN:
 
-  for (const s of sroot.depthFirst_sizeXFitChildren()) {
-    s.req_gap(true, 0, 0) // direction doesn't matter here
-    s.req_pl(0, 0)
-    s.req_pr(0, 0)
-    let sx = 0
-    const is_h = s.space.direction === Direction.Horizontal
-    if (is_h) {
-      for (const s_c of s.children) {
-        sx += s_c.req_sx(0, 0)
-      }
-      sx += s.gap! * Math.max(0, s.children.length - 1)
-    } else {
-      for (const s_c of s.children) {
-        sx = Math.max(sx, s_c.req_sx(0, 0))
-      }
-    }
-    sx += s.pl! + s.pr!
-    s.sx = sx
-    s.set_avail(0, 0)
-  }
+  We inspect the children of each SState in a breadth - first manner,
+  computing their sizes based on available space.
 
-  for (const s of sroot.depthFirst_sizeYFitChildren()) {
-    s.req_gap(true, 0, 0) // direction doesn't matter here
-    s.req_pt(0, 0)
-    s.req_pb(0, 0)
-    let sy = 0
-    const is_h = s.space.direction === Direction.Horizontal
-    if (is_h === false) {
-      for (const s_c of s.children) {
-        sy += s_c.req_sy(0, 0)
-      }
-      sy += s.gap! * Math.max(0, s.children.length - 1)
-    } else {
-      for (const s_c of s.children) {
-        sy = Math.max(sy, s_c.req_sy(0, 0))
-      }
-    }
-    sy += s.pt! + s.pb!
-    s.sy = sy
-    s.set_avail(0, 0)
-  }
+  - "Regular": here we are only concerned by "regular" children: "fit" children
+    must have been already processed.
 
-  sroot.req_x(0, 0)
-  sroot.req_y(0, 0)
-  sroot.req_p(0, 0)
+  - All is about:
+    - 1. Compute non fractional space sizes, and deduce available space
+    - 2. Compute fractional total weight
+    - 3. Distribute available spaces to fractional space.
 
-  {
-    // If the root size is not "fit-children", we need to set it now.
-    const sx = sroot.space.sizeX.value
-    const sy = sroot.space.sizeY.value
-    sroot.req_sx(sx, sy)
-    sroot.req_sy(sx, sy)
-  }
+  Notes:
+  - Available space can be negative (overflow).
+  - But fractional space are only concerned by "positive" space. So we have to clamp
+    space to zero for fractionnal children BUT keep negative space into the node
+    for further alignment concerns.
 
-  // SIZING CHILDREN:
-  // We inspect the children of each SState in a breadth-first manner,
-  // computing their sizes based on available space.
-  const size_queue = [sroot]
-  while (size_queue.length > 0) {
-    const s = size_queue.shift()!
+ */
+export function sizingRegularChildren(root: LayoutNodeSpace) {
+  const queue = [root]
+  while (queue.length > 0) {
+    const s = queue.shift()!
     const sx = s.sx!
     const sy = s.sy!
     s.req_p(sx, sy) // Ensure padding is computed
@@ -316,6 +278,7 @@ export function computeLayout2(root: Space) {
         const fr = sc.space.sizeX.value
         total_fr += fr
       }
+
       const sx_availClamp = Math.max(0, sx_avail)
       for (const sc of s.allChildren_fractionSizeX(true)) {
         const fr = sc.space.sizeX.value
@@ -342,6 +305,7 @@ export function computeLayout2(root: Space) {
         const fr = sc.space.sizeY.value
         total_fr += fr
       }
+
       const sy_availClamp = Math.max(0, sy_avail)
       for (const sc of s.allChildren_fractionSizeY(true)) {
         const fr = sc.space.sizeY.value
@@ -353,13 +317,14 @@ export function computeLayout2(root: Space) {
       s.set_avail(sx_avail, sy_avail)
     }
 
-    size_queue.push(...s.children)
+    queue.push(...s.children)
   }
+}
 
-  // POSITIONING:
-  const pos_queue = [sroot]
-  while (pos_queue.length > 0) {
-    const s = pos_queue.shift()!
+function positioningAllChildren(root: LayoutNodeSpace) {
+  const queue = [root]
+  while (queue.length > 0) {
+    const s = queue.shift()!
     const x = s.x!
     const y = s.y!
     const sx = s.sx!
@@ -375,7 +340,7 @@ export function computeLayout2(root: Space) {
       sc.y = offsetY
       const sc_sx = sc.req_sx(sx, sy)
       const sc_sy = sc.req_sy(sx, sy)
-      pos_queue.push(sc)
+      queue.push(sc)
       const c_ax = sc.space.alignSelfX
       const c_ay = sc.space.alignSelfY
       if (is_h) {
@@ -391,7 +356,70 @@ export function computeLayout2(root: Space) {
       }
     }
   }
+}
 
-  sroot.applyToSpace()
+export function computeLayout2(rootSpace: Space) {
+  LayoutNodeSpace.next_id = 0
+  const root = new LayoutNodeSpace(rootSpace)
+
+  for (const s of root.depthFirst_sizeXFitChildren()) {
+    s.req_gap(true, 0, 0) // direction doesn't matter here
+    s.req_pl(0, 0)
+    s.req_pr(0, 0)
+    let sx = 0
+    const is_h = s.space.direction === Direction.Horizontal
+    if (is_h) {
+      for (const s_c of s.children) {
+        sx += s_c.req_sx(0, 0)
+      }
+      sx += s.gap! * Math.max(0, s.children.length - 1)
+    } else {
+      for (const s_c of s.children) {
+        sx = Math.max(sx, s_c.req_sx(0, 0))
+      }
+    }
+    sx += s.pl! + s.pr!
+    s.sx = sx
+    s.set_avail(0, 0)
+  }
+
+  for (const s of root.depthFirst_sizeYFitChildren()) {
+    s.req_gap(true, 0, 0) // direction doesn't matter here
+    s.req_pt(0, 0)
+    s.req_pb(0, 0)
+    let sy = 0
+    const is_h = s.space.direction === Direction.Horizontal
+    if (is_h === false) {
+      for (const s_c of s.children) {
+        sy += s_c.req_sy(0, 0)
+      }
+      sy += s.gap! * Math.max(0, s.children.length - 1)
+    } else {
+      for (const s_c of s.children) {
+        sy = Math.max(sy, s_c.req_sy(0, 0))
+      }
+    }
+    sy += s.pt! + s.pb!
+    s.sy = sy
+    s.set_avail(0, 0)
+  }
+
+  root.req_x(0, 0)
+  root.req_y(0, 0)
+  root.req_p(0, 0)
+
+  {
+    // If the root size is not "fit-children", we need to set its size.
+    const sx = root.space.sizeX.value
+    const sy = root.space.sizeY.value
+    root.req_sx(sx, sy)
+    root.req_sy(sx, sy)
+  }
+
+  sizingRegularChildren(root)
+
+  positioningAllChildren(root)
+
+  root.applyToSpace()
 }
 
