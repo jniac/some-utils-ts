@@ -229,7 +229,7 @@ export class Space {
    * Note:
    * - If other constraints are defined (size), expect undetermined behavior (for now).
    */
-  selfAspectSizeMode: AspectSizeMode | null = null
+  aspectSizeMode: AspectSizeMode = AspectSizeMode.Contain
 
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
@@ -360,7 +360,7 @@ export class Space {
       this.childrenAspectSizeMode = parseAspectSizeMode(props.childrenAspectSizeMode)
     }
     if (props.selfAspectSizeMode !== undefined) {
-      this.selfAspectSizeMode = parseAspectSizeMode(props.selfAspectSizeMode)
+      this.aspectSizeMode = parseAspectSizeMode(props.selfAspectSizeMode)
     }
     if (props.alignChildren !== undefined) {
       const { x, y } = fromVector2Declaration(props.alignChildren)

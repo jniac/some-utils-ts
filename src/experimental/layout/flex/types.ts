@@ -29,7 +29,8 @@ export enum Positioning {
 }
 
 export enum AspectSizeMode {
-  None = 'none',
+  Contain = 'contain',
+  Cover = 'cover',
   FillTangentSpace = 'fill-tangent-space',
   FillNormalSpace = 'fill-normal-space',
 }

@@ -81,7 +81,7 @@ function computeSize(space: Space, width: number, height: number, direction: Dir
       if (space.sizeY.type === ScalarType.Auto) {
         // Both are auto: decide based on the direction
         // Note: the previous line was used before, but it does not make sense to me.
-        const aspectSizeMode = space.selfAspectSizeMode ?? space.parent?.childrenAspectSizeMode ?? null
+        const aspectSizeMode = space.aspectSizeMode ?? space.parent?.childrenAspectSizeMode ?? null
         switch (aspectSizeMode) {
           case AspectSizeMode.FillTangentSpace:
             useWidth = true
