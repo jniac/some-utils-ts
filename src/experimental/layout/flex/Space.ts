@@ -4,7 +4,7 @@ import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { computeChildrenRect, computeRootRect } from './Space.layout'
-import { computeLayout2 } from './Space.layout2'
+import { computeLayout2 } from './computeLayout2'
 import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
