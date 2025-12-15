@@ -81,6 +81,7 @@ function fromSpacingDeclaration(arg: SpacingDeclaration): SpacingTupleDeclaratio
 
 export type SpaceProps = Partial<{
   name: string
+  enabled: boolean
   direction: DirectionDeclaration
   positioning: PositioningDeclaration
   offset: Scalar2Declaration
@@ -310,6 +311,9 @@ export class Space {
   set(props: SpaceProps): this {
     if (props.name !== undefined) {
       this.name = props.name
+    }
+    if (props.enabled !== undefined) {
+      this.enabled = props.enabled
     }
     if (props.direction !== undefined) {
       this.direction = parseDirection(props.direction)
