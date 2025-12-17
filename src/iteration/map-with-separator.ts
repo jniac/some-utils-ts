@@ -17,6 +17,7 @@ export function mapWithSeparator<T, U>(
   let previous: T | undefined = undefined
   if (!current.done) {
     result.push(map(current.value, index, originalIndex))
+    originalIndex++
     index++
     previous = current.value
     current = it.next()
