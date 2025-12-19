@@ -75,10 +75,14 @@ export function parsePositioning(value: any): Positioning {
 
 export type DirectionDeclaration =
   | Direction
+  | boolean
   | 'horizontal'
   | 'vertical'
 
 export function parseDirection(value: any): Direction {
+  if (typeof value === 'boolean') {
+    return value ? Direction.Horizontal : Direction.Vertical
+  }
   if (value in Direction) {
     return value
   }
