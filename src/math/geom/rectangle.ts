@@ -45,6 +45,7 @@ export type RectangleDeclaration =
   | [x: number, y: number, width: number, height: number]
   | [width: number, height: number]
   | { minX: number, minY: number, maxX: number, maxY: number }
+  | { min: Vector2Declaration, max: Vector2Declaration }
   | WithAlignOption<Partial<RectangleLike>>
   | WithAlignOption<{ aspect: number, diagonal: number }>
   | WithAlignOption<{ center?: Vector2Declaration, extent: number | Vector2Declaration }>
@@ -73,6 +74,12 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
   if (isBBox(declaration)) {
     const { minX, minY, maxX, maxY } = declaration
     return out.set(minX, minY, maxX - minX, maxY - minY)
+  }
+
+  if ('min' in declaration && 'max' in declaration) {
+    const min = fromVector2Declaration(declaration.min)
+    const max = fromVector2Declaration(declaration.max)
+    return out.set(min.x, min.y, max.x - min.x, max.y - min.y)
   }
 
   const { align, ...restDeclaration } = declaration
