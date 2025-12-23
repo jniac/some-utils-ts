@@ -1,6 +1,7 @@
 import { fromVector2Declaration, Vector2Declaration } from '../../declaration'
 import { Ray2Like, RectangleLike, Vector2Like } from '../../types'
 import { isRectangleLike } from '../../types/is'
+import { clamp } from '../basic'
 import { Line2 } from './line2'
 import { Padding, PaddingDeclaration } from './padding'
 import { Ray2, Ray2Args } from './ray2'
@@ -1111,6 +1112,28 @@ export class Rectangle implements RectangleLike, Iterable<number> {
       }
     }
     throw new Error('Oops. Wrong parameters here.')
+  }
+
+  closestPoint<T extends Vector2Like = Vector2Like>({ x, y }: Vector2Like, out?: T): T {
+    out ??= { x: 0, y: 0 } as T
+    out.x = clamp(x, this.x, this.x + this.width)
+    out.y = clamp(y, this.y, this.y + this.height)
+    return out
+  }
+
+  static #distanceToPoint_P = { x: 0, y: 0 }
+  distanceToPointSquared(point: Vector2Declaration): number {
+    const p = Rectangle.#distanceToPoint_P
+    fromVector2Declaration(point, p)
+    const x = clamp(p.x, this.x, this.x + this.width)
+    const y = clamp(p.y, this.y, this.y + this.height)
+    const dx = x - p.x
+    const dy = y - p.y
+    return dx * dx + dy * dy
+  }
+
+  distanceToPoint(point: Vector2Declaration): number {
+    return Math.sqrt(this.distanceToPointSquared(point))
   }
 
   uv<T extends Vector2Like = Vector2Like>({ x, y }: T, out?: T): T {
