@@ -1,4 +1,4 @@
-import { DestroyableObject, StringMatcher } from '../types'
+import { DestroyableObject, OneOrMany, StringMatcher } from '../types'
 import { IdRegister } from './IdRegister'
 
 type Callback<P = any> = {
@@ -69,6 +69,12 @@ function removeListener(id: number, listener: Listener): boolean {
  *   console.log(message.type, message.payload)
  * })
  * Message.send(myTarget, 'HELLO', { payload: 'world' })
+ * ```
+ * Note that `type` on listener can also be a string matcher (RegExp or `*`), one or many:
+ * ```
+ * Message.on<string>(myTarget, /HELL/, message => { ... })
+ * Message.on<string>(myTarget, '*', message => { ... })
+ * Message.on<string>(myTarget, ['HELLO', 'HI'], message => { ... })
  * ```
  * 
  * ### 3. Ok, but what is "myTarget" here?
@@ -208,12 +214,14 @@ class Message<P = any> {
   }
 }
 
-function solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher, callback: Callback<P>] {
+function solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher[], callback: Callback<P>] {
   if (args.length === 2) {
     const [target, callback] = args
-    return [target, '*', callback]
+    return [target, ['*'], callback]
   }
-  return args as any
+  const [target, filterArg, callback] = args
+  const filters: StringMatcher[] = Array.isArray(filterArg) ? filterArg : [filterArg]
+  return [target, filters, callback]
 }
 /**
  * Add a callback to a target.
@@ -230,14 +238,15 @@ function solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher,
  * ```
  */
 function on<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
-function on<P = any>(target: any, filter: StringMatcher, callback: (message: Message<P>) => void): DestroyableObject
+function on<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
 function on<P = any>(...args: any): DestroyableObject {
-  const [target, filter, callback] = solveOnArgs<P>(args)
+  const [target, filters, callback] = solveOnArgs<P>(args)
   const targetId = idRegister.requireId(target)
-  const listener = new Listener(filter, callback)
-  requireListeners(targetId).push(listener)
+  const listeners = filters.map(filter => new Listener(filter, callback))
+  requireListeners(targetId).push(...listeners)
   const destroy = () => {
-    removeListener(targetId, listener)
+    for (const listener of listeners)
+      removeListener(targetId, listener)
   }
   return { destroy }
 }
@@ -249,8 +258,8 @@ function wait<P = any>(...args: any): Promise<Message<P>> {
     const callback = (message: Message<P>) => {
       resolve(message)
     }
-    const [target, filter] = solveOnArgs<P>([...args, callback])
-    on(target, filter, callback)
+    const [target, filters] = solveOnArgs<P>([...args, callback])
+    on(target, filters, callback)
   })
 }
 
