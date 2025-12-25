@@ -1,26 +1,31 @@
 import { DestroyableObject, OneOrMany, StringMatcher } from '../types'
-import { IdRegister } from './IdRegister'
+import { HashRegister } from './hash-register'
 
 type Callback<P = any> = {
   (message: Message<P>): void
 }
 
 class Listener {
+  target: any
   filter: StringMatcher
   callback: Callback
-  match: (type: string) => boolean
-  constructor(filter: StringMatcher, callback: Callback) {
+  match: (target: any, type: string) => boolean
+  constructor(target: any, filter: StringMatcher, callback: Callback) {
     this.filter = filter
+    this.target = target
     this.callback = callback
-    this.match = (
+    const matchTarget =
+      (incomingTarget: any) => HashRegister.areSame(incomingTarget, this.target)
+    const matchType = (
       filter === '*' ? () => true :
         typeof filter === 'string' ? (type: string) => type === filter :
           filter instanceof RegExp ? (type: string) => filter.test(type) :
             () => false)
+    this.match = (target: any, type: string) => matchTarget(target) && matchType(type)
   }
 }
 
-const idRegister = new IdRegister()
+const hashRegister = new HashRegister()
 const listenerMap = new Map<number, Listener[]>()
 
 function requireListeners(id: number): Listener[] {
@@ -149,11 +154,11 @@ class Message<P = any> {
    */
   static wait = wait
 
-  static debug = { listenerMap, idRegister }
+  static debug = { listenerMap, idRegister: hashRegister }
 
   private static nextId = 0
   readonly id = Message.nextId++
-  readonly targetId: number
+  readonly targetHash: number
 
   target: any
   type: string
@@ -162,13 +167,13 @@ class Message<P = any> {
   debug = { currentListenerIndex: -1, listenerCount: 0 }
 
   constructor(target: any, type?: string, payload?: P) {
-    this.targetId = idRegister.requireId(target)
+    this.targetHash = hashRegister.requireHash(target)
     this.target = target
     this.type = type ?? 'message'
     this.payload = payload
 
-    const listeners = (listenerMap.get(this.targetId) ?? [])
-      .filter(listener => listener.match(this.type))
+    const listeners = (listenerMap.get(this.targetHash) ?? [])
+      .filter(listener => listener.match(target, this.type))
 
     this.debug.listenerCount = listeners.length
 
@@ -241,8 +246,8 @@ function on<P = any>(target: any, callback: (message: Message<P>) => void): Dest
 function on<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
 function on<P = any>(...args: any): DestroyableObject {
   const [target, filters, callback] = solveOnArgs<P>(args)
-  const targetId = idRegister.requireId(target)
-  const listeners = filters.map(filter => new Listener(filter, callback))
+  const targetId = hashRegister.requireHash(target)
+  const listeners = filters.map(filter => new Listener(target, filter, callback))
   requireListeners(targetId).push(...listeners)
   const destroy = () => {
     for (const listener of listeners)
@@ -290,6 +295,10 @@ function sendDual(target: any, type: string, extraPayload: Omit<Record<string, a
   send(type, { payload })
   send(target, type, { payload })
 }
+
+Object.assign(Message, {
+  debug: { listenerMap, hashRegister, HashRegister },
+})
 
 export { Message }
 export type {

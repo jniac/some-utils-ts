@@ -1,3 +1,4 @@
 
-export type { MessageCallback, MessageListener } from './Message'
-export { Message } from './Message'
+export { Message } from './tmp-message'
+export type { MessageCallback, MessageListener } from './tmp-message'
+
