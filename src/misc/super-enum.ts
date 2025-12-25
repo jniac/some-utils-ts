@@ -6,6 +6,13 @@ class SuperEnumEntry<T> {
     public value: T
   ) { }
 
+  compare(other: SuperEnumEntry<T> | T): boolean {
+    if (other instanceof SuperEnumEntry) {
+      return this.value === other.value
+    }
+    return this.value === other
+  }
+
   next(): SuperEnumEntry<T>
   next(loop: true): SuperEnumEntry<T>
   next(loop: boolean): SuperEnumEntry<T> | null
