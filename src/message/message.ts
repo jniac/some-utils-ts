@@ -50,6 +50,7 @@ function removeListener(id: number, listener: Listener): boolean {
   }
   return false
 }
+
 /**
  * Message system for intra-application communication.
  *
@@ -87,7 +88,7 @@ function removeListener(id: number, listener: Listener): boolean {
  * It could be:
  * - a primitive (1, "FOO", Symbol() etc.)
  * - a object
- * - any combination of the two (via an array, order-sensitive)
+ * - any combination of the two (via an array, order-sensitive, but nesting ignored (eg: [a, [b, c]] === [a, b, c]))
  * ```
  * const secretKey = Symbol('secret')
  * 
@@ -115,49 +116,9 @@ function removeListener(id: number, listener: Listener): boolean {
  * ```
  */
 class Message<P = any> {
-  /**
-   * Send a message.
-   */
-  static send = send
+  static #nextId = 0
 
-  /**
-   * Send a message to both the target and the type.
-   * 
-   * When listening, you can listen to either the target (local) or the type (global).
-   * 
-   * ```ts
-   * Message.sendDual(myTarget, 'SOME_TYPE')
-   * 
-   * // Somewhere else:
-   * 
-   * // global (on the type):
-   * Message.on('SOME_TYPE', message => {
-   *   const { target } = message.assertPayload()
-   *   console.log('(global) React to', message.target, target)
-   * })
-   *
-   * // local (on the target):
-   * Message.on(myTarget, 'SOME_TYPE', message => {
-   *   console.log('(local) React to', message.type, message.target)
-   * })
-   * ```
-   */
-  static sendDual = sendDual
-
-  /**
-   * Listen to messages.
-   */
-  static on = on
-
-  /**
-   * Wait for a message to be sent, returns a promise that resolves when the message is sent.
-   */
-  static wait = wait
-
-  static debug = { listenerMap, idRegister: hashRegister }
-
-  private static nextId = 0
-  readonly id = Message.nextId++
+  readonly id = Message.#nextId++
   readonly targetHash: number
 
   target: any
@@ -256,6 +217,9 @@ function on<P = any>(...args: any): DestroyableObject {
   return { destroy }
 }
 
+/**
+ * Wait for a message to be sent, returns a promise that resolves when the message is sent.
+ */
 function wait<P = any>(target: any): Promise<Message<P>>
 function wait<P = any>(target: any, filter: StringMatcher): Promise<Message<P>>
 function wait<P = any>(...args: any): Promise<Message<P>> {
@@ -285,22 +249,96 @@ function send<P = any>(target: any): Message<P>
 function send<P = any>(target: any, type: string): Message<P>
 function send<P = any>(target: any, options: { payload: P }): Message<P>
 function send<P = any>(target: any, type: string, options: { payload: P }): Message<P>
+/**
+ * Send a message.
+ */
 function send<P = any>(...args: any[]): Message<P> {
   const [target, type, payload] = solveSendArgs<P>(args)
   return new Message(target, type, payload)
 }
 
+/**
+ * Send a message to both the target and the type.
+ * 
+ * When listening, you can listen to either the target (local) or the type (global).
+ * 
+ * ```ts
+ * Message.sendDual(myTarget, 'SOME_TYPE')
+ * 
+ * // Somewhere else:
+ * 
+ * // global (on the type):
+ * Message.on('SOME_TYPE', message => {
+ *   const { target } = message.assertPayload()
+ *   console.log('(global) React to', message.target, target)
+ * })
+ *
+ * // local (on the target):
+ * Message.on(myTarget, 'SOME_TYPE', message => {
+ *   console.log('(local) React to', message.type, message.target)
+ * })
+ * ```
+ */
 function sendDual(target: any, type: string, extraPayload: Omit<Record<string, any>, 'target'> = {}) {
   const payload = { target, ...extraPayload }
   send(type, { payload })
   send(target, type, { payload })
 }
 
-Object.assign(Message, {
-  debug: { listenerMap, hashRegister, HashRegister },
-})
+/**
+ * Require an instance of a class via the message system. If no instance is found, 
+ * null is returned.
+ * 
+ * Why use this?
+ * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
+ *   its singleton instance. Someone else (a global manager) can provide it via 
+ *   the message system.
+ * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
+ *   or handle the null case, making the dependency explicit.
+ * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise,
+ *   clear, and type-safe.
+ */
+function require<T>(classArg: (new () => T)): T | null {
+  const message = send<T>(classArg, 'REQUIRE_INSTANCE')
+  return message.payload ?? null
+}
 
-export { Message }
+/**
+ * Require an instance of a class via the message system. If no instance is found, an error is thrown.
+ * 
+ * Why use this?
+ * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
+ *   its singleton instance. Someone else (a global manager) can provide it via 
+ *   the message system.
+ * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
+ *   or handle the null case, making the dependency explicit.
+ * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise
+ *   and clear.
+ */
+function requireOrThrow<T>(classArg: (new () => T), errorMessage?: string): T {
+  const instance = require<T>(classArg)
+  if (instance === null) {
+    throw new Error(`Message.requireOrThrow: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
+  }
+  return instance
+}
+
+const MessageStatic = {
+  send,
+  sendDual,
+  require,
+  requireOrThrow,
+  on,
+  wait,
+  debug: { listenerMap, hashRegister, HashRegister },
+}
+
+Object.assign(Message, MessageStatic)
+
+const MessageModule = Message as typeof Message & typeof MessageStatic
+
+export { MessageModule as Message }
+
 export type {
   Callback as MessageCallback,
   Listener as MessageListener
