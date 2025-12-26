@@ -3,7 +3,8 @@ class SuperEnumEntry<T> {
     public core: SuperEnumCore<T>,
     public name: string,
     public index: number,
-    public value: T
+    public value: T,
+    public description: string,
   ) { }
 
   compare(other: any, { ignoreCase = true } = {}): boolean {
@@ -61,8 +62,13 @@ class SuperEnumEntry<T> {
 class SuperEnumCore<TValue> {
   entries = [] as SuperEnumEntry<TValue>[]
 
-  constructor(entries: Record<string, TValue>) {
-    this.entries = Object.entries(entries).map(([name, value], index) => new SuperEnumEntry(this, name, index, value))
+  constructor(entries: Record<string, TValue | [value: TValue, description: string]>) {
+    this.entries = Object.entries(entries).map(([name, valueArg], index) => {
+      const [value, description] = Array.isArray(valueArg)
+        ? valueArg
+        : [valueArg, '']
+      return new SuperEnumEntry(this, name, index, value, description)
+    })
   }
 
   parse(value: any, options?: Parameters<SuperEnumEntry<TValue>['compare']>[1]): SuperEnumEntry<TValue> | null {
@@ -117,7 +123,12 @@ class SuperEnumCore<TValue> {
  * console.log(Colors.Red.next()) // SuperEnumEntry { name: 'Green', value: 1, index: 1 }
  * ```
  */
-export function superEnum<T extends Record<string, number | string>>(obj: T): SuperEnumCore<T[keyof T]> & Record<keyof T, SuperEnumEntry<T[keyof T]>> {
+export function superEnum<
+  T extends Record<string, TValue | [value: TValue, description: string]>,
+  TValue extends number | string
+>(
+  obj: T,
+): SuperEnumCore<TValue> & Record<keyof T, SuperEnumEntry<TValue>> {
   const core = new SuperEnumCore(obj)
   return new Proxy(core, {
     get(target, prop, receiver) {
