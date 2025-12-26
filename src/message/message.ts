@@ -116,6 +116,155 @@ function removeListener(id: number, listener: Listener): boolean {
  * ```
  */
 class Message<P = any> {
+  static solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher[], callback: Callback<P>] {
+    if (args.length === 2) {
+      const [target, callback] = args
+      return [target, ['*'], callback]
+    }
+    const [target, filterArg, callback] = args
+    const filters: StringMatcher[] = Array.isArray(filterArg) ? filterArg : [filterArg]
+    return [target, filters, callback]
+  }
+  /**
+   * Add a callback to a target.
+   * ```
+   * Message.on<{ ok: boolean }>('USER', m => {
+   *   const { ok } = m.payload!
+   * })
+   * ```
+   * A "string filter" can be specified: 
+   * ```
+   * Message.on<{ ok: boolean }>('USER', /AUTH/, m => {
+   *   const { ok } = m.payload!
+   * })
+   * ```
+   */
+  static on<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
+  static on<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
+  static on<P = any>(...args: any): DestroyableObject {
+    const [target, filters, callback] = Message.solveOnArgs<P>(args)
+    const targetId = hashRegister.requireHash(target)
+    const listeners = filters.map(filter => new Listener(target, filter, callback))
+    requireListeners(targetId).push(...listeners)
+    const destroy = () => {
+      for (const listener of listeners)
+        removeListener(targetId, listener)
+    }
+    return { destroy }
+  }
+
+  /**
+   * Wait for a message to be sent, returns a promise that resolves when the message is sent.
+   */
+  static wait<P = any>(target: any): Promise<Message<P>>
+  static wait<P = any>(target: any, filter: StringMatcher): Promise<Message<P>>
+  static wait<P = any>(...args: any): Promise<Message<P>> {
+    return new Promise(resolve => {
+      const callback = (message: Message<P>) => {
+        resolve(message)
+      }
+      const [target, filters] = Message.solveOnArgs<P>([...args, callback])
+      Message.on(target, filters, callback)
+    })
+  }
+
+  static solveSendArgs<P = any>(args: any[]): [target: any, type?: string, payload?: P] {
+    const [target, ...rest] = args
+    if (rest.length === 2) {
+      const [type, { payload }] = rest
+      return [target, type, payload]
+    }
+    if (rest.length === 1) {
+      const [arg2] = rest
+      return typeof arg2 === 'string' ? [target, arg2] : [target, undefined, arg2.payload]
+    }
+    return [target]
+  }
+
+  /**
+   * Send a message.
+   */
+  static send<P = any>(target: any): Message<P>
+  static send<P = any>(target: any, type: string): Message<P>
+  static send<P = any>(target: any, options: { payload: P }): Message<P>
+  static send<P = any>(target: any, type: string, options: { payload: P }): Message<P>
+  static send<P = any>(...args: any[]): Message<P> {
+    const [target, type, payload] = Message.solveSendArgs<P>(args)
+    return new Message(target, type, payload)
+  }
+
+  /**
+   * Send a message to both the target and the type.
+   * 
+   * When listening, you can listen to either the target (local) or the type (global).
+   * 
+   * ```ts
+   * Message.sendDual(myTarget, 'SOME_TYPE')
+   * 
+   * // Somewhere else:
+   * 
+   * // global (on the type):
+   * Message.on('SOME_TYPE', message => {
+   *   const { target } = message.assertPayload()
+   *   console.log('(global) React to', message.target, target)
+   * })
+   *
+   * // local (on the target):
+   * Message.on(myTarget, 'SOME_TYPE', message => {
+   *   console.log('(local) React to', message.type, message.target)
+   * })
+   * ```
+   */
+  static sendDual(target: any, type: string, extraPayload: Omit<Record<string, any>, 'target'> = {}) {
+    const payload = { target, ...extraPayload }
+    Message.send(type, { payload })
+    Message.send(target, type, { payload })
+  }
+
+  /**
+   * Require an instance of a class via the message system. If no instance is found, 
+   * null is returned.
+   * 
+   * Why use this?
+   * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
+   *   its singleton instance. Someone else (a global manager) can provide it via 
+   *   the message system.
+   * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
+   *   or handle the null case, making the dependency explicit.
+   * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise,
+   *   clear, and type-safe.
+   */
+  static require<T>(classArg: (new () => T)): T | null {
+    const message = Message.send<T>(classArg)
+    return message.payload ?? null
+  }
+
+  /**
+   * Require an instance of a class via the message system. If no instance is found, an error is thrown.
+   * 
+   * Why use this?
+   * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
+   *   its singleton instance. Someone else (a global manager) can provide it via 
+   *   the message system.
+   * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
+   *   or handle the null case, making the dependency explicit.
+   * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise
+   *   and clear.
+   */
+  static requireOrThrow<T>(classArg: (new () => T), errorMessage?: string): T {
+    const instance = Message.require<T>(classArg)
+    if (instance === null) {
+      throw new Error(`Message.requireOrThrow: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
+    }
+    return instance
+  }
+
+  static onRequire<T>(classArg: (new () => T), instance: T): DestroyableObject {
+    return Message.on<T>(classArg, message => {
+      message.setPayload(instance)
+    })
+  }
+
   static #nextId = 0
 
   readonly id = Message.#nextId++
@@ -180,164 +329,7 @@ class Message<P = any> {
   }
 }
 
-function solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher[], callback: Callback<P>] {
-  if (args.length === 2) {
-    const [target, callback] = args
-    return [target, ['*'], callback]
-  }
-  const [target, filterArg, callback] = args
-  const filters: StringMatcher[] = Array.isArray(filterArg) ? filterArg : [filterArg]
-  return [target, filters, callback]
-}
-/**
- * Add a callback to a target.
- * ```
- * Message.on<{ ok: boolean }>('USER', m => {
- *   const { ok } = m.payload!
- * })
- * ```
- * A "string filter" can be specified: 
- * ```
- * Message.on<{ ok: boolean }>('USER', /AUTH/, m => {
- *   const { ok } = m.payload!
- * })
- * ```
- */
-function on<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
-function on<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
-function on<P = any>(...args: any): DestroyableObject {
-  const [target, filters, callback] = solveOnArgs<P>(args)
-  const targetId = hashRegister.requireHash(target)
-  const listeners = filters.map(filter => new Listener(target, filter, callback))
-  requireListeners(targetId).push(...listeners)
-  const destroy = () => {
-    for (const listener of listeners)
-      removeListener(targetId, listener)
-  }
-  return { destroy }
-}
-
-/**
- * Wait for a message to be sent, returns a promise that resolves when the message is sent.
- */
-function wait<P = any>(target: any): Promise<Message<P>>
-function wait<P = any>(target: any, filter: StringMatcher): Promise<Message<P>>
-function wait<P = any>(...args: any): Promise<Message<P>> {
-  return new Promise(resolve => {
-    const callback = (message: Message<P>) => {
-      resolve(message)
-    }
-    const [target, filters] = solveOnArgs<P>([...args, callback])
-    on(target, filters, callback)
-  })
-}
-
-function solveSendArgs<P = any>(args: any[]): [target: any, type?: string, payload?: P] {
-  const [target, ...rest] = args
-  if (rest.length === 2) {
-    const [type, { payload }] = rest
-    return [target, type, payload]
-  }
-  if (rest.length === 1) {
-    const [arg2] = rest
-    return typeof arg2 === 'string' ? [target, arg2] : [target, undefined, arg2.payload]
-  }
-  return [target]
-}
-
-function send<P = any>(target: any): Message<P>
-function send<P = any>(target: any, type: string): Message<P>
-function send<P = any>(target: any, options: { payload: P }): Message<P>
-function send<P = any>(target: any, type: string, options: { payload: P }): Message<P>
-/**
- * Send a message.
- */
-function send<P = any>(...args: any[]): Message<P> {
-  const [target, type, payload] = solveSendArgs<P>(args)
-  return new Message(target, type, payload)
-}
-
-/**
- * Send a message to both the target and the type.
- * 
- * When listening, you can listen to either the target (local) or the type (global).
- * 
- * ```ts
- * Message.sendDual(myTarget, 'SOME_TYPE')
- * 
- * // Somewhere else:
- * 
- * // global (on the type):
- * Message.on('SOME_TYPE', message => {
- *   const { target } = message.assertPayload()
- *   console.log('(global) React to', message.target, target)
- * })
- *
- * // local (on the target):
- * Message.on(myTarget, 'SOME_TYPE', message => {
- *   console.log('(local) React to', message.type, message.target)
- * })
- * ```
- */
-function sendDual(target: any, type: string, extraPayload: Omit<Record<string, any>, 'target'> = {}) {
-  const payload = { target, ...extraPayload }
-  send(type, { payload })
-  send(target, type, { payload })
-}
-
-/**
- * Require an instance of a class via the message system. If no instance is found, 
- * null is returned.
- * 
- * Why use this?
- * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
- *   its singleton instance. Someone else (a global manager) can provide it via 
- *   the message system.
- * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
- *   or handle the null case, making the dependency explicit.
- * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise,
- *   clear, and type-safe.
- */
-function require<T>(classArg: (new () => T)): T | null {
-  const message = send<T>(classArg, 'REQUIRE_INSTANCE')
-  return message.payload ?? null
-}
-
-/**
- * Require an instance of a class via the message system. If no instance is found, an error is thrown.
- * 
- * Why use this?
- * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
- *   its singleton instance. Someone else (a global manager) can provide it via 
- *   the message system.
- * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
- *   or handle the null case, making the dependency explicit.
- * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise
- *   and clear.
- */
-function requireOrThrow<T>(classArg: (new () => T), errorMessage?: string): T {
-  const instance = require<T>(classArg)
-  if (instance === null) {
-    throw new Error(`Message.requireOrThrow: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
-  }
-  return instance
-}
-
-const MessageStatic = {
-  send,
-  sendDual,
-  require,
-  requireOrThrow,
-  on,
-  wait,
-  debug: { listenerMap, hashRegister, HashRegister },
-}
-
-Object.assign(Message, MessageStatic)
-
-const MessageModule = Message as typeof Message & typeof MessageStatic
-
-export { MessageModule as Message }
+export { Message }
 
 export type {
   Callback as MessageCallback,
