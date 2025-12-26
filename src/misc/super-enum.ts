@@ -6,9 +6,15 @@ class SuperEnumEntry<T> {
     public value: T
   ) { }
 
-  compare(other: SuperEnumEntry<T> | T): boolean {
+  compare(other: any, { ignoreCase = true } = {}): boolean {
     if (other instanceof SuperEnumEntry) {
       return this.value === other.value
+    }
+    if (other instanceof RegExp) {
+      return other.test(this.name)
+    }
+    if (typeof other === 'string' && ignoreCase) {
+      return this.name.toLowerCase() === other.toLowerCase()
     }
     return this.value === other
   }
@@ -57,6 +63,17 @@ class SuperEnumCore<TValue> {
 
   constructor(entries: Record<string, TValue>) {
     this.entries = Object.entries(entries).map(([name, value], index) => new SuperEnumEntry(this, name, index, value))
+  }
+
+  parse(value: any, options?: Parameters<SuperEnumEntry<TValue>['compare']>[1]): SuperEnumEntry<TValue> | null {
+    return this.entries.find(e => e.compare(value, options)) ?? null
+  }
+
+  parseOrThrow(value: any): SuperEnumEntry<TValue> {
+    const entry = this.parse(value)
+    if (!entry)
+      throw new Error(`SuperEnum: Unable to parse value: ${value}`)
+    return entry
   }
 
   entryByValue(value: TValue): SuperEnumEntry<TValue> | null
