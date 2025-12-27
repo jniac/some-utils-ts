@@ -231,10 +231,10 @@ class Message<P = any> {
    *   the message system.
    * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
    *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise,
-   *   clear, and type-safe.
+   * - ✅ Nice invariant syntax: `const myInstance = Message.requireInstance(MyClass)` 
+   *   is concise, clear, and type-safe.
    */
-  static require<T>(classArg: (new () => T)): T | null {
+  static requireInstance<T>(classArg: (new (...args: any) => T)): T | null {
     const message = Message.send<T>(classArg)
     return message.payload ?? null
   }
@@ -248,18 +248,18 @@ class Message<P = any> {
    *   the message system.
    * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
    *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice syntax: `const myInstance = Message.requireOrThrow(MyClass)` is concise
-   *   and clear.
+   * - ✅ Nice invariant syntax: `const myInstance = Message.requireInstanceOrThrow(MyClass)` 
+   *   is concise and clear.
    */
-  static requireOrThrow<T>(classArg: (new () => T), errorMessage?: string): T {
-    const instance = Message.require<T>(classArg)
+  static requireInstanceOrThrow<T>(classArg: (new (...args: any) => T), errorMessage?: string): T {
+    const instance = Message.requireInstance<T>(classArg)
     if (instance === null) {
       throw new Error(`Message.requireOrThrow: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
     }
     return instance
   }
 
-  static onRequire<T>(classArg: (new () => T), instance: T): DestroyableObject {
+  static onRequireInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
     return Message.on<T>(classArg, message => {
       message.setPayload(instance)
     })
