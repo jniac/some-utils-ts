@@ -124,11 +124,10 @@ class SuperEnumCore<TValue> {
  * ```
  */
 export function superEnum<
-  T extends Record<string, TValue | [value: TValue, description: string]>,
-  TValue extends number | string
+  T extends Record<string, number | string | [value: number | string, description: string]>,
 >(
   obj: T,
-): SuperEnumCore<TValue> & Record<keyof T, SuperEnumEntry<TValue>> {
+): SuperEnumCore<T[keyof T]> & Record<keyof T, SuperEnumEntry<T[keyof T]>> {
   const core = new SuperEnumCore(obj)
   return new Proxy(core, {
     get(target, prop, receiver) {
