@@ -120,16 +120,18 @@ type RandomUtilsType = {
   createPicker: <T>(options: [weight: number, value: T][]) => () => T
 
   /**
-   * Generates a random 2D direction vector with a length of 1.
+   * Generates a random 2D direction vector of given magnitude (1 by default).
+   * 
+   * The vector is uniformly distributed over the unit circle.
    */
-  direction2: <T extends Vector2Like>(out?: T) => T
+  direction2: <T extends Vector2Like>(magnitude?: number, out?: T) => T
 
   /**
-   * Generates a random 3D direction vector with a length of 1.
+   * Generates a random 3D direction vector of given magnitude (1 by default).
    * 
    * The vector is uniformly distributed over the surface of a unit sphere.
    */
-  direction3: <T extends Vector3Like>(out?: T) => T
+  direction3: <T extends Vector3Like>(magnitude?: number, out?: T) => T
 
   /**
    * Generates a random quaternion.
@@ -274,23 +276,37 @@ function createRandomUtils(): RandomUtilsType {
     return () => values[pickIndex(weights, { weightsAreNormalized: true })]
   }
 
-  function direction2<T extends Vector2Like>(out: T = { x: 0, y: 0 } as T): T {
+  function direction2<T extends Vector2Like>(magnitude = 1, out: T = { x: 0, y: 0 } as T): T {
+    // Backward support for old signature
+    if (typeof magnitude === 'object') {
+      out = magnitude as T
+      magnitude = 1
+      console.warn('RandomUtils.direction2: Deprecated signature used. Please use direction2(magnitude, out) instead of direction2(out).')
+    }
+
     const angle = random() * Math.PI * 2
-    out.x = Math.cos(angle)
-    out.y = Math.sin(angle)
+    out.x = magnitude * Math.cos(angle)
+    out.y = magnitude * Math.sin(angle)
     return out
   }
 
-  function direction3<T extends Vector3Like>(out: T = { x: 0, y: 0, z: 0 } as T): T {
+  function direction3<T extends Vector3Like>(magnitude = 1, out: T = { x: 0, y: 0, z: 0 } as T): T {
+    // Backward support for old signature
+    if (typeof magnitude === 'object') {
+      out = magnitude as T
+      magnitude = 1
+      console.warn('RandomUtils.direction3: Deprecated signature used. Please use direction3(magnitude, out) instead of direction3(out).')
+    }
+
     const u = random()
     const v = random()
 
     const phi = 2 * Math.PI * u // Azimuthal angle
     const theta = Math.acos(1 - 2 * v) // Polar angle
 
-    out.x = Math.sin(theta) * Math.cos(phi)
-    out.y = Math.sin(theta) * Math.sin(phi)
-    out.z = Math.cos(theta)
+    out.x = magnitude * Math.sin(theta) * Math.cos(phi)
+    out.y = magnitude * Math.sin(theta) * Math.sin(phi)
+    out.z = magnitude * Math.cos(theta)
     return out
   }
 
