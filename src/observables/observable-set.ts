@@ -27,6 +27,18 @@ export class ObservableSet<T> extends Observable<Iterable<T>> {
     this._valueOld = _set
   }
 
+  /**
+   * ⚠️ Returns a copy of the internal Set.
+   * 
+   * To avoid new set alloction, use `values()` instead.
+   */
+  override get = () => {
+    return new Set(this._value)
+  }
+
+  /**
+   * ⚠️ Returns a copy of the internal Set.
+   */
   override get value(): Set<T> {
     return new Set(this._value)
   }
@@ -69,6 +81,17 @@ export class ObservableSet<T> extends Observable<Iterable<T>> {
       return this.setValue(copy)
     }
     return false
+  }
+
+  /**
+   * Returns an iterator over the values in the internal Set.
+   * 
+   * Notes:
+   * - ✅ No new Set allocation.
+   * - ✅ No mutation of the internal Set.
+   */
+  values(): SetIterator<T> {
+    return (this._value as Set<T>).values()
   }
 
   override setValue(incomingValues: Iterable<T>, options?: SetValueOptions | undefined): boolean {
