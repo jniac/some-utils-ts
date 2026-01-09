@@ -6,6 +6,16 @@
  * 
  * Could be also as an "tagged value set" where each value can have a single tag (key),
  * but each tag can have multiple values.
+ * 
+ * Example usage:
+ * ````
+ * const uvm = new UniqueValueMap<string, number>()
+ * uvm.set('a', 1)
+ * uvm.set('a', 2) // 'a' now has values [1, 2]
+ * uvm.set('b', 3)
+ * uvm.set('b', 1) // Moves value 1 from key 'a' to key 'b'
+ * console.log([...uvm.allEntries()]) // Outputs: [ ['a', 0, 2], ['b', 0, 3], ['b', 1, 1] ]
+ * ```
  */
 export class UniqueValueMap<K, V> {
   #keyToValues = new Map<K, V[]>();
@@ -133,9 +143,9 @@ export class UniqueValueMap<K, V> {
   }
 
   /**
-   * Generator that yields [key, index, value] tuples for all entries.
+   * Generator that yields [key, indexPerKey, value] tuples for all entries.
    */
-  *allEntries(): Generator<[key: K, index: number, value: V]> {
+  *allEntries(): Generator<[key: K, indexPerKey: number, value: V]> {
     for (const [key, values] of this.#keyToValues) {
       for (let i = 0; i < values.length; i++) {
         yield [key, i, values[i]]
