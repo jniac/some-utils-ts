@@ -99,6 +99,28 @@ const defaultParams = {
 //   }
 // }
 
+/**
+ * Generates 2D Poisson-disc samples within an infinite plane.
+ *
+ * @param incomingParams - Parameters to configure the sampling process.
+ * @returns An object containing the generated samples, the spatial grid, and the used parameters.
+ * 
+ * @example
+ * ```ts
+ * import { generatePoissonDiscSamples2 } from 'some-utils-ts/experimental/poisson-disc-sampling'
+ * 
+ * const { samples, grid, params } = generatePoissonDiscSamples2({
+ *   radius: 5,
+ *   maxCount: 500,
+ *   start: [10, 10],
+ *   isValid: (x, y) => {
+ *     // Example: Only allow samples within a circle of radius 50 centered at (0, 0)
+ *     return (x * x + y * y) <= (50 * 50)
+ *   },
+ * })
+ * console.log('Generated samples:', samples)
+ * ```
+ */
 export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defaultParams>): {
   samples: Vector2Like[]
   grid: HashGrid2<number>
@@ -144,7 +166,7 @@ export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defa
     const angleOffset = random() * Math.PI * 2
     for (let i = 0; i < maxAttempts; i++) {
       const angle = angleOffset + i / maxAttempts * Math.PI * 2
-      const r = radius + random() * (radiusRatioMax - radius)
+      const r = radius * (1 + random() * (radiusRatioMax - 1))
       const x = sample.x + Math.cos(angle) * r
       const y = sample.y + Math.sin(angle) * r
 
