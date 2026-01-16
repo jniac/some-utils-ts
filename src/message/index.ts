@@ -1,4 +1,4 @@
 
-export { Message } from './Message-TMP'
-export type { MessageCallback, MessageListener } from './Message-TMP'
+export { Message } from './message'
+export type { MessageCallback, MessageListener } from './message'
 
