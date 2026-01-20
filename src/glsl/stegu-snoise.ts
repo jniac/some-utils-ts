@@ -17,6 +17,9 @@ export const glsl_stegu_snoise = /* glsl */`
 //               https://github.com/stegu/webgl-noise
 // 
 
+#ifndef STEGU_PERMUTE
+#define STEGU_PERMUTE
+
 float mod289(float x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0; 
 }
@@ -44,6 +47,8 @@ vec3 permute(vec3 x) {
 vec4 permute(vec4 x) {
   return mod289(((x*34.0)+10.0)*x);
 }
+
+#endif
 
 float taylorInvSqrt(float r) {
   return 1.79284291400159 - 0.85373472095314 * r;
