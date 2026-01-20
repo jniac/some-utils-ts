@@ -2,6 +2,11 @@ import { HashGrid2 } from '../collection/spatial/hash-grid'
 import { fromVector2Declaration, Vector2Declaration } from '../declaration'
 import { Vector2Like } from '../types'
 
+function rangeModulo(x: number, min: number, max: number) {
+  const range = max - min
+  return ((x - min) % range + range) % range + min
+}
+
 const defaultParams = {
   /**
    * The minimum distance between samples.
@@ -37,6 +42,12 @@ const defaultParams = {
    * @default 23
    */
   maxAttempts: 23,
+
+  /**
+   * If defined, the samples will be generated with periodicity in the given 
+   * dimensions. This enables seamless tiling of the samples.
+   */
+  period: null as null | { x: number, y: number },
 }
 
 // Note: The StringHashGrid is not used in the current implementation.
@@ -135,6 +146,7 @@ export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defa
     start,
     isValid,
     maxAttempts,
+    period,
   } = params
 
   if (radius <= 0)
@@ -158,6 +170,17 @@ export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defa
 
   const samples = [startSample]
 
+  const pushSample = (x: number, y: number) => {
+    const sample = { x, y }
+    samples.push(sample)
+    active.push(sample)
+    grid.set(x, y, samples.length - 1)
+  }
+
+  const pushSampleClone = (x: number, y: number) => {
+    grid.set(x, y, samples.length - 1)
+  }
+
   while (active.length > 0 && samples.length < maxCount) {
     const sampleIndex = Math.floor(random() * active.length)
     const sample = active[sampleIndex]
@@ -167,14 +190,26 @@ export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defa
     for (let i = 0; i < maxAttempts; i++) {
       const angle = angleOffset + i / maxAttempts * Math.PI * 2
       const r = radius * (1 + random() * (radiusRatioMax - 1))
-      const x = sample.x + Math.cos(angle) * r
-      const y = sample.y + Math.sin(angle) * r
+      let x = sample.x + Math.cos(angle) * r
+      let y = sample.y + Math.sin(angle) * r
+
+      if (period !== null) {
+        x = rangeModulo(x, startSample.x - period.x / 2, startSample.x + period.x / 2)
+        y = rangeModulo(y, startSample.y - period.y / 2, startSample.y + period.y / 2)
+      }
 
       if (!isValid(x, y))
         continue
 
       if (grid.hasCell(x, y))
         continue
+
+      if (period !== null) {
+        if (grid.hasCell(x + period.x, y) || grid.hasCell(x - period.x, y))
+          continue
+        if (grid.hasCell(x, y + period.y) || grid.hasCell(x, y - period.y))
+          continue
+      }
 
       let farEnough = true
       // Fast / easy check for the 24 neighbors thanks to the grid
@@ -193,10 +228,19 @@ export function generatePoissonDiscSamples2(incomingParams?: Partial<typeof defa
         continue
 
       found = true
-      const newSample = { x, y }
-      samples.push(newSample)
-      active.push(newSample)
-      grid.set(x, y, samples.length - 1)
+      pushSample(x, y)
+
+      if (period !== null) {
+        pushSampleClone(x + period.x, y - period.y)
+        pushSampleClone(x + period.x, y)
+        pushSampleClone(x + period.x, y + period.y)
+        pushSampleClone(x, y + period.y)
+        pushSampleClone(x - period.x, y + period.y)
+        pushSampleClone(x - period.x, y)
+        pushSampleClone(x - period.x, y - period.y)
+        pushSampleClone(x, y - period.y)
+      }
+
       break
     }
 
