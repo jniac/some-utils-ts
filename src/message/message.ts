@@ -259,10 +259,20 @@ class Message<P = any> {
     return instance
   }
 
+  static #requireInstanceDestroy: (() => void) | null = null
+  /**
+   * Set the instance to be returned for a class when using `requireInstance` or `requireInstanceOrThrow`.
+   * 
+   * Notes:
+   * - This method will overwrite any previously set instance for the same class.
+   */
   static onRequireInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
-    return Message.on<T>(classArg, message => {
+    this.#requireInstanceDestroy?.()
+    const { destroy } = Message.on<T>(classArg, message => {
       message.setPayload(instance)
     })
+    Message.#requireInstanceDestroy = destroy
+    return { destroy }
   }
 
   static #nextId = 0
