@@ -715,9 +715,14 @@ export class Ticker implements DestroyableObject {
 
     if (frameInterval > 0) {
       let frame = 0
-      return this.onTick({ order }, tick => {
+      let safeFrameInterval = frameInterval
+      if (Math.floor(frameInterval) !== frameInterval) {
+        console.warn('"frameInterval" should be an integer. The value will be rounded down.\nIf you want to use a fractional interval, consider using "timeInterval" instead.', { frameInterval })
+        safeFrameInterval = Math.floor(frameInterval)
+      }
+      return this.onTick({ ...options, frameInterval: 0 }, tick => {
         const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
-        const shoudCallback = (frame % frameInterval) === 0
+        const shoudCallback = (frame % safeFrameInterval) === 0
         frame++
         if (lastTickBeforeInactivity || shoudCallback) {
           return callback(tick)
@@ -727,7 +732,7 @@ export class Ticker implements DestroyableObject {
 
     if (timeInterval > 0) {
       let cumulativeTime = timeInterval
-      return this.onTick({ order }, tick => {
+      return this.onTick({ ...options, timeInterval: 0 }, tick => {
         const lastTickBeforeInactivity = tick.inactivityTimeScale === 0
         const shoudCallback = cumulativeTime <= 0
         cumulativeTime = cumulativeTime + tick.deltaTime > timeInterval
