@@ -259,7 +259,7 @@ class Message<P = any> {
     return instance
   }
 
-  static #requireInstanceDestroy: (() => void) | null = null
+  static #requireInstanceDestroy = new WeakMap<any, () => void>()
   /**
    * Set the instance to be returned for a class when using `requireInstance` or `requireInstanceOrThrow`.
    * 
@@ -267,12 +267,21 @@ class Message<P = any> {
    * - This method will overwrite any previously set instance for the same class.
    */
   static onRequireInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
-    this.#requireInstanceDestroy?.()
+    this.#requireInstanceDestroy.get(classArg)?.()
     const { destroy } = Message.on<T>(classArg, message => {
       message.setPayload(instance)
     })
-    Message.#requireInstanceDestroy = destroy
+    Message.#requireInstanceDestroy.set(classArg, destroy)
     return { destroy }
+  }
+
+  static debug = {
+    hashRegister,
+    listenerForTarget: (target: any) => {
+      const targetHash = hashRegister.requireHash(target)
+      return (listenerMap.get(targetHash) ?? [])
+      // .filter(listener => listener.match(target, '*'))
+    }
   }
 
   static #nextId = 0
@@ -296,6 +305,7 @@ class Message<P = any> {
       .filter(listener => listener.match(target, this.type))
 
     this.debug.listenerCount = listeners.length
+    Object.assign(this.debug, { foo: listenerMap.get(this.targetHash) })
 
     for (const listener of listeners) {
       this.debug.currentListenerIndex++
