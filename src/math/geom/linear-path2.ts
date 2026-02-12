@@ -80,8 +80,6 @@ function transform<T extends Vector2Like>(points: T[], matrix3: Float32Array, ro
   }
 }
 
-const _p0: Vector2Like = { x: 0, y: 0 }
-const _p1: Vector2Like = { x: 0, y: 0 }
 const _line1 = new Line2()
 const _line2 = new Line2()
 
@@ -104,6 +102,8 @@ function computeSignedArea(points: Vector2Like[]): number {
 function computeClosedPathIsDirect(points: Vector2Like[]): boolean {
   return computeSignedArea(points) > 0
 }
+
+
 
 function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanceThresold = 1e-4, angleThreshold = .0001 } = {}): T[] {
   return points
@@ -129,6 +129,8 @@ function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanc
     })
 }
 
+
+
 function offsetClosedPath<T extends Vector2Like>(points: T[], amount: number): T[] {
   if (points.length < 2)
     return points.map(cloneVector2Like)
@@ -151,6 +153,8 @@ function offsetClosedPath<T extends Vector2Like>(points: T[], amount: number): T
   }
   return result
 }
+
+
 
 function offsetOpenPath<T extends Vector2Like>(points: T[], amount: number): T[] {
   if (points.length < 2)
@@ -204,6 +208,8 @@ function offsetOpenPath<T extends Vector2Like>(points: T[], amount: number): T[]
   return result
 }
 
+
+
 const roundCornerOptionsDefaults = {
   /**
    * Tension of the corner curve.
@@ -232,7 +238,10 @@ type RoundCornerDelegate = (info: { point: Vector2Like, angle: number, line1: Li
  * The provided delegate is called for each corner point and should return the 
  * rounding options for that point.
  */
-function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDelegate): T[] {
+function roundCorner<T extends Vector2Like>(
+  points: T[],
+  delegate: RoundCornerDelegate,
+): T[] {
   const constructor = points[0].constructor as { new(): T }
   const result: T[] = []
   const n = points.length
@@ -295,11 +304,70 @@ function roundCorner<T extends Vector2Like>(points: T[], delegate: RoundCornerDe
     const count = Math.ceil(Math.abs(arc) / Math.PI * (4 * resolution))
     for (let j = 0; j < count; j++) {
       const t = j / (count - 1)
-      result.push(bezier2(cp, t))
+      result.push(bezier2(cp, t, new constructor()))
     }
   }
   return result
 }
+
+
+function subdivideByMaxSegmentLength<T extends Vector2Like>(
+  points: T[],
+  closed: boolean,
+  maxSegmentLength: number,
+): T[] {
+  const constructor = points[0].constructor as { new(): T }
+  const result: T[] = []
+
+  const m2 = maxSegmentLength * maxSegmentLength
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i]
+    result.push(p0)
+    const p1 = points[i + 1]
+    const dx = p1.x - p0.x
+    const dy = p1.y - p0.y
+    const l2 = dx * dx + dy * dy
+    if (l2 > m2) {
+      const l = Math.sqrt(l2)
+      const segments = Math.ceil(l / maxSegmentLength)
+      for (let j = 1; j < segments; j++) {
+        const t = j / segments
+        const p = new constructor()
+        p.x = p0.x + dx * t
+        p.y = p0.y + dy * t
+        result.push(p)
+      }
+    }
+  }
+
+  {
+    const p0 = points[points.length - 1]
+    result.push(p0)
+
+    if (closed) {
+      const p1 = points[0]
+      const dx = p1.x - p0.x
+      const dy = p1.y - p0.y
+      const l2 = dx * dx + dy * dy
+      if (l2 > m2) {
+        const l = Math.sqrt(l2)
+        const segments = Math.ceil(l / maxSegmentLength)
+        for (let j = 1; j < segments; j++) {
+          const t = j / segments
+          const p = new constructor()
+          p.x = p0.x + dx * t
+          p.y = p0.y + dy * t
+          result.push(p)
+        }
+      }
+    }
+  }
+
+  return result
+}
+
+
 
 type OnError = 'throw' | 'warn' | 'ignore'
 function handleError<T>(instance: T, message: string, onError: OnError): T {
@@ -310,6 +378,8 @@ function handleError<T>(instance: T, message: string, onError: OnError): T {
   }
   return instance
 }
+
+
 
 /**
  * A linear path is a sequence of points that can be used to represent a path in 2D space.
@@ -475,6 +545,37 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
         typeof options === 'number' ? () => ({ radius: options }) :
           () => options
     this.points = roundCorner(this.points, delegate)
+    return this
+  }
+
+  subdivide({ maxSegmentLength }: { maxSegmentLength: number }): this {
+    if (this.points.length < 2)
+      return this
+    this.points = subdivideByMaxSegmentLength(this.points, this.closed, maxSegmentLength)
+    return this
+  }
+
+  static setAsCircleOptions = {
+    radius: 1,
+    segments: 64,
+    center: <Vector2Declaration>0,
+  }
+  setAsCircle(options?: Partial<typeof LinearPath2.setAsCircleOptions>, vector2Constructor?: { new(): T }): this {
+    const {
+      radius,
+      segments,
+      center,
+    } = { ...LinearPath2.setAsCircleOptions, ...options }
+    const { x: cx, y: cy } = fromVector2Declaration(center)
+    const PointConstructor = vector2Constructor || (this.points[0]?.constructor as { new(): T }) || Object as unknown as { new(): T }
+    this.points = Array.from({ length: segments }, (_, i) => {
+      const angle = i / segments * Math.PI * 2
+      const p = new PointConstructor()
+      p.x = cx + Math.cos(angle) * radius
+      p.y = cy + Math.sin(angle) * radius
+      return p
+    })
+    this.closed = true
     return this
   }
 }
