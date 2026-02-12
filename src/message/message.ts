@@ -275,12 +275,15 @@ class Message<P = any> {
     return { destroy }
   }
 
+  /**
+   * @deprecated For debugging purposes only.
+   */
   static debug = {
     hashRegister,
     listenerForTarget: (target: any) => {
       const targetHash = hashRegister.requireHash(target)
       return (listenerMap.get(targetHash) ?? [])
-      // .filter(listener => listener.match(target, '*'))
+        .filter(listener => listener.match(target, '*'))
     }
   }
 
