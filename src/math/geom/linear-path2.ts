@@ -18,7 +18,11 @@ export type Transform2Declaration = number[] | Partial<{
   rotation: AngleDeclaration
 }>
 
-function fromTransform2Declaration(value: Transform2Declaration, out = new Float32Array(9), rowMajor = true): Float32Array {
+function fromTransform2Declaration(
+  value: Transform2Declaration,
+  out = new Float32Array(9),
+  rowMajor = true,
+): Float32Array {
   if (value instanceof Float32Array) {
     if (value.length === 9)
       return value
@@ -66,7 +70,11 @@ function fromTransform2Declaration(value: Transform2Declaration, out = new Float
   return out
 }
 
-function transform<T extends Vector2Like>(points: T[], matrix3: Float32Array, rowMajor = true) {
+function transform<T extends Vector2Like>(
+  points: T[],
+  matrix3: Float32Array,
+  rowMajor = true,
+) {
   for (const p of points) {
     const x = p.x
     const y = p.y
@@ -83,6 +91,8 @@ function transform<T extends Vector2Like>(points: T[], matrix3: Float32Array, ro
 const _line1 = new Line2()
 const _line2 = new Line2()
 
+
+
 function computeSignedArea(points: Vector2Like[]): number {
   let area = 0
   const n = points.length
@@ -93,6 +103,8 @@ function computeSignedArea(points: Vector2Like[]): number {
   }
   return area / 2
 }
+
+
 
 /**
  * Computes the winding of a closed path.
@@ -127,6 +139,39 @@ function simplify<T extends Vector2Like>(points: T[], closed: boolean, { distanc
       const angle = _line1.angleTo(_line2)
       return Math.abs(angle) > angleThreshold
     })
+}
+
+
+
+/**
+ * Returns true if the point is inside the shape defined by the points.
+ * 
+ * Notes:
+ * - The shape is assumed to be closed (the last point is connected to the first point).
+ * - The winding order of the points does not matter.
+ */
+function shapeContainsPoint(shape: Vector2Like[], point: Vector2Like): boolean {
+  if (shape.length < 2) return false
+
+  let intersectionRightCount = 0
+  let intersectionLeftCount = 0
+
+  for (let i = 0; i < shape.length; i++) {
+    const p0 = shape[i]
+    const p1 = shape[(i + 1) % shape.length]
+
+    // Check if the edge intersects with a horizontal ray to the right of the point
+    if ((p0.y > point.y) !== (p1.y > point.y)) {
+      const xIntersection = ((p1.x - p0.x) * (point.y - p0.y)) / (p1.y - p0.y) + p0.x
+      if (xIntersection > point.x) {
+        intersectionRightCount++
+      } else if (xIntersection < point.x) {
+        intersectionLeftCount++
+      }
+    }
+  }
+
+  return (intersectionRightCount % 2 === 1) && (intersectionLeftCount % 2 === 1)
 }
 
 
@@ -311,6 +356,7 @@ function roundCorner<T extends Vector2Like>(
 }
 
 
+
 function subdivideByMaxSegmentLength<T extends Vector2Like>(
   points: T[],
   closed: boolean,
@@ -464,6 +510,23 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
+  /**
+   * Returns true if the path is direct (clockwise).
+   * 
+   * Notes:
+   * - Check the `cache.isDirect` property for a cached value, which is much 
+   *   faster to access after the first computation.
+   */
+  isDirectSafe(): boolean {
+    if (this.closed) {
+      if (this.cache.isDirect === undefined) {
+        return computeClosedPathIsDirect(this.points)
+      }
+      return this.cache.isDirect
+    }
+    return false
+  }
+
   makeDirect(value = true): this {
     if (value !== this.isDirect()) {
       this.points.reverse()
@@ -553,6 +616,19 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
       return this
     this.points = subdivideByMaxSegmentLength(this.points, this.closed, maxSegmentLength)
     return this
+  }
+
+  /**
+   * Returns true if the point is inside the shape defined by the points.
+   * 
+   * Notes:
+   * - Always returns false for open paths.
+   * - Winding order of the points does not matter (positive shape and holes are treated the same).
+   */
+  containsPoint(point: Vector2Like): boolean {
+    if (this.closed === false)
+      return false
+    return shapeContainsPoint(this.points, point)
   }
 
   static setAsCircleOptions = {
