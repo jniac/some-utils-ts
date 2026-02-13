@@ -268,6 +268,8 @@ const roundCornerOptionsDefaults = {
   tension: 1,
   /**
    * Number of segments per quarter circle.
+   * 
+   * Defaults to `8`.
    */
   resolution: 8,
   /**
@@ -503,6 +505,13 @@ export class LinearPath2<T extends Vector2Like = Vector2Like> {
     return this
   }
 
+  /**
+   * Cache the winding of the path (CW or CCW) if the path is closed.
+   * 
+   * Notes:
+   * - Why caching? Because winding is cheap to compute for simple paths, but can become 
+   *   expensive after operations like rounding corners (which can add many points, but do not change the overall winding of the path).
+   */
   isDirectToCache(): this {
     if (this.closed) {
       this.toCache({ isDirect: computeClosedPathIsDirect(this.points) })
