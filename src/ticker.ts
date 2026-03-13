@@ -915,6 +915,21 @@ export class Ticker implements DestroyableObject {
   }
 
   /**
+   * Waits for a specific number of frames and returns the tick when the frame count is reached.
+   */
+  waitForFrames(frames: number): Promise<Tick> {
+    return new Promise(resolve => {
+      const startFrame = this.tick.frame
+      const listener = this.onTick(tick => {
+        if (tick.frame - startFrame >= frames) {
+          listener.destroy()
+          resolve(tick)
+        }
+      })
+    })
+  }
+
+  /**
    * Waits for a specific number of seconds and returns the tick when the time is reached.
    * 
    * @param seconds The number of seconds to wait for.
