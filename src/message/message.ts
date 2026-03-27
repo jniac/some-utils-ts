@@ -225,6 +225,19 @@ class Message<P = any> {
    * Require an instance of a class via the message system. If no instance is found, 
    * null is returned.
    * 
+   * ## Example
+   * ```
+   * const myInstance = Message.requireInstance(MyClass)
+   * if (myInstance) {
+   *   // use myInstance
+   * }
+   * // or with a callback:
+   * Message.requireInstance(MyClass, instance => {
+   *   // use instance
+   * })
+   * ```
+   * 
+   * ## Why?
    * Why use this?
    * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
    *   its singleton instance. Someone else (a global manager) can provide it via 
@@ -233,10 +246,25 @@ class Message<P = any> {
    *   or handle the null case, making the dependency explicit.
    * - ✅ Nice invariant syntax: `const myInstance = Message.requireInstance(MyClass)` 
    *   is concise, clear, and type-safe.
+   * 
+   * ## Multiple instances
+   * If multiples instances should be provided for the same class, a "key" can be 
+   * specified to differentiate them:
+   * ```
+   * const foo = Message.requireInstance([MyClass, 'foo'])
+   * const bar = Message.requireInstance([MyClass, 'bar'])
+   * ```
    */
-  static requireInstance<T>(classArg: (new (...args: any) => T)): T | null {
-    const message = Message.send<T>(classArg)
-    return message.payload ?? null
+  static requireInstance<T>(arg: [classArg: (new (...args: any) => T), key: string], callback?: (instance: T) => void): T | null
+  static requireInstance<T>(classArg: (new (...args: any) => T), callback?: (instance: T) => void): T | null
+  static requireInstance<T>(arg: any, callback?: (instance: T | null) => void): T | null {
+    const message = Message.send<T>(arg)
+    const { payload } = message
+    const instance = payload ?? null
+    if (instance === null)
+      return null
+    callback?.(instance)
+    return instance
   }
 
   /**
