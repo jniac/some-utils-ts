@@ -10,8 +10,14 @@ function mix(x: number, shift = 2, factor = 6329): number {
   return (x << shift) | (x >>> (32 - shift))
 }
 
+function normalize(x: number): number {
+  if (Object.is(x, -0)) return 0
+  if (Number.isNaN(x)) return NaN
+  return x
+}
+
 const f64 = new Float64Array(1)
-const i32 = new Int32Array(f64.buffer)
+const view = new DataView(f64.buffer)
 
 /**
  * An hash function that takes two numbers (x, y) and returns a 32-bit integer.
@@ -43,13 +49,13 @@ const i32 = new Int32Array(f64.buffer)
  *  ```
  */
 export function hash2(x: number, y: number): number {
-  f64[0] = x
-  const x1 = i32[0]
-  const x2 = i32[1]
+  f64[0] = normalize(x)
+  const x1 = view.getInt32(0, true)
+  const x2 = view.getInt32(4, true)
 
-  f64[0] = y
-  const y1 = i32[0]
-  const y2 = i32[1]
+  f64[0] = normalize(y)
+  const y1 = view.getInt32(0, true)
+  const y2 = view.getInt32(4, true)
 
   return 0b00010011000111100110001110111101 ^ (
     (mix(x1, 3, PRIME1) ^ mix(x2, 17, PRIME2)) ^
@@ -58,17 +64,17 @@ export function hash2(x: number, y: number): number {
 }
 
 export function hash3(x: number, y: number, z: number): number {
-  f64[0] = x
-  const x1 = i32[0]
-  const x2 = i32[1]
+  f64[0] = normalize(x)
+  const x1 = view.getInt32(0, true)
+  const x2 = view.getInt32(4, true)
 
-  f64[0] = y
-  const y1 = i32[0]
-  const y2 = i32[1]
+  f64[0] = normalize(y)
+  const y1 = view.getInt32(0, true)
+  const y2 = view.getInt32(4, true)
 
-  f64[0] = z
-  const z1 = i32[0]
-  const z2 = i32[1]
+  f64[0] = normalize(z)
+  const z1 = view.getInt32(0, true)
+  const z2 = view.getInt32(4, true)
 
   return 0b10011010010110000110000001010111 ^ (
     (mix(x1, 3, PRIME1) ^ mix(x2, 17, PRIME2)) ^
