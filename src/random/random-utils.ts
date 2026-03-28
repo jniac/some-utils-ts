@@ -4,6 +4,25 @@ import * as parkmiller from './algorithm/parkmiller-c-iso'
 
 type SetRandomParameters = [random?: (() => number) | 'parkmiller', seed?: number | string]
 
+type HexColorOptions = {
+  /**
+   * The hue range in normalized (0 to 1) values.
+   * 
+   * Notes:
+   * - If not specified, the full range (0 to 1) is used.
+   * - The range can overflow, for example [0.9, 1.1] will generate hues from 0.9 to 1.0 and from 0.0 to 0.1.
+   */
+  hue?: [number, number],
+  /**
+   * The saturation range in normalized (0 to 1) values.
+   */
+  saturation?: [number, number],
+  /**
+   * The lightness range in normalized (0 to 1) values.
+   */
+  lightness?: [number, number],
+}
+
 type RandomUtilsType = {
   /**
    * Sets the random function to use. By default, Math.random is used but you can
@@ -85,7 +104,7 @@ type RandomUtilsType = {
    * Generates a random hex color string in the format '#RRGGBB'.
    * @returns A random hex color string.
    */
-  hexColor(): string
+  hexColor(options?: HexColorOptions): string
 
   /**
    * Picks a random index from an array of weights based on their relative probabilities.
@@ -217,9 +236,50 @@ function createRandomUtils(): RandomUtilsType {
     throw new Error('Invalid arguments')
   }
 
-  function hexColor(): string {
-    const randomColor = Math.floor(random() * 0xffffff)
-    return `#${randomColor.toString(16).padStart(6, '0')}`
+  function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+    if (s === 0) return [l, l, l]
+
+    const q = l < 0.5
+      ? l * (1 + s)
+      : l + s - l * s
+
+    const p = 2 * l - q
+
+    const hue2rgb = (t: number) => {
+      t = ((t % 1) + 1) % 1
+      if (t < 1 / 6) return p + (q - p) * 6 * t
+      if (t < 1 / 2) return q
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+      return p
+    }
+
+    return [
+      hue2rgb(h + 1 / 3),
+      hue2rgb(h),
+      hue2rgb(h - 1 / 3),
+    ]
+  }
+
+  const toHex = (value: number) => Math.round(value * 255).toString(16).padStart(2, '0')
+
+  function hexColor(options: HexColorOptions): string {
+
+    const {
+      hue: hueRange = [0, 1],
+      saturation: saturationRange = [0, 1],
+      lightness: lightnessRange = [0, 1],
+    } = options ?? {}
+
+    let h = number(...hueRange)
+    let s = number(...saturationRange)
+    let l = number(...lightnessRange)
+
+    h = ((h % 1) + 1) % 1
+    s = Math.max(0, Math.min(1, s))
+    l = Math.max(0, Math.min(1, l))
+
+    const [r, g, b] = hslToRgb(h, s, l)
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`
   }
 
   function pickIndex(weights: number[], { weightsAreNormalized = false } = {}): number {
