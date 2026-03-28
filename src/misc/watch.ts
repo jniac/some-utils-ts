@@ -17,6 +17,11 @@ export type WatcherOptions<T> = {
   immediate?: boolean,
 }
 
+export type CheckOptions = {
+  /** If true, `debounce` is ignored. */
+  force?: boolean
+}
+
 export class Watcher<T> {
   currentTime = -1
   currentReducedValue: number | string | boolean | null = null
@@ -29,12 +34,12 @@ export class Watcher<T> {
       this.check()
   }
 
-  check() {
+  check(options?: CheckOptions) {
     const newTime = this.options.debounce
       ? Math.floor(Date.now() / this.options.debounce) * this.options.debounce
       : Date.now()
 
-    if (newTime === this.currentTime)
+    if (newTime === this.currentTime && !options?.force)
       return
 
     this.currentTime = newTime
