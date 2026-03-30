@@ -154,6 +154,28 @@ class Message<P = any> {
   }
 
   /**
+   * Add a callback to a target that will be called only once. Useful for waiting
+   * a single occurrence in question/response scenarios.
+   * ```
+   * Message.once('USER:RESPONSE', m => {
+   *   // Do something smart here.
+   * })
+   * Message.send('USER:REQUEST', { payload: { ... } })
+   * ```
+   */
+  static once<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
+  static once<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
+  static once<P = any>(...args: any): DestroyableObject {
+    const [target, filters, callback] = Message.solveOnArgs<P>(args)
+    const wrapperCallback: Callback<P> = (message) => {
+      destroy()
+      callback(message)
+    }
+    const destroy = Message.on(target, filters, wrapperCallback).destroy
+    return { destroy }
+  }
+
+  /**
    * Wait for a message to be sent, returns a promise that resolves when the message is sent.
    */
   static wait<P = any>(target: any): Promise<Message<P>>
