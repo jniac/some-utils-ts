@@ -165,6 +165,14 @@ type RandomUtilsType = {
    * Note:
    * - The generator uses number theory to produce a sequence of pseudo-random indexes.
    * - Memory-efficient: does not require storing the entire array in memory.
+   * - ⚠️ The sequence is very biased for small n (e.g., n=2 will always yield the same index), but becomes more uniform as n increases.
+   */
+  generateCoprimePermutation: (length: number) => Generator<number>
+
+  /**
+   * @deprecated Use generateCoprimePermutation instead. The name shuffleIndices 
+   * is misleading, as the sequence is not a true shuffle and can be very biased 
+   * for small lengths.
    */
   shuffleIndexes: (length: number) => Generator<number>
 
@@ -386,7 +394,7 @@ function createRandomUtils(): RandomUtilsType {
     return out
   }
 
-  function* shuffleIndexes(n: number): Generator<number> {
+  function* generateCoprimePermutation(n: number): Generator<number> {
     if (n <= 0)
       throw new Error('N must be greater than 0')
 
@@ -438,7 +446,8 @@ function createRandomUtils(): RandomUtilsType {
     direction2,
     direction3,
     quaternion,
-    shuffleIndexes,
+    generateCoprimePermutation,
+    shuffleIndexes: generateCoprimePermutation,
     shuffleArray,
   }
 
