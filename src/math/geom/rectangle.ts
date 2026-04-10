@@ -69,6 +69,7 @@ export function fromRectangleDeclaration(declaration: RectangleDeclaration, out 
       const [x, y, width, height] = declaration
       return out.set(x, y, width, height)
     }
+    console.error('Invalid rectangle declaration array length:', declaration)
     throw new Error('Oops. Wrong parameters here.')
   }
 
