@@ -447,3 +447,20 @@ export class HashGrid2<T> {
     return max
   }
 }
+
+/**
+ * A helper class that extends `HashGrid2` to store multiple values in the same cell as an array.
+ * This is useful when you want to store multiple values in the same cell and don't care about the order of the values.
+ * It provides an `add` method to add a value to the cell, and it will automatically create an array for the cell if it doesn't exist.
+ */
+export class HashGrid2Array<T> extends HashGrid2<T[]> {
+  add(x: number, y: number, value: T): void {
+    const existing = this.get(x, y)
+    if (existing) {
+      existing.push(value)
+      this.set(x, y, existing)
+    } else {
+      this.set(x, y, [value])
+    }
+  }
+}
