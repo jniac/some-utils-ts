@@ -26,7 +26,7 @@ const defaultProps = {
  * ```
  * 
  * Notes:
- * - It's all about mental models,  "exponential-decay" already offers a way to compute 
+ * - It's all about mental models, "exponential-decay" already offers a way to compute 
  *   a lerp factor, but `computeExponentialLerpFactor()` may be more intuitive to use.
  * @param deltaTime The current delta time (time that has passed since the last update).
  * @param props The properties for the exponential lerp factor calculation.
