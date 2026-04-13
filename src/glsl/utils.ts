@@ -217,5 +217,17 @@ ${generics('vecX', /* glsl */`
   }
 `)}
 
+${generics('vecX', /* glsl */`
+  T max3(in T a, in T b, in T c) {
+    return max(max(a, b), c);
+  }
+`)}
+
+${generics('vecX', /* glsl */`
+  T max4(in T a, in T b, in T c, in T d) {
+    return max(max(a, b), max(c, d));
+  }
+`)}
+
 #endif // GLSL_UTILS
 `
