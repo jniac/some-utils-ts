@@ -244,6 +244,14 @@ class Message<P = any> {
   }
 
   /**
+   * Message allows to require, wait for, and dispatch instances of classes via 
+   * the message system. This can be useful for decoupling and avoiding global 
+   * references to singleton instances.
+   * 
+   * This is the symbol associated with the instance to allow a unique channel.
+   */
+  static #instanceSymbol = Symbol('Message.instance')
+  /**
    * Require an instance of a class via the message system. If no instance is found, 
    * null is returned.
    * 
@@ -280,7 +288,7 @@ class Message<P = any> {
   static requireInstance<T>(arg: [classArg: (new (...args: any) => T), key: string], callback?: (instance: T) => void): T | null
   static requireInstance<T>(classArg: (new (...args: any) => T), callback?: (instance: T) => void): T | null
   static requireInstance<T>(arg: any, callback?: (instance: T | null) => void): T | null {
-    const message = Message.send<T>(arg)
+    const message = Message.send<T>([Message.#instanceSymbol, arg])
     const { payload } = message
     const instance = payload ?? null
     if (instance === null)
@@ -309,20 +317,55 @@ class Message<P = any> {
     return instance
   }
 
-  static #requireInstanceDestroy = new WeakMap<any, () => void>()
+  static #dispatchInstanceDestroy = new WeakMap<any, () => void>()
   /**
    * Set the instance to be returned for a class when using `requireInstance` or `requireInstanceOrThrow`.
    * 
    * Notes:
    * - This method will overwrite any previously set instance for the same class.
    */
-  static onRequireInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
-    this.#requireInstanceDestroy.get(classArg)?.()
-    const { destroy } = Message.on<T>(classArg, message => {
+  static dispatchInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
+    // #1 Send a message with the instance as payload, so that any current listeners waiting for it can receive it.
+    Message.send<T>([Message.#instanceSymbol, classArg], { payload: instance })
+
+    // #2 Set up a listener for future `requireInstance` calls, so that they can receive the instance as well. If there was a previous instance registered, its listener is destroyed to avoid memory leaks and unintended behavior.
+    this.#dispatchInstanceDestroy.get(classArg)?.()
+    const { destroy } = Message.on<T>([Message.#instanceSymbol, classArg], message => {
       message.setPayload(instance)
     })
-    Message.#requireInstanceDestroy.set(classArg, destroy)
+    Message.#dispatchInstanceDestroy.set(classArg, destroy)
     return { destroy }
+  }
+
+  /**
+   * @deprecated Use `dispatchInstance` instead.
+   */
+  static onRequireInstance = Message.dispatchInstance
+
+  /**
+   * Return a promise that resolves with the instance of a class when it is dispatched via `dispatchInstance`. 
+   * 
+   * Notes:
+   * - If the instance has already been dispatched, the promise will resolve immediately.
+   */
+  static waitForInstance<T>(classArg: (new (...args: any) => T)): Promise<T> {
+    return new Promise(resolve => {
+      const instance = Message.requireInstance<T>(classArg)
+
+      // Immediate resolution:
+      if (instance !== null) {
+        resolve(instance)
+        return
+      }
+
+      // Wait for future dispatch:
+      else {
+        const callback = (message: Message<T>) => {
+          resolve(message.payload!)
+        }
+        Message.once<T>([Message.#instanceSymbol, classArg], callback)
+      }
+    })
   }
 
   /**
