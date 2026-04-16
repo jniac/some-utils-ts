@@ -1,3 +1,4 @@
+
 export function cast<T>(value: any, constructor: new (...args: any[]) => T): T | null {
   return value instanceof constructor ? value : null
 }

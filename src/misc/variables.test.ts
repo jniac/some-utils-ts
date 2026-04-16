@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import { Float32Variable } from './variable'
+import { Float32Variable } from './variables'
 
 describe('Float32Variable', () => {
   test('push and get', () => {
