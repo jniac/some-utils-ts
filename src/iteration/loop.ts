@@ -1,4 +1,5 @@
-import { Vector2Like, Vector3Like } from '../types'
+import { fromVector3Declaration, Vector3Declaration } from '../declaration'
+import { Vector2Like } from '../types'
 
 export type LoopResult = {
   /**
@@ -263,44 +264,61 @@ export type Loop3Result = {
  * ```
  */
 export function loop3(width: number, height: number, depth: number): Generator<Loop3Result>
-export function loop3(size: Vector3Like | [number, number, number]): Generator<Loop3Result>
+export function loop3(size: Vector3Declaration | [number, number, number]): Generator<Loop3Result>
+export function loop3(bounds: { min: Vector3Declaration, max: Vector3Declaration }): Generator<Loop3Result>
 export function* loop3(...args: any[]) {
-  let sx = 0, sy = 0, sz = 0
+  let minX = 0, minY = 0, minZ = 0
+  let maxX = 0, maxY = 0, maxZ = 0
   if (args.length === 3) {
-    sx = args[0]
-    sy = args[1]
-    sz = args[2]
+    maxX = args[0]
+    maxY = args[1]
+    maxZ = args[2]
   } else {
-    if (Array.isArray(args[0])) {
-      sx = args[0][0]
-      sy = args[0][1]
-      sz = args[0][2]
-    } else {
-      sx = args[0].x
-      sy = args[0].y
-      sz = args[0].z
+    const arg0 = args[0]
+    if ('min' in arg0 && 'max' in arg0) {
+      const min = fromVector3Declaration(arg0.min)
+      const max = fromVector3Declaration(arg0.max)
+      maxX = max.x - min.x
+      maxY = max.y - min.y
+      maxZ = max.z - min.z
+      minX = min.x
+      minY = min.y
+      minZ = min.z
+    }
+
+    else if (Array.isArray(args[0])) {
+      maxX = args[0][0]
+      maxY = args[0][1]
+      maxZ = args[0][2]
+    }
+
+    else {
+      maxX = args[0].x
+      maxY = args[0].y
+      maxZ = args[0].z
     }
   }
+
   let i = 0
-  let x = 0
-  let y = 0
-  let z = 0
+  let x = minX
+  let y = minY
+  let z = minZ
   const out: Loop3Result = {
     get i() { return i },
     get x() { return x },
     get y() { return y },
     get z() { return z },
-    get tx() { return x / sx },
-    get ty() { return y / sy },
-    get tz() { return z / sz },
-    get px() { return x / (sx - 1) },
-    get py() { return y / (sy - 1) },
-    get pz() { return z / (sz - 1) },
+    get tx() { return (x - minX) / (maxX - minX) },
+    get ty() { return (y - minY) / (maxY - minY) },
+    get tz() { return (z - minZ) / (maxZ - minZ) },
+    get px() { return (x - minX) / (maxX - minX) },
+    get py() { return (y - minY) / (maxY - minY) },
+    get pz() { return (z - minZ) / (maxZ - minZ) },
     clone() { return { ...this } }
   }
-  for (z = 0; z < sz; z++) {
-    for (y = 0; y < sy; y++) {
-      for (x = 0; x < sx; x++) {
+  for (z = minZ; z < maxZ; z++) {
+    for (y = minY; y < maxY; y++) {
+      for (x = minX; x < maxX; x++) {
         yield out
         i++
       }
@@ -317,7 +335,7 @@ export function* loop3(...args: any[]) {
  * ```
  */
 export function loop3Array(width: number, height: number, depth: number): Loop3Result[]
-export function loop3Array(size: Vector3Like | [number, number, number]): Loop3Result[]
+export function loop3Array(size: Vector3Declaration | [number, number, number]): Loop3Result[]
 export function loop3Array(...args: any[]) {
   const out: Loop3Result[] = []
   // @ts-ignore
