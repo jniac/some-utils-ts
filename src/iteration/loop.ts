@@ -269,21 +269,24 @@ export function loop3(bounds: { min: Vector3Declaration, max: Vector3Declaration
 export function* loop3(...args: any[]) {
   let minX = 0, minY = 0, minZ = 0
   let maxX = 0, maxY = 0, maxZ = 0
+
   if (args.length === 3) {
     maxX = args[0]
     maxY = args[1]
     maxZ = args[2]
-  } else {
+  }
+
+  else {
     const arg0 = args[0]
     if ('min' in arg0 && 'max' in arg0) {
       const min = fromVector3Declaration(arg0.min)
       const max = fromVector3Declaration(arg0.max)
-      maxX = max.x - min.x
-      maxY = max.y - min.y
-      maxZ = max.z - min.z
       minX = min.x
       minY = min.y
       minZ = min.z
+      maxX = max.x
+      maxY = max.y
+      maxZ = max.z
     }
 
     else if (Array.isArray(args[0])) {
@@ -303,6 +306,7 @@ export function* loop3(...args: any[]) {
   let x = minX
   let y = minY
   let z = minZ
+
   const out: Loop3Result = {
     get i() { return i },
     get x() { return x },
@@ -316,6 +320,7 @@ export function* loop3(...args: any[]) {
     get pz() { return (z - minZ) / (maxZ - minZ) },
     clone() { return { ...this } }
   }
+
   for (z = minZ; z < maxZ; z++) {
     for (y = minY; y < maxY; y++) {
       for (x = minX; x < maxX; x++) {
