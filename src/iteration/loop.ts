@@ -1,6 +1,9 @@
 import { fromVector3Declaration, Vector3Declaration } from '../declaration'
 import { Vector2Like } from '../types'
 
+const _v0 = { x: 0, y: 0, z: 0 }
+const _v1 = { x: 0, y: 0, z: 0 }
+
 export type LoopResult = {
   /**
    * The current iteration index.
@@ -249,6 +252,18 @@ export type Loop3Result = {
   clone(): Loop3Result
 }
 
+type Box3Declaration = {
+  min: Vector3Declaration
+  max: Vector3Declaration
+}
+
+function isBox3Declaration(obj: any): obj is Box3Declaration {
+  return obj
+    && typeof obj === 'object'
+    && Object.hasOwn(obj, 'min')
+    && Object.hasOwn(obj, 'max')
+}
+
 /**
  * Allows declarative iteration over a 3D space.
  * 
@@ -264,7 +279,7 @@ export type Loop3Result = {
  * ```
  */
 export function loop3(width: number, height: number, depth: number): Generator<Loop3Result>
-export function loop3(size: Vector3Declaration | [number, number, number]): Generator<Loop3Result>
+export function loop3(size: Vector3Declaration): Generator<Loop3Result>
 export function loop3(bounds: { min: Vector3Declaration, max: Vector3Declaration }): Generator<Loop3Result>
 export function* loop3(...args: any[]) {
   let minX = 0, minY = 0, minZ = 0
@@ -278,9 +293,10 @@ export function* loop3(...args: any[]) {
 
   else {
     const arg0 = args[0]
-    if ('min' in arg0 && 'max' in arg0) {
-      const min = fromVector3Declaration(arg0.min)
-      const max = fromVector3Declaration(arg0.max)
+
+    if (isBox3Declaration(arg0)) {
+      const min = fromVector3Declaration(arg0.min, _v0)
+      const max = fromVector3Declaration(arg0.max, _v1)
       minX = min.x
       minY = min.y
       minZ = min.z
@@ -289,16 +305,11 @@ export function* loop3(...args: any[]) {
       maxZ = max.z
     }
 
-    else if (Array.isArray(args[0])) {
-      maxX = args[0][0]
-      maxY = args[0][1]
-      maxZ = args[0][2]
-    }
-
     else {
-      maxX = args[0].x
-      maxY = args[0].y
-      maxZ = args[0].z
+      const { x, y, z } = fromVector3Declaration(arg0, _v0)
+      maxX = x
+      maxY = y
+      maxZ = z
     }
   }
 

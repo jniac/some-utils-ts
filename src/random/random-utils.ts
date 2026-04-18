@@ -78,7 +78,8 @@ type RandomUtilsType = {
   /**
    * Alias for number() method.
    */
-  f: (...args: Parameters<RandomUtilsType['number']>) => number
+  f(): number
+  f(...args: Parameters<RandomUtilsType['number']>): number
 
   /**
    * Generates a random sign, either -1 or 1.
@@ -98,7 +99,7 @@ type RandomUtilsType = {
   /**
    * Alias for int() method.
    */
-  i: (...args: Parameters<RandomUtilsType['int']>) => number
+  i(...args: Parameters<RandomUtilsType['int']>): number
 
   /**
    * Generates a random hex color string in the format '#RRGGBB'.
