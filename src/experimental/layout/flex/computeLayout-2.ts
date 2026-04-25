@@ -47,7 +47,7 @@ class LayoutNodeSpace {
     for (const child of this.children) {
       yield* child.depthFirst_sizeXFitChildren()
     }
-    if (this.space.sizeXFitChildren)
+    if (this.space.sizeXFitContent)
       yield this
   }
 
@@ -55,13 +55,13 @@ class LayoutNodeSpace {
     for (const child of this.children) {
       yield* child.depthFirst_sizeYFitChildren()
     }
-    if (this.space.sizeYFitChildren)
+    if (this.space.sizeYFitContent)
       yield this
   }
 
   *allChildren_fractionSizeX(yieldsFraction: boolean): Generator<LayoutNodeSpace> {
     for (const sc of this.children) {
-      const is_fr = (sc.space.sizeX.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeXFitChildren === false
+      const is_fr = (sc.space.sizeX.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeXFitContent === false
       if (is_fr === yieldsFraction) {
         yield sc
       }
@@ -70,7 +70,7 @@ class LayoutNodeSpace {
 
   *allChildren_fractionSizeY(yieldsFraction: boolean): Generator<LayoutNodeSpace> {
     for (const sc of this.children) {
-      const is_fr = (sc.space.sizeY.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeYFitChildren === false
+      const is_fr = (sc.space.sizeY.type & AUTO_OR_FRACTION) !== 0 && sc.space.sizeYFitContent === false
       if (is_fr === yieldsFraction) {
         yield sc
       }

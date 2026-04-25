@@ -138,12 +138,12 @@ class Node {
     const p_is_h = parent?.is_h ?? true
 
     this.fractionalInTangentSpace = p_is_h
-      ? isFractional(space.sizeX.type, space.sizeXFitChildren)
-      : isFractional(space.sizeY.type, space.sizeYFitChildren)
+      ? isFractional(space.sizeX.type, space.sizeXFitContent)
+      : isFractional(space.sizeY.type, space.sizeYFitContent)
 
     this.fractionalInNormalSpace = p_is_h
-      ? isFractional(space.sizeY.type, space.sizeYFitChildren)
-      : isFractional(space.sizeX.type, space.sizeXFitChildren)
+      ? isFractional(space.sizeY.type, space.sizeYFitContent)
+      : isFractional(space.sizeX.type, space.sizeXFitContent)
 
     this.flowChildren = []
     this.detachedChildren = []
@@ -269,7 +269,7 @@ function* iterateTangentFit(n: Node): Generator<Node> {
   for (const c of n.flowChildren) {
     yield* iterateTangentFit(c)
   }
-  const tangentFit = n.is_h ? n.space.sizeXFitChildren : n.space.sizeYFitChildren
+  const tangentFit = n.is_h ? n.space.sizeXFitContent : n.space.sizeYFitContent
   if (tangentFit) {
     yield n
   }

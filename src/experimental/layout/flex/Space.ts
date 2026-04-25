@@ -87,9 +87,9 @@ export type SpaceProps = Partial<{
   offset: Scalar2Declaration
   offsetX: ScalarDeclaration
   offsetY: ScalarDeclaration
-  size: Declaration2D<ScalarDeclaration | 'fit-children'>
-  sizeX: ScalarDeclaration | 'fit-children'
-  sizeY: ScalarDeclaration | 'fit-children'
+  size: Declaration2D<ScalarDeclaration | 'fit-content'>
+  sizeX: ScalarDeclaration | 'fit-content'
+  sizeY: ScalarDeclaration | 'fit-content'
   alignChildren: Vector2Declaration
   alignChildrenX: number
   alignChildrenY: number
@@ -237,9 +237,9 @@ export class Space {
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
   sizeX = new Scalar(1, ScalarType.Auto)
-  sizeXFitChildren = false
+  sizeXFitContent = false
   sizeY = new Scalar(1, ScalarType.Auto)
-  sizeYFitChildren = false
+  sizeYFitContent = false
 
   extraSizeX = new Scalar(1, ScalarType.Relative)
   extraSizeY = new Scalar(1, ScalarType.Relative)
@@ -355,20 +355,28 @@ export class Space {
       sizeY ??= _sizeY
     }
     if (sizeX !== undefined) {
-      if (sizeX === 'fit-children') {
-        this.sizeXFitChildren = true
+      if (
+        sizeX === 'fit-content'
+        // @ts-expect-error backward compatibility
+        || sizeX === 'fit-children' // backward compatibility
+      ) {
+        this.sizeXFitContent = true
         this.sizeX.set(0, ScalarType.Auto)
       } else {
-        this.sizeXFitChildren = false
+        this.sizeXFitContent = false
         this.sizeX.parse(sizeX)
       }
     }
     if (sizeY !== undefined) {
-      if (sizeY === 'fit-children') {
-        this.sizeYFitChildren = true
+      if (
+        sizeY === 'fit-content'
+        // @ts-expect-error backward compatibility
+        || sizeY === 'fit-children' // backward compatibility
+      ) {
+        this.sizeYFitContent = true
         this.sizeY.set(0, ScalarType.Auto)
       } else {
-        this.sizeYFitChildren = false
+        this.sizeYFitContent = false
         this.sizeY.parse(sizeY)
       }
     }
