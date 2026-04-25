@@ -315,3 +315,16 @@ export function computeChildrenRect(space: Space) {
     }
   }
 }
+
+export function computeLayout1(root: Space) {
+  if (root.isRoot()) {
+    computeRootRect(root)
+  }
+
+  const queue: Space[] = [root]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    computeChildrenRect(current)
+    queue.push(...current.children)
+  }
+}

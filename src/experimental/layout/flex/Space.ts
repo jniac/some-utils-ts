@@ -3,8 +3,7 @@ import { Rectangle } from '../../../math/geom/rectangle'
 import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
-import { computeChildrenRect, computeRootRect } from './Space.layout'
-import { computeLayout2 } from './computeLayout2'
+import { computeLayout3 } from './computeLayout-3'
 import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
@@ -912,22 +911,9 @@ export class Space {
    * Compute the layout of the space and its children. Should be called on the root space.
    */
   computeLayout(): this {
-    if (this.isRoot()) {
-      computeRootRect(this)
-    }
-
-    const queue: Space[] = [this]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      computeChildrenRect(current)
-      queue.push(...current.children)
-    }
-
-    return this
-  }
-
-  computeLayout2(): this {
-    computeLayout2(this)
+    // computeLayout1(this)
+    // computeLayout2(this)
+    computeLayout3(this)
     return this
   }
 
