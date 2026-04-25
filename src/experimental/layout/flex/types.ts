@@ -1,6 +1,6 @@
 import { ScalarDeclaration } from './Scalar'
 
-enum All {
+enum SpaceConstants {
   // Positioning:
   Flow,
   Detached,
@@ -10,9 +10,11 @@ enum All {
   Vertical,
 }
 
+const SC = SpaceConstants
+
 export enum Direction {
-  Horizontal = All.Horizontal,
-  Vertical = All.Vertical,
+  Horizontal = SC.Horizontal,
+  Vertical = SC.Vertical,
 }
 
 export enum Positioning {
@@ -20,12 +22,12 @@ export enum Positioning {
    * Flow children are included in the layout computation. They are positioned
    * relative to the parent space and to other children (previous children offset).
    */
-  Flow = All.Flow,
+  Flow = SC.Flow,
   /**
    * Detached children are not included in the layout computation. They are 
    * positioned relative to the parent space only (not to other children).
    */
-  Detached = All.Detached,
+  Detached = SC.Detached,
 }
 
 export enum AspectSizeMode {

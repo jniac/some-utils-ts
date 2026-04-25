@@ -13,6 +13,7 @@ function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
 
 export type Declaration2D<T> =
   | T
+  | T[]
   | [x: T, y: T]
   | { x: T, y: T }
 
@@ -99,6 +100,8 @@ export type SpaceProps = Partial<{
   aspect: null | number
   childrenAspectSizeMode: AspectSizeModeDeclaration
   selfAspectSizeMode: AspectSizeModeDeclaration
+  detachedChildrenSpacingMode: number
+  detachedSelfSpacingMode: number | null
   padding: BoxSpacingDeclaration
   paddingTop: ScalarDeclaration
   paddingRight: ScalarDeclaration
@@ -279,6 +282,20 @@ export class Space {
   alignSelfX: number | null = null
   alignSelfY: number | null = null
 
+  /**
+   * The spacing mode for detached children. A number between 0 and 1 that 
+   * determines how the spacing (padding) is applied to detached children.
+   * - `0`: no spacing (children are positioned at the edge of the parent space)
+   * - `1`: full spacing (children are positioned as if they were in flow, but still detached)
+   */
+  detachedChildrenSpacingMode: number = 0
+  /**
+   * The spacing mode for detached self. 
+   * 
+   * cf. `detachedChildrenSpacingMode`, but for the space itself when it's detached.
+   */
+  detachedSelfSpacingMode: number | null = null
+
   rect = new Rectangle()
 
   userData: Record<string, any> = {}
@@ -387,6 +404,12 @@ export class Space {
     }
     if (props.alignSelfY !== undefined) {
       this.alignSelfY = props.alignSelfY
+    }
+    if (props.detachedChildrenSpacingMode !== undefined) {
+      this.detachedChildrenSpacingMode = props.detachedChildrenSpacingMode
+    }
+    if (props.detachedSelfSpacingMode !== undefined) {
+      this.detachedSelfSpacingMode = props.detachedSelfSpacingMode
     }
     if (props.padding !== undefined) {
       const [top, right, bottom, left] = fromBoxSpacingDeclaration(props.padding as any)
@@ -706,8 +729,9 @@ export class Space {
     return current
   }
 
-  add(...spaces: Space[]): this {
-    for (const space of spaces) {
+  add(...spaces: (Space | SpaceProps)[]): this {
+    for (const spaceArg of spaces) {
+      const space = spaceArg instanceof Space ? spaceArg : new Space(spaceArg)
       space.removeFromParent()
       space.parent = this
       this.children.push(space)

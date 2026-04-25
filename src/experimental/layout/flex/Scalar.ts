@@ -57,7 +57,7 @@ export function parseScalar(arg: ScalarDeclaration, out = new Scalar()): Scalar 
     throw new Error('Invalid scalar declaration')
   }
 
-  const m = arg.match(/([\d\.]+)([a-z%]+)?$/)!
+  const m = arg.match(/([+-\d\.]+)([a-z%]+)?$/)!
   if (!m) {
     console.log(`received:`, arg)
     throw new Error('Invalid scalar declaration')
