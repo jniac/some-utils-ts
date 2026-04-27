@@ -2,7 +2,7 @@ import { Rectangle, RectangleDeclaration } from '../../../math/geom/rectangle'
 import { Kolor as K } from '../../../string/kolor'
 import { Scalar, ScalarType } from './Scalar'
 import { Space } from './Space'
-import { Direction } from './types'
+import { Direction, Positioning } from './types'
 
 // Padding order: top, right, bottom, left (Clockwise from top, same as CSS).
 const P_NY = 0 // top padding
@@ -34,6 +34,8 @@ const Warnings: Record<string, [code: number, message: string]> = {
   ],
 }
 
+class InternalError extends Error { }
+
 enum PropertyType {
   Gap,
   PaddingNY,
@@ -44,7 +46,16 @@ enum PropertyType {
   SizeY,
 }
 
-enum PropertyAlgorithm {
+enum PropertyAlgorithmStatus {
+  /**
+   * 
+   */
+  Unset,
+  /**
+   * The value cannot be computed from other properties only.
+   * Should be resolved from the fractional pass.
+   */
+  Fraction,
   /**
    * The value is absolute and does not depend on any other property (relations are ignored).
    */
@@ -73,37 +84,13 @@ enum PropertyAlgorithm {
   FitContentMax,
 }
 
-function inferAlgorithmForBasicProperty(scalar: Scalar): PropertyAlgorithm {
-  switch (scalar.type) {
-    case ScalarType.LargerRelative:
-      return PropertyAlgorithm.Max
-    case ScalarType.SmallerRelative:
-      return PropertyAlgorithm.Min
-    default:
-      return PropertyAlgorithm.First
-  }
-}
-
-function inferAlgorithmForSize(
-  scalar: Scalar,
-  fitContent: boolean,
-  spaceDirection: Direction,
-  sizeDirection: Direction,
-): PropertyAlgorithm {
-  if (fitContent) {
-    return sizeDirection === spaceDirection
-      ? PropertyAlgorithm.FitContentSum
-      : PropertyAlgorithm.FitContentMax
-  }
-  return inferAlgorithmForBasicProperty(scalar)
-}
-
 class RelativeProperty {
   node: Node
   type: PropertyType
   scalar: Scalar
-  algorithm: PropertyAlgorithm
+  isFractional: boolean
 
+  algorithm: PropertyAlgorithmStatus = PropertyAlgorithmStatus.Unset
   value = 0
   resolved = false
   relations = <RelativeProperty[]>[]
@@ -111,54 +98,32 @@ class RelativeProperty {
 
   get typeName() { return PropertyType[this.type] }
 
-  constructor(node: Node, type: PropertyType, scalar: Scalar) {
+  constructor(node: Node, type: PropertyType, scalar: Scalar, isFractional = false) {
     this.node = node
     this.type = type
     this.scalar = scalar
-
-    if (scalar.type === ScalarType.Absolute) {
-      this.algorithm = PropertyAlgorithm.Absolute
-    }
-
-    else {
-      switch (type) {
-        case PropertyType.Gap:
-        case PropertyType.PaddingNY:
-        case PropertyType.PaddingPY:
-        case PropertyType.PaddingNX:
-        case PropertyType.PaddingPX:
-          this.algorithm = inferAlgorithmForBasicProperty(scalar)
-          break
-
-        case PropertyType.SizeX:
-          this.algorithm = inferAlgorithmForSize(
-            scalar,
-            node.space.sizeXFitContent,
-            node.space.direction,
-            Direction.Horizontal)
-          break
-        case PropertyType.SizeY:
-          this.algorithm = inferAlgorithmForSize(
-            scalar,
-            node.space.sizeYFitContent,
-            node.space.direction,
-            Direction.Vertical)
-          break
-      }
-    }
+    this.isFractional = isFractional
   }
 
-  addWarning([code]: [number, string]) {
+  setAlgorithm(algorithm: PropertyAlgorithmStatus): this {
+    this.algorithm = algorithm
+    return this
+  }
+
+  addWarning([code]: [number, string]): this {
     this.warningMask |= 1 << code
+    return this
   }
 
-  addRelations(...values: RelativeProperty[]) {
+  addRelations(...values: RelativeProperty[]): this {
     this.relations.push(...values)
+    return this
   }
 
-  resolve(value: number) {
+  resolve(value: number): this {
     this.value = value
     this.resolved = true
+    return this
   }
 
   tryResolve(): boolean {
@@ -166,9 +131,9 @@ class RelativeProperty {
       return true
 
     switch (this.algorithm) {
-      case PropertyAlgorithm.First: {
+      case PropertyAlgorithmStatus.First: {
         if (this.relations.length === 0)
-          throw new Error('AlgoError: First algorithm requires at least 1 relation.')
+          throw new InternalError('First algorithm requires at least 1 relation.')
         const relation = this.relations[0]
         if (!relation.resolved)
           return false
@@ -176,9 +141,9 @@ class RelativeProperty {
         return true
       }
 
-      case PropertyAlgorithm.Min: {
+      case PropertyAlgorithmStatus.Min: {
         if (this.relations.length === 0)
-          throw new Error('AlgoError: Min algorithm requires at least 1 relation.')
+          throw new InternalError('Min algorithm requires at least 1 relation.')
         let min = Infinity
         for (const relation of this.relations) {
           if (!relation.resolved)
@@ -190,7 +155,7 @@ class RelativeProperty {
         return true
       }
 
-      case PropertyAlgorithm.Max: {
+      case PropertyAlgorithmStatus.Max: {
         if (this.relations.length === 0)
           throw new Error('AlgoError: Max algorithm requires at least 1 relation.')
         let max = -Infinity
@@ -204,7 +169,7 @@ class RelativeProperty {
         return true
       }
 
-      case PropertyAlgorithm.FitContentSum: {
+      case PropertyAlgorithmStatus.FitContentSum: {
         if (this.relations.length < 3)
           throw new Error('AlgoError: FitContentSum algorithm requires at least 3 relations.')
         if (!this.relations[0].resolved || !this.relations[1].resolved || !this.relations[2].resolved)
@@ -223,7 +188,7 @@ class RelativeProperty {
         return true
       }
 
-      case PropertyAlgorithm.FitContentMax: {
+      case PropertyAlgorithmStatus.FitContentMax: {
         if (this.relations.length < 2) {
           console.log(this.node.toDependenciesString())
           console.log(this.node.root().toTreeString())
@@ -261,7 +226,10 @@ class RelativeProperty {
   }
 
   toString(): string {
-    return `${PropertyType[this.type]}(${this.scalar.toString()}) ${PropertyAlgorithm[this.algorithm]} ${this.resolved ? '✅' : '🔄'} (${this.relations.length})`
+    const t = PropertyType[this.type]
+    const r = this.resolved ? '✅' : '🔄'
+    const w = this.warningMask === 0 ? '' : ` ⚠️(${this.warnings().length})`
+    return `${t}(${this.scalar.toString()}) ${PropertyAlgorithmStatus[this.algorithm]} ${r} (${this.relations.length})${w}`
   }
 
   toSummaryString(): string {
@@ -269,7 +237,7 @@ class RelativeProperty {
     const warnings = this.warnings()
     for (const relation of this.relations) {
       if (!relation) {
-        lines.push(`  - ⚠️  null relation!`)
+        lines.push(`  - 🛑 null relation!`)
         continue
       }
       lines.push(`  - ${relation.typeName} ${relation.resolved ? '✅' : '🔄'} (${relation.relations.length})`)
@@ -286,7 +254,9 @@ function initGap(node: Node) {
     case ScalarType.Absolute:
     case ScalarType.Auto: // Auto is treated as absolute for gap.
     case ScalarType.Fraction: // Fraction has no sense for gap, so it's treated as absolute.
-      node.gap.resolve(node.space.gap.value)
+      node.gap
+        .setAlgorithm(PropertyAlgorithmStatus.Absolute)
+        .resolve(node.space.gap.value)
       break
 
     case ScalarType.Relative:
@@ -295,9 +265,11 @@ function initGap(node: Node) {
         node.gap.addWarning(Warnings.RelativeToSelfTangentSizeBut)
         node.gap.resolve(0)
       } else {
-        node.gap.addRelations(node.isHorizontal
-          ? node.s_x
-          : node.s_y)
+        node.gap
+          .setAlgorithm(PropertyAlgorithmStatus.First)
+          .addRelations(node.isHorizontal
+            ? node.s_x
+            : node.s_y)
       }
       break
 
@@ -307,9 +279,11 @@ function initGap(node: Node) {
         node.gap.addWarning(Warnings.RelativeToSelfNormalSizeBut)
         node.gap.resolve(0)
       } else {
-        node.gap.addRelations(node.isHorizontal
-          ? node.s_y
-          : node.s_x)
+        node.gap
+          .setAlgorithm(PropertyAlgorithmStatus.First)
+          .addRelations(node.isHorizontal
+            ? node.s_y
+            : node.s_x)
       }
       break
 
@@ -322,16 +296,24 @@ function initGap(node: Node) {
         if (node.tangentSizeFitContent) {
           node.gap.addWarning(Warnings.RelativeToSelfTangentSizeBut)
         } else {
-          node.gap.addRelations(
-            node.s_x,
-            node.s_y)
+          node.gap
+            .setAlgorithm(node.space.gap.type === ScalarType.LargerRelative
+              ? PropertyAlgorithmStatus.Max
+              : PropertyAlgorithmStatus.Min)
+            .addRelations(
+              node.s_x,
+              node.s_y)
         }
         if (node.normalSizeFitContent) {
           node.gap.addWarning(Warnings.RelativeToSelfNormalSizeBut)
         } else {
-          node.gap.addRelations(
-            node.s_x,
-            node.s_y)
+          node.gap
+            .setAlgorithm(node.space.gap.type === ScalarType.LargerRelative
+              ? PropertyAlgorithmStatus.Max
+              : PropertyAlgorithmStatus.Min)
+            .addRelations(
+              node.s_x,
+              node.s_y)
         }
       }
       break
@@ -345,7 +327,9 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, padding
     case ScalarType.Absolute:
     case ScalarType.Auto: // Auto is treated as absolute for padding.
     case ScalarType.Fraction: // Fraction has no sense for padding, so it's treated as absolute.
-      prop.resolve(scalar.value)
+      prop
+        .setAlgorithm(PropertyAlgorithmStatus.Absolute)
+        .resolve(scalar.value)
       break
 
     case ScalarType.Relative:
@@ -355,9 +339,11 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, padding
         prop.resolve(0)
       } else {
         const h = prop.type === PropertyType.PaddingPX || prop.type === PropertyType.PaddingPY
-        prop.addRelations(h
-          ? node.s_x
-          : node.s_y)
+        prop
+          .setAlgorithm(PropertyAlgorithmStatus.First)
+          .addRelations(h
+            ? node.s_x
+            : node.s_y)
       }
       break
 
@@ -368,9 +354,11 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, padding
         prop.resolve(0)
       } else {
         const h = prop.type === PropertyType.PaddingPX || prop.type === PropertyType.PaddingPY
-        prop.addRelations(h
-          ? node.s_y
-          : node.s_x)
+        prop
+          .setAlgorithm(PropertyAlgorithmStatus.First)
+          .addRelations(h
+            ? node.s_y
+            : node.s_x)
       }
       break
 
@@ -383,16 +371,24 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, padding
         if (sizeFitContent) {
           prop.addWarning(isTangent ? Warnings.RelativeToSelfTangentSizeBut : Warnings.RelativeToSelfNormalSizeBut)
         } else {
-          prop.addRelations(
-            node.s_x,
-            node.s_y)
+          prop
+            .setAlgorithm(scalar.type === ScalarType.LargerRelative
+              ? PropertyAlgorithmStatus.Max
+              : PropertyAlgorithmStatus.Min)
+            .addRelations(
+              node.s_x,
+              node.s_y)
         }
         if (sizeFitContent) {
           prop.addWarning(isTangent ? Warnings.RelativeToSelfTangentSizeBut : Warnings.RelativeToSelfNormalSizeBut)
         } else {
-          prop.addRelations(
-            node.s_x,
-            node.s_y)
+          prop
+            .setAlgorithm(scalar.type === ScalarType.LargerRelative
+              ? PropertyAlgorithmStatus.Max
+              : PropertyAlgorithmStatus.Min)
+            .addRelations(
+              node.s_x,
+              node.s_y)
         }
       }
       break
@@ -401,29 +397,35 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, padding
 
 function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, sizeDirection: Direction) {
   if (scalar.type === ScalarType.Absolute) {
-    prop.resolve(scalar.value)
+    prop
+      .setAlgorithm(PropertyAlgorithmStatus.Absolute)
+      .resolve(scalar.value)
     return
   }
 
-  const isTangent = node.isHorizontal === (sizeDirection === Direction.Horizontal)
+  const sizeIsTangent = sizeDirection === node.space.direction
   const sizeIsHorizontal = sizeDirection === Direction.Horizontal
-  const sizeFitContent = isTangent
+  const sizeFitContent = sizeIsTangent
     ? node.tangentSizeFitContent
     : node.normalSizeFitContent
 
   if (sizeFitContent) {
     if (sizeIsHorizontal) {
-      prop.addRelations(node.p_nx, node.p_px)
-      if (isTangent)
+      prop
+        .setAlgorithm(sizeIsTangent ? PropertyAlgorithmStatus.FitContentSum : PropertyAlgorithmStatus.FitContentMax)
+        .addRelations(node.p_nx, node.p_px)
+      if (sizeIsTangent)
         prop.addRelations(node.gap)
-      for (const child of node.children) {
+      for (const child of node.flowChildren) {
         prop.addRelations(child.s_x)
       }
     } else {
-      prop.addRelations(node.p_ny, node.p_py)
-      if (isTangent)
+      prop
+        .setAlgorithm(sizeIsTangent ? PropertyAlgorithmStatus.FitContentSum : PropertyAlgorithmStatus.FitContentMax)
+        .addRelations(node.p_ny, node.p_py)
+      if (sizeIsTangent)
         prop.addRelations(node.gap)
-      for (const child of node.children) {
+      for (const child of node.flowChildren) {
         prop.addRelations(child.s_y)
       }
     }
@@ -438,26 +440,39 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, sizeDirect
     return
   }
 
+  if (prop.isFractional) {
+    prop.setAlgorithm(PropertyAlgorithmStatus.Fraction)
+    return
+  }
+
   switch (scalar.type) {
     case ScalarType.Auto:
     case ScalarType.Fraction:
     case ScalarType.Relative:
-      prop.addRelations(sizeIsHorizontal
-        ? parent.s_x
-        : parent.s_y)
+      prop
+        .setAlgorithm(PropertyAlgorithmStatus.First)
+        .addRelations(sizeIsHorizontal
+          ? parent.s_x
+          : parent.s_y)
       break
 
     case ScalarType.OppositeRelative:
-      prop.addRelations(sizeIsHorizontal
-        ? parent.s_y
-        : parent.s_x)
+      prop
+        .setAlgorithm(PropertyAlgorithmStatus.First)
+        .addRelations(sizeIsHorizontal
+          ? parent.s_y
+          : parent.s_x)
       break
 
     case ScalarType.LargerRelative:
     case ScalarType.SmallerRelative:
-      prop.addRelations(
-        parent.s_x,
-        parent.s_y)
+      prop
+        .setAlgorithm(scalar.type === ScalarType.LargerRelative
+          ? PropertyAlgorithmStatus.Max
+          : PropertyAlgorithmStatus.Min)
+        .addRelations(
+          parent.s_x,
+          parent.s_y)
       break
   }
 }
@@ -478,11 +493,17 @@ class Node {
 
   space: Space
   parent: Node | null
-  children: Node[]
   isHorizontal: boolean
+
+  children: Node[] = []
+  flowChildren = <Node[]>[]
+  detachedChildren = <Node[]>[]
 
   tangentSizeFitContent: boolean
   normalSizeFitContent: boolean
+
+  hasFractionalChildren = false
+  fractionalChildrenHaveBeenResolved = false
 
   p_px: RelativeProperty
   p_nx: RelativeProperty
@@ -502,10 +523,20 @@ class Node {
   constructor(parent: Node | null, space: Space) {
     this.parent = parent
     this.space = space
-    this.children = space.children.map(child => new Node(this, child))
     this.isHorizontal = space.direction === Direction.Horizontal
     this.tangentSizeFitContent = this.isHorizontal ? space.sizeXFitContent : space.sizeYFitContent
     this.normalSizeFitContent = this.isHorizontal ? space.sizeYFitContent : space.sizeXFitContent
+
+    for (const childSpace of space.children) {
+      const childNode = new Node(this, childSpace)
+      this.children.push(childNode)
+      if (this.isHorizontal) { }
+      if (childSpace.positioning === Positioning.Flow) {
+        this.flowChildren.push(childNode)
+      } else {
+        this.detachedChildren.push(childNode)
+      }
+    }
 
     this.p_px = new RelativeProperty(this, PropertyType.PaddingPX, space.padding[P_PX])
     this.p_nx = new RelativeProperty(this, PropertyType.PaddingNX, space.padding[P_NX])
@@ -514,8 +545,15 @@ class Node {
 
     this.gap = new RelativeProperty(this, PropertyType.Gap, space.gap)
 
-    this.s_x = new RelativeProperty(this, PropertyType.SizeX, space.sizeX)
-    this.s_y = new RelativeProperty(this, PropertyType.SizeY, space.sizeY)
+    const isFractionalSizeX = space.positioning === Positioning.Flow
+      && (space.sizeX.type === ScalarType.Fraction || space.sizeX.type === ScalarType.Auto)
+      && space.direction === Direction.Horizontal
+    this.s_x = new RelativeProperty(this, PropertyType.SizeX, space.sizeX, isFractionalSizeX)
+
+    const isFractionalSizeY = space.positioning === Positioning.Flow
+      && (space.sizeY.type === ScalarType.Fraction || space.sizeY.type === ScalarType.Auto)
+      && space.direction === Direction.Vertical
+    this.s_y = new RelativeProperty(this, PropertyType.SizeY, space.sizeY, isFractionalSizeY)
   }
 
   initialize(): this {
@@ -528,6 +566,9 @@ class Node {
     initSize(this, this.space.sizeY, this.s_y, Direction.Vertical)
 
     for (const child of this.children) {
+      if ((this.isHorizontal && child.s_x.isFractional) || (!this.isHorizontal && child.s_y.isFractional))
+        this.hasFractionalChildren = true
+
       child.initialize()
     }
 
@@ -542,7 +583,6 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
   root(): Node {
@@ -554,7 +594,6 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
   childAt(...path: number[]): Node | null {
@@ -568,10 +607,9 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
-  *allLeaves(): Generator<Node> {
+  * allLeaves(): Generator<Node> {
     if (this.children.length === 0) {
       yield this
     } else {
@@ -582,10 +620,9 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
-  *allDescendants({ includeSelf = false } = {}): Generator<Node> {
+  * allDescendants({ includeSelf = false } = {}): Generator<Node> {
     if (includeSelf)
       yield this
     for (const child of this.children) {
@@ -594,11 +631,10 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
-  *allAncestors(): Generator<Node> {
-    let node: Node | null = this
+  * allAncestors(): Generator<Node> {
+    let node: Node | null = this.parent
     while (node) {
       yield node
       node = node.parent
@@ -606,7 +642,6 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For testing purposes only. Do not use in prod. May be removed in the future.
    */
   firstLeaf(): Node {
@@ -618,7 +653,6 @@ class Node {
   }
 
   /**
-   * @deprecated 
    * ⚠️ For debugging purposes only (treeString).
    */
   depth(): number {
@@ -629,6 +663,30 @@ class Node {
       p = p.parent
     }
     return d
+  }
+
+  /**
+   * ⚠️ For debugging purposes only (treeString).
+   */
+  path(): number[] {
+    const path = [] as number[]
+    let node: Node = this
+    while (node.parent !== null) {
+      const parent = node.parent
+      const index = parent.children.indexOf(node)
+      if (index === -1)
+        throw new InternalError('Node is not a child of its parent.')
+      path.unshift(index)
+      node = parent
+    }
+    return path
+  }
+
+  /**
+   * ⚠️ For debugging purposes only (treeString).
+   */
+  hasChild(): boolean {
+    return this.children.length > 0
   }
 
   /**
@@ -700,7 +758,7 @@ class Node {
     for (const prop of this.relativeProperties()) {
       if (prop.resolved)
         continue
-      lines.push(`- [${PropertyType[prop.type]} "${PropertyAlgorithm[prop.algorithm]}"] (${prop.relations.length}):`)
+      lines.push(`- [${PropertyType[prop.type]} "${PropertyAlgorithmStatus[prop.algorithm]}"] (${prop.relations.length}):`)
       dependenciesCount += prop.relations.length
       for (const relation of prop.relations) {
         lines.push(`  - [#${relation.node.id} ${PropertyType[relation.type]} ${relation.resolved ? '✅' : '🔄'}]`)
@@ -746,14 +804,26 @@ class Node {
         n.isLastChild() === false ? '├─' : '└─'
       const line = `${indent}${relation} ${nodeToString(n)}`
       lines.push(line)
+
       if (afterNode) {
         const after = afterNode(n)
         if (after) {
-          lines.push('└•┬───────────────────────────────────────┄┄')
-          lines.push(after.split('\n').map(l => `  │ ${l}`).join('\n'))
-          lines.push('  └───────────────────────────────────────┄┄')
+          const afterIndent =
+            indent
+            + (n.isLastChild() ? '   ' : '│  ')
+            + (n.hasChild() ? '│' : ' ')
+          const afterLines = after.split('\n')
+          if (afterLines.length > 0) {
+            const last = afterLines.pop()!
+            for (const l of afterLines) {
+              lines.push(afterIndent + '  ├─ ' + l)
+            }
+            lines.push(afterIndent + '  └─ ' + last)
+          }
+          lines.push(afterIndent)
         }
       }
+
       total++
     }
     lines.unshift(`Tree: (${total})`)
@@ -765,14 +835,17 @@ class Node {
     onlyUnresolved = false
   } = {}): string {
     return this.toTreeString({
+      nodeToString: (node: Node) => {
+        return `${node.toString()} (${node.path().join('.')})`
+      },
       afterNode: (node: Node) => {
         const lines = [] as string[]
         for (const prop of node.relativeProperties()) {
           if (onlyUnresolved && prop.resolved)
             continue
-          lines.push(`- ${PropertyType[prop.type]} "${PropertyAlgorithm[prop.algorithm]}" (${prop.relations.length} relations)`)
+          lines.push(`${PropertyType[prop.type]} "${PropertyAlgorithmStatus[prop.algorithm]}" (${prop.relations.length} relations)`)
           for (const relation of prop.relations) {
-            lines.push(`  - ${relation.resolved ? '✅' : '🔄'} [#${relation.node.id} ${PropertyType[relation.type]}]`)
+            lines.push(`- ${relation.resolved ? '✅' : '🔄'} [#${relation.node.id} ${PropertyType[relation.type]}]`)
           }
         }
         return lines.join('\n')
@@ -855,8 +928,9 @@ function sizePass(stack: Node[]) {
   const nextStack = [] as Node[]
 
   let pass = 0
-  while (stack.length > 0 && pass++ < 100) {
-    if (pass === 100) {
+  let passMax = stack.length * 2
+  while (stack.length > 0 && pass++ < passMax) {
+    if (pass === passMax) {
       console.log(K.red('Max pass count reached. Possible circular dependency.'))
     }
     const node = stack.shift()!
