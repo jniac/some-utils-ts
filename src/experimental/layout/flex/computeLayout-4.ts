@@ -1004,34 +1004,41 @@ function processCircularDependencies(stack: Node[], log = false) {
   }
 }
 
+/**
+ * Notes:
+ * - A huge optimization opportunity would be to compute the topological sort of the dependency graph to minimize the number of passes.
+ */
 function sizePass(stack: Node[]) {
   const nextStack = [] as Node[]
 
   let pass = 0
-  let passMax = stack.length * 3
+  let passMax = stack.length ** 2
   while (stack.length > 0 && pass++ < passMax) {
     if (pass === passMax) {
       console.log(K.red('Max pass count reached. Possible circular dependency.'))
     }
-    const node = stack.shift()!
+    const node = stack.pop()!
 
     const allResolved = node.tryResolveProperties()
 
     node.tryResolveFlow()
 
-    // console.log(node.toDependenciesString())
-
-    // console.log(`#${node.id} allResolved: ${allResolved}`)
-    if (allResolved === false) {
+    if (allResolved === false)
       nextStack.push(node)
-    }
 
     if (stack.length === 0) {
-      // Reversed nextStack to optimize passes:
-      // - Top-down on the first pass, which is more likely to resolve root dependencies first.
-      // - Bottom-up on the next passes, which is more likely to resolve leaf dependencies first.
-      for (let i = nextStack.length - 1; i >= 0; i--) {
-        stack.push(nextStack[i])
+      if (pass % 2) {
+        // Normal order on odd passes.
+        for (const n of nextStack) {
+          stack.push(n)
+        }
+      } else {
+        // Reversed nextStack to optimize passes:
+        // - Top-down on the first pass, which is more likely to resolve root dependencies first.
+        // - Bottom-up on the next passes, which is more likely to resolve leaf dependencies first.
+        for (let i = nextStack.length - 1; i >= 0; i--) {
+          stack.push(nextStack[i])
+        }
       }
       nextStack.length = 0
     }
