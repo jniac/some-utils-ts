@@ -96,6 +96,16 @@ export function parseDirection(value: any): Direction {
   throw new Error(`Invalid direction value: ${value}`)
 }
 
+export function directionToString(direction: Direction): string {
+  return direction === Direction.Horizontal ? 'horizontal' : 'vertical'
+}
+
+export function oppositeDirection(direction: Direction): Direction {
+  return direction === Direction.Horizontal
+    ? Direction.Vertical
+    : Direction.Horizontal
+}
+
 export type SizeDeclaration =
   | ScalarDeclaration
   | [width: ScalarDeclaration, height: ScalarDeclaration]

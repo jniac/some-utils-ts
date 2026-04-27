@@ -1,9 +1,14 @@
 {
   "compilerOptions": {
-    "downlevelIteration": true,
     "target": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "ESNext.Iterator"
+    ],
     "module": "ESNext",
     "declaration": true,
+    "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
