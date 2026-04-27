@@ -93,9 +93,9 @@ export type SpaceProps = Partial<{
   alignChildren: Vector2Declaration
   alignChildrenX: number
   alignChildrenY: number
-  alignSelf: Vector2Declaration<number | null>
-  alignSelfX: number | null
-  alignSelfY: number | null
+  align: Vector2Declaration<number | null>
+  alignX: number | null
+  alignY: number | null
   aspect: null | number
   childrenAspectSizeMode: AspectSizeModeDeclaration
   selfAspectSizeMode: AspectSizeModeDeclaration
@@ -114,6 +114,13 @@ export type SpaceProps = Partial<{
   gap: ScalarDeclaration
   spacing: SpacingDeclaration
   userData: Record<string, any>
+
+  /** @deprecated Use `align` instead */
+  alignSelf: Vector2Declaration<number | null>
+  /** @deprecated Use `alignX` and `alignY` instead */
+  alignSelfX: number | null
+  /** @deprecated Use `alignX` and `alignY` instead */
+  alignSelfY: number | null
 }>
 
 type SpacePredicate =
@@ -278,8 +285,8 @@ export class Space {
    */
   alignChildrenY: number = .5
 
-  alignSelfX: number | null = null
-  alignSelfY: number | null = null
+  alignX: number | null = null
+  alignY: number | null = null
 
   /**
    * The spacing mode for detached children. A number between 0 and 1 that 
@@ -293,7 +300,7 @@ export class Space {
    * 
    * cf. `detachedChildrenSpacingMode`, but for the space itself when it's detached.
    */
-  detachedSelfSpacingMode: number | null = null
+  detachedSpacingMode: number | null = null
 
   rect = new Rectangle()
 
@@ -325,6 +332,24 @@ export class Space {
   }
 
   set(props: SpaceProps): this {
+    // Deprecated properties:
+    if (props.alignSelf !== undefined
+      || props.alignSelfX === undefined
+      || props.alignSelfY === undefined) {
+      // copy props to avoid mutating the original object
+      props = { ...props }
+      if (props.alignSelf !== undefined && props.align === undefined) {
+        props.align = props.alignSelf
+      }
+      if (props.alignSelfX !== undefined && props.alignX === undefined) {
+        props.alignX = props.alignSelfX
+      }
+      if (props.alignSelfY !== undefined && props.alignY === undefined) {
+        props.alignY = props.alignSelfY
+      }
+    }
+
+    // Regular properties:
     if (props.name !== undefined) {
       this.name = props.name
     }
@@ -401,22 +426,22 @@ export class Space {
     if (props.alignChildrenY !== undefined) {
       this.alignChildrenY = props.alignChildrenY
     }
-    if (props.alignSelf !== undefined) {
-      const { x, y } = fromVector2Declaration(props.alignSelf)
-      this.alignSelfX = x
-      this.alignSelfY = y
+    if (props.align !== undefined) {
+      const { x, y } = fromVector2Declaration(props.align)
+      this.alignX = x
+      this.alignY = y
     }
-    if (props.alignSelfX !== undefined) {
-      this.alignSelfX = props.alignSelfX
+    if (props.alignX !== undefined) {
+      this.alignX = props.alignX
     }
-    if (props.alignSelfY !== undefined) {
-      this.alignSelfY = props.alignSelfY
+    if (props.alignY !== undefined) {
+      this.alignY = props.alignY
     }
     if (props.detachedChildrenSpacingMode !== undefined) {
       this.detachedChildrenSpacingMode = props.detachedChildrenSpacingMode
     }
     if (props.detachedSelfSpacingMode !== undefined) {
-      this.detachedSelfSpacingMode = props.detachedSelfSpacingMode
+      this.detachedSpacingMode = props.detachedSelfSpacingMode
     }
     if (props.padding !== undefined) {
       const [top, right, bottom, left] = fromBoxSpacingDeclaration(props.padding as any)
@@ -680,9 +705,9 @@ export class Space {
    * 
    * Negative indexes are allowed.
    */
-  get(...path: number[]): Space | null
-  get(path: Iterable<number>): Space | null
-  get(...args: any[]): Space | null {
+  child(...path: number[]): Space | null
+  child(path: Iterable<number>): Space | null
+  child(...args: any[]): Space | null {
     const path = (args[0] && typeof args[0] === 'object' && Symbol.iterator in args[0]) ? args[0] : args
     let current: Space = this
     for (let index of path) {
@@ -695,6 +720,14 @@ export class Space {
       }
     }
     return current
+  }
+
+  /**
+   * @deprecated Use `child(...path)` instead.
+   */
+  get(...args: any[]): Space | null {
+    console.warn('Space.get is deprecated. Use Space.child instead.')
+    return this.child(...args)
   }
 
   find(predicate: SpacePredicate, { includeSelf = true } = {}): Space | null {

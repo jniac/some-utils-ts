@@ -221,10 +221,10 @@ export function computeChildrenRect(space: Space) {
     const freeWidth = innerWidth - child.rect.width
     const freeHeight = innerHeight - child.rect.height
     child.rect.x = innerX
-      + freeWidth * (child.alignSelfX ?? alignChildrenX)
+      + freeWidth * (child.alignX ?? alignChildrenX)
       + child.offsetX.compute(innerWidth, innerHeight)
     child.rect.y = innerY
-      + freeHeight * (child.alignSelfY ?? alignChildrenY)
+      + freeHeight * (child.alignY ?? alignChildrenY)
       + child.offsetY.compute(innerHeight, innerWidth)
   }
 
@@ -289,9 +289,9 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeY.type === ScalarType.Fraction || child.sizeY.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].top - _padding.top)
         const endMargin = Math.max(0, _childrenMargins[index].bottom - _padding.bottom)
-        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignSelfY ?? alignChildrenY)
+        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignY ?? alignChildrenY)
       } else {
-        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignSelfY ?? alignChildrenY)
+        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignY ?? alignChildrenY)
       }
       cumulative += child.rect.width + tangentSpacings[index + 1]
     }
@@ -306,9 +306,9 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeX.type === ScalarType.Fraction || child.sizeX.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].left - _padding.left)
         const endMargin = Math.max(0, _childrenMargins[index].right - _padding.right)
-        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignSelfX ?? alignChildrenX)
+        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignX ?? alignChildrenX)
       } else {
-        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignSelfX ?? alignChildrenX)
+        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignX ?? alignChildrenX)
       }
       child.rect.y = offy + cumulative
       cumulative += child.rect.height + tangentSpacings[index + 1]

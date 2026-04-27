@@ -341,8 +341,8 @@ function positioningAllChildren(root: LayoutNodeSpace) {
       const sc_sx = sc.req_sx(sx, sy)
       const sc_sy = sc.req_sy(sx, sy)
       queue.push(sc)
-      const c_ax = sc.space.alignSelfX
-      const c_ay = sc.space.alignSelfY
+      const c_ax = sc.space.alignX
+      const c_ay = sc.space.alignY
       if (is_h) {
         offsetX += sc_sx + s.gap!
         const sy_avail = sy - s.pt! - s.pb! - sc_sy // Available space in Y for alignment must be computed per-child
