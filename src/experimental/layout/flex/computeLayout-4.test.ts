@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
 import { computeLayout4 } from './computeLayout-4'
+import { ScalarType } from './Scalar'
 import { Space } from './Space'
+import { Positioning } from './types'
 
 const testSuites = <[desc: string, fn: () => void][]>[]
 function addTestSuite(fn: () => void, desc?: string) {
@@ -104,29 +106,43 @@ addTestSuite(detachedNodesShouldNotContributeToSizeTest,
   'detached nodes should not contribute to size')
 
 function simpleLayoutTest() {
-  const root1 = new Space({
+  const width = 300, height = 100, spacing = 10
+  const childSizeX = 50
+  const root = new Space({
     direction: 'horizontal',
-    size: [300, 100],
-    spacing: 10,
+    size: [width, height],
+    spacing,
   })
     .add(
-      { sizeX: 50 },
-      {},
+      { sizeX: childSizeX },
+      { sizeX: '1fr' },
+      { sizeX: '2fr' },
       { positioning: 'detached' },
-      { sizeX: 50 },
+      { sizeX: childSizeX },
     )
 
-  expect(root1.children.length).toBe(4)
-  const c_root1 = computeLayout4(root1)
+  computeLayout4(root)
 
   test('detached node with no size nor offset should have the same rect as the parent', () => {
-    const areEqual = root1.child(2)!.rect.equals(root1.rect)
-    if (!areEqual) {
-      console.log('root1:', root1.rect)
-      console.log('child2:', root1.child(2)!.rect)
-      console.log(c_root1.toTreeWithDependenciesString())
-    }
+    const detachedChild = root.find(node => node.positioning === Positioning.Detached)!
+    expect(detachedChild.positioning).toBe(Positioning.Detached)
+    const areEqual = detachedChild.rect.equals(root.rect)
     expect(areEqual).toBe(true)
+
+    if (!areEqual) {
+      console.log('root1:', root.rect)
+      console.log('child2:', detachedChild.rect)
+    }
+  })
+
+  test('fractional size should be resolved correctly', () => {
+    const flowChildrenCount = root.children.length - 1
+    const expectedSize1 = (width - spacing * (flowChildrenCount + 1) - childSizeX * 2) * (1 / 3)
+    const expectedSize2 = (width - spacing * (flowChildrenCount + 1) - childSizeX * 2) * (2 / 3)
+    const fractionChild1 = root.children.find(space => space.sizeX.type === ScalarType.Fraction && space.sizeX.value === 1)!
+    const fractionChild2 = root.children.find(space => space.sizeX.type === ScalarType.Fraction && space.sizeX.value === 2)!
+    expect(fractionChild1.rect.width).toBe(expectedSize1)
+    expect(fractionChild2.rect.width).toBe(expectedSize2)
   })
 }
 addTestSuite(simpleLayoutTest, 'simple layout (position and size)')

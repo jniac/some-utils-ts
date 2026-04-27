@@ -705,9 +705,9 @@ export class Space {
    * 
    * Negative indexes are allowed.
    */
-  child(...path: number[]): Space | null
-  child(path: Iterable<number>): Space | null
-  child(...args: any[]): Space | null {
+  childAt(...path: number[]): Space | null
+  childAt(path: Iterable<number>): Space | null
+  childAt(...args: any[]): Space | null {
     const path = (args[0] && typeof args[0] === 'object' && Symbol.iterator in args[0]) ? args[0] : args
     let current: Space = this
     for (let index of path) {
@@ -727,7 +727,7 @@ export class Space {
    */
   get(...args: any[]): Space | null {
     console.warn('Space.get is deprecated. Use Space.child instead.')
-    return this.child(...args)
+    return this.childAt(...args)
   }
 
   find(predicate: SpacePredicate, { includeSelf = true } = {}): Space | null {
