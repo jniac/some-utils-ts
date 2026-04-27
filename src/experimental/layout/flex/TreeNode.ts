@@ -182,13 +182,14 @@ export class TreeNode {
             + (n.hasChild() ? '│' : ' ')
           const afterLines = after.split('\n')
           if (afterLines.length > 0) {
+            lines.push(afterIndent + '  ╷')
             const last = afterLines.pop()!
-            for (const l of afterLines) {
-              lines.push(afterIndent + '  ├─ ' + l)
+            for (const line of afterLines) {
+              lines.push(afterIndent + '  ├─ ' + line)
             }
             lines.push(afterIndent + '  └─ ' + last)
+            lines.push(afterIndent)
           }
-          lines.push(afterIndent)
         }
       }
 

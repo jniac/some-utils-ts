@@ -45,6 +45,7 @@ type BoxSpacingDeclaration =
   | [all: ScalarDeclaration]
   | [vertical: ScalarDeclaration, horizontal: ScalarDeclaration]
   | BoxSpacingTupleDeclaration
+  | (string | number)[] // For convenience
 
 function fromBoxSpacingDeclaration(arg: BoxSpacingDeclaration): BoxSpacingTupleDeclaration {
   if (Array.isArray(arg) === false) {
