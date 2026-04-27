@@ -387,6 +387,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     yield this.height
   }
 
+  equals(other: RectangleLike): boolean {
+    return this.x === other.x && this.y === other.y && this.width === other.width && this.height === other.height
+  }
+
   copy(other: RectangleLike): this {
     this.x = other.x
     this.y = other.y
