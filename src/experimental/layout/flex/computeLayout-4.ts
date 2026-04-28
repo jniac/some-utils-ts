@@ -29,34 +29,6 @@ const Warnings: Record<string, [code: number, message: string]> = {
 
 class InternalError extends Error { }
 
-/**
- * An internal representation of the "space" scalars (gap, padding, size).
- * 
- * Why? Two reasons:
- * - The original scalars may have invalid state for the resolution (eg: "auto" with 0 value).
- * - For cache purposes: we can compare the internal scalar with its source to determine if the tree needs to be recomputed.
- */
-class PropertyScalar {
-  type: ScalarType
-  value: number
-
-  constructor(source: Scalar) {
-    this.type = source.type
-    this.value = source.value
-
-    switch (this.type) {
-      // Auto values must be 1 for the resolution to work
-      case ScalarType.Auto:
-        this.value = 1
-        break
-    }
-  }
-
-  toString(): string {
-    return `${ScalarType[this.type]}(${this.value})`
-  }
-}
-
 enum PropertyType {
   Gap,
   PaddingNY,
@@ -125,7 +97,7 @@ const solvers = {
     tryResolve(prop) {
       if (prop.node.size_x.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * prop.node.size_x.value)
+      prop.resolve(prop.scalarValue * prop.node.size_x.value)
       return true
     },
   },
@@ -138,7 +110,7 @@ const solvers = {
     tryResolve(prop): boolean {
       if (prop.node.size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * prop.node.size_y.value)
+      prop.resolve(prop.scalarValue * prop.node.size_y.value)
       return true
     },
   },
@@ -153,7 +125,7 @@ const solvers = {
       const { size_x, size_y } = prop.node
       if (size_x.resolved === false || size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * Math.min(size_x.value, size_y.value))
+      prop.resolve(prop.scalarValue * Math.min(size_x.value, size_y.value))
       return true
     }
   },
@@ -168,7 +140,7 @@ const solvers = {
       const { size_x, size_y } = prop.node
       if (size_x.resolved === false || size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * Math.max(size_x.value, size_y.value))
+      prop.resolve(prop.scalarValue * Math.max(size_x.value, size_y.value))
       return true
     }
   },
@@ -210,7 +182,7 @@ const solvers = {
       const { inner_size_x } = prop.node.parent!
       if (inner_size_x.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * inner_size_x.value)
+      prop.resolve(prop.scalarValue * inner_size_x.value)
       return true
     },
   },
@@ -224,7 +196,7 @@ const solvers = {
       const { inner_size_y } = prop.node.parent!
       if (inner_size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * inner_size_y.value)
+      prop.resolve(prop.scalarValue * inner_size_y.value)
       return true
     },
   },
@@ -239,7 +211,7 @@ const solvers = {
       const { inner_size_x, inner_size_y } = prop.node
       if (inner_size_x.resolved === false || inner_size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * Math.min(inner_size_x.value, inner_size_y.value))
+      prop.resolve(prop.scalarValue * Math.min(inner_size_x.value, inner_size_y.value))
       return true
     }
   },
@@ -254,7 +226,7 @@ const solvers = {
       const { inner_size_x, inner_size_y } = prop.node
       if (inner_size_x.resolved === false || inner_size_y.resolved === false)
         return false
-      prop.resolve(prop.scalar.value * Math.max(inner_size_x.value, inner_size_y.value))
+      prop.resolve(prop.scalarValue * Math.max(inner_size_x.value, inner_size_y.value))
       return true
     }
   },
@@ -403,7 +375,8 @@ const solvers = {
 class RelativeProperty {
   node: Node
   type: PropertyType
-  scalar: PropertyScalar
+  scalarType: ScalarType
+  scalarValue: number
   isFractional: boolean
 
   value = 0
@@ -420,8 +393,14 @@ class RelativeProperty {
   constructor(node: Node, type: PropertyType, scalar: Scalar, isFractional = false) {
     this.node = node
     this.type = type
-    this.scalar = new PropertyScalar(scalar)
+    this.scalarType = scalar.type
+    this.scalarValue = scalar.value
     this.isFractional = isFractional
+
+    if (this.scalarType === ScalarType.Auto) {
+      // Auto values must be 1 for the resolution to work
+      this.scalarValue = 1
+    }
   }
 
   setSolver(solver: Solver): this {
@@ -471,11 +450,12 @@ class RelativeProperty {
   }
 
   toString(): string {
-    const t = PropertyType[this.type]
     const r = this.resolved ? '✅' : '🔶'
+    const t = PropertyType[this.type]
+    const s = `${ScalarType[this.scalarType]}(${this.scalarValue})`
     const v = this.resolved ? ` > ${this.value}` : ''
     const w = this.warningMask === 0 ? '' : ` ⚠️(${this.warnings().length})`
-    return `${r} ${t} (${this.scalar.toString()}${v}) "${this.solver.name}" (${this.dependencies.length} 🔗)${w}`
+    return `${r} ${t} (${s}${v}) "${this.solver.name}" (${this.dependencies.length} 🔗)${w}`
   }
 
   toSummaryString(): string {
@@ -496,7 +476,7 @@ class RelativeProperty {
 }
 
 function initGap(node: Node) {
-  switch (node.space.gap.type) {
+  switch (node.gap.scalarType) {
     case ScalarType.Absolute:
     case ScalarType.Auto: // Auto is treated as absolute for gap.
     case ScalarType.Fraction: // Fraction has no sense for gap, so it's treated as absolute.
@@ -549,11 +529,11 @@ function initGap(node: Node) {
   }
 }
 
-function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, propIsHorizontal: boolean) {
-  switch (scalar.type) {
+function initPadding(node: Node, prop: RelativeProperty, propIsHorizontal: boolean) {
+  switch (prop.scalarType) {
     case ScalarType.Absolute:
     case ScalarType.Auto: // Auto is treated as absolute for padding.
-      prop.absolute(scalar.value)
+      prop.absolute(prop.scalarValue)
       break
 
     case ScalarType.Fraction:
@@ -583,7 +563,7 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, propIsH
       if (fitContent) {
         prop.invalid(Warnings.RelativeToFitContent)
       } else {
-        prop.setSolver(scalar.type === ScalarType.LargerRelative
+        prop.setSolver(prop.scalarType === ScalarType.LargerRelative
           ? solvers.relativeToSizeMaxXY
           : solvers.relativeToSizeMinXY)
       }
@@ -592,9 +572,9 @@ function initPadding(node: Node, scalar: Scalar, prop: RelativeProperty, propIsH
   }
 }
 
-function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp: RelativeProperty, sizeIsHorizontal: boolean) {
-  if (scalar.type === ScalarType.Absolute) {
-    prop.absolute(scalar.value)
+function initSize(node: Node, prop: RelativeProperty, innerProp: RelativeProperty, sizeIsHorizontal: boolean) {
+  if (prop.scalarType === ScalarType.Absolute) {
+    prop.absolute(prop.scalarValue)
     innerProp.setSolver(sizeIsHorizontal ? solvers.removePaddingFromSizeX : solvers.removePaddingFromSizeY)
     return
   }
@@ -625,7 +605,7 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp:
   }
 
   if (sizeIsTangent === false) {
-    switch (scalar.type) {
+    switch (prop.scalarType) {
       case ScalarType.Auto:
       case ScalarType.Fraction:
         // Auto and Fraction values for the normal size are treated as relative to the parent inner size, since they have no sense otherwise.
@@ -634,7 +614,7 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp:
     }
   }
 
-  switch (scalar.type) {
+  switch (prop.scalarType) {
     case ScalarType.Auto:
     case ScalarType.Fraction:
     case ScalarType.Relative:
@@ -647,7 +627,7 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp:
 
     case ScalarType.LargerRelative:
     case ScalarType.SmallerRelative:
-      prop.setSolver(scalar.type === ScalarType.LargerRelative
+      prop.setSolver(prop.scalarType === ScalarType.LargerRelative
         ? solvers.relativeToInnerSizeMaxXY
         : solvers.relativeToInnerSizeMinXY)
       break
@@ -749,12 +729,12 @@ class Node extends TreeNode {
 
   initialize(): this {
     initGap(this)
-    initPadding(this, this.space.padding[P_NX], this.pad_nx, true)
-    initPadding(this, this.space.padding[P_PX], this.pad_px, true)
-    initPadding(this, this.space.padding[P_NY], this.pad_ny, false)
-    initPadding(this, this.space.padding[P_PY], this.pad_py, false)
-    initSize(this, this.space.sizeX, this.size_x, this.inner_size_x, true)
-    initSize(this, this.space.sizeY, this.size_y, this.inner_size_y, false)
+    initPadding(this, this.pad_nx, true)
+    initPadding(this, this.pad_px, true)
+    initPadding(this, this.pad_ny, false)
+    initPadding(this, this.pad_py, false)
+    initSize(this, this.size_x, this.inner_size_x, true)
+    initSize(this, this.size_y, this.inner_size_y, false)
 
     for (const child of this.children) {
       if (child.isFlow)
@@ -812,7 +792,7 @@ class Node extends TreeNode {
       const childSize = is_h ? child.size_x : child.size_y
       if (childSize.isFractional) {
         hasFractionalSize = true
-        totalFraction += childSize.scalar.value
+        totalFraction += childSize.scalarValue
       } else {
         if (!childSize.resolved)
           return false
@@ -835,7 +815,7 @@ class Node extends TreeNode {
 
       const childSize = is_h ? child.size_x : child.size_y
       if (childSize.isFractional) {
-        const resolvedSize = remainingSpace * childSize.scalar.value / totalFraction
+        const resolvedSize = remainingSpace * childSize.scalarValue / totalFraction
         childSize.resolve(resolvedSize)
 
         // Remaining space is consumed.
