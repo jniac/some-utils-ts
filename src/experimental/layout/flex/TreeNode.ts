@@ -71,11 +71,8 @@ export class TreeNode {
     return current
   }
 
-  *flattened(): Generator<this> {
-    yield this
-    for (const child of this.children) {
-      yield* child.flattened()
-    }
+  *flat(): Generator<this> {
+    return yield* this.allDescendants({ includeSelf: true })
   }
 
   *allLeaves(): Generator<this> {

@@ -319,10 +319,12 @@ export class Space {
   constructor(...args: any[]) {
     if (args.length === 1) {
       const arg0 = args[0]
-      if (typeof arg0 === 'object') {
-        this.set(arg0)
-      } else {
-        this.direction = arg0
+      if (!!arg0) {
+        if (typeof arg0 === 'object') {
+          this.set(arg0)
+        } else {
+          this.direction = arg0
+        }
       }
     }
 
@@ -803,7 +805,7 @@ export class Space {
       const { count, ...props } = args[0]
       return this.populate(count, props)
     }
-    const [count, props] = args
+    const [count, props] = args as [number, SpaceProps]
     for (let i = 0; i < count; i++) {
       this.add(new Space(props))
     }

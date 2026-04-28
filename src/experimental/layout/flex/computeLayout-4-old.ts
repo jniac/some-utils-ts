@@ -906,7 +906,7 @@ export function computeLayout4(rootSpace: Space, rootRect?: RectangleDeclaration
     root.y = rootSpace.offsetY.value
   }
 
-  const stack = [...root.flattened()]
+  const stack = [...root.flat()]
 
   processCircularDependencies(stack)
 
