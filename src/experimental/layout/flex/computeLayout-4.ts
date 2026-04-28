@@ -570,7 +570,7 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp:
     return
   }
 
-  const sizeIsTangent = sizeIsHorizontal === node.isHorizontal
+  const sizeIsTangent = sizeIsHorizontal === node.parent?.isHorizontal
   const sizeFitContent = sizeIsHorizontal ? node.sizeXFitContent : node.sizeYFitContent
 
   if (sizeFitContent) {
