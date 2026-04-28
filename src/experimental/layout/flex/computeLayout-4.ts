@@ -29,6 +29,34 @@ const Warnings: Record<string, [code: number, message: string]> = {
 
 class InternalError extends Error { }
 
+/**
+ * An internal representation of the "space" scalars (gap, padding, size).
+ * 
+ * Why? Two reasons:
+ * - The original scalars may have invalid state for the resolution (eg: "auto" with 0 value).
+ * - For cache purposes: we can compare the internal scalar with its source to determine if the tree needs to be recomputed.
+ */
+class PropertyScalar {
+  type: ScalarType
+  value: number
+
+  constructor(source: Scalar) {
+    this.type = source.type
+    this.value = source.value
+
+    switch (this.type) {
+      // Auto values must be 1 for the resolution to work
+      case ScalarType.Auto:
+        this.value = 1
+        break
+    }
+  }
+
+  toString(): string {
+    return `${ScalarType[this.type]}(${this.value})`
+  }
+}
+
 enum PropertyType {
   Gap,
   PaddingNY,
@@ -239,10 +267,10 @@ const solvers = {
       yield prop.node.inner_size_x
     },
     tryResolve(prop) {
-      const { pad_nx, pad_px, inner_size_x } = prop.node
-      if (pad_nx.resolved === false || pad_px.resolved === false || inner_size_x.resolved === false)
+      const { inner_size_x, pad_nx, pad_px } = prop.node
+      if (inner_size_x.resolved === false || pad_nx.resolved === false || pad_px.resolved === false)
         return false
-      prop.resolve(pad_nx.value + pad_px.value + inner_size_x.value)
+      prop.resolve(inner_size_x.value + pad_nx.value + pad_px.value)
       return true
     },
   },
@@ -255,10 +283,10 @@ const solvers = {
       yield prop.node.inner_size_y
     },
     tryResolve(prop) {
-      const { pad_ny, pad_py, inner_size_y } = prop.node
-      if (pad_ny.resolved === false || pad_py.resolved === false || inner_size_y.resolved === false)
+      const { inner_size_y, pad_ny, pad_py } = prop.node
+      if (inner_size_y.resolved === false || pad_ny.resolved === false || pad_py.resolved === false)
         return false
-      prop.resolve(pad_ny.value + pad_py.value + inner_size_y.value)
+      prop.resolve(inner_size_y.value + pad_ny.value + pad_py.value)
       return true
     },
   },
@@ -375,7 +403,7 @@ const solvers = {
 class RelativeProperty {
   node: Node
   type: PropertyType
-  scalar: Scalar
+  scalar: PropertyScalar
   isFractional: boolean
 
   value = 0
@@ -392,7 +420,7 @@ class RelativeProperty {
   constructor(node: Node, type: PropertyType, scalar: Scalar, isFractional = false) {
     this.node = node
     this.type = type
-    this.scalar = scalar
+    this.scalar = new PropertyScalar(scalar)
     this.isFractional = isFractional
   }
 
@@ -445,19 +473,20 @@ class RelativeProperty {
   toString(): string {
     const t = PropertyType[this.type]
     const r = this.resolved ? '✅' : '🔶'
+    const v = this.resolved ? ` > ${this.value}` : ''
     const w = this.warningMask === 0 ? '' : ` ⚠️(${this.warnings().length})`
-    return `${t}(${this.scalar.toString()}) ${this.solver.name} ${r} (${this.dependencies.length})${w}`
+    return `${r} ${t} (${this.scalar.toString()}${v}) "${this.solver.name}" (${this.dependencies.length} 🔗)${w}`
   }
 
   toSummaryString(): string {
     const lines = [`${this.toString()}`]
     const warnings = this.warnings()
-    for (const relation of this.dependencies) {
-      if (!relation) {
+    for (const dep of this.dependencies) {
+      if (!dep) {
         lines.push(`  - 🛑 null relation!`)
         continue
       }
-      lines.push(`  - ${relation.typeName} ${relation.resolved ? '✅' : '🔶'} (${relation.dependencies.length})`)
+      lines.push(`  - ${dep}`)
     }
     for (const [code, message] of warnings) {
       lines.push(`Warning ${code}: ${message}`)
@@ -574,11 +603,7 @@ function initSize(node: Node, scalar: Scalar, prop: RelativeProperty, innerProp:
   const sizeFitContent = sizeIsHorizontal ? node.sizeXFitContent : node.sizeYFitContent
 
   if (sizeFitContent) {
-    if (sizeIsHorizontal) {
-      innerProp.setSolver(sizeIsTangent ? solvers.fitContentTangent : solvers.fitContentNormal)
-    } else {
-      innerProp.setSolver(sizeIsTangent ? solvers.fitContentTangent : solvers.fitContentNormal)
-    }
+    innerProp.setSolver(sizeIsHorizontal === node.isHorizontal ? solvers.fitContentTangent : solvers.fitContentNormal)
     // The size property of a fit-content node is derived from the inner size plus padding.
     prop.setSolver(sizeIsHorizontal ? solvers.addPaddingToInnerSizeX : solvers.addPaddingToInnerSizeY)
     return
@@ -707,11 +732,13 @@ class Node extends TreeNode {
     this.gap = new RelativeProperty(this, PropertyType.Gap, space.gap)
 
     const isFractionalSizeX = space.positioning === Positioning.Flow
+      && space.sizeXFitContent === false
       && (space.sizeX.type === ScalarType.Fraction || space.sizeX.type === ScalarType.Auto)
       && space.parent?.direction === Direction.Horizontal
     this.size_x = new RelativeProperty(this, PropertyType.SizeX, space.sizeX, isFractionalSizeX)
 
     const isFractionalSizeY = space.positioning === Positioning.Flow
+      && space.sizeYFitContent === false
       && (space.sizeY.type === ScalarType.Fraction || space.sizeY.type === ScalarType.Auto)
       && space.parent?.direction === Direction.Vertical
     this.size_y = new RelativeProperty(this, PropertyType.SizeY, space.sizeY, isFractionalSizeY)
@@ -773,6 +800,7 @@ class Node extends TreeNode {
 
     const totalSpace = selfSize.value
 
+    let hasFractionalSize = false
     let totalFraction = 0
     let totalSize = 0
     let childCount = 0
@@ -783,6 +811,7 @@ class Node extends TreeNode {
 
       const childSize = is_h ? child.size_x : child.size_y
       if (childSize.isFractional) {
+        hasFractionalSize = true
         totalFraction += childSize.scalar.value
       } else {
         if (!childSize.resolved)
@@ -796,6 +825,9 @@ class Node extends TreeNode {
     const gap = this.gap.value * Math.max(0, childCount - 1)
     let remainingSignedSpace = totalSpace - totalSize - paddingBefore.value - paddingAfter.value - gap
     let remainingSpace = Math.max(0, remainingSignedSpace)
+
+    if (hasFractionalSize && totalFraction === 0)
+      throw new InternalError('Total fraction cannot be 0 when resolving fractional sizes.')
 
     for (const child of this.children) {
       if (child.isFlow === false)
@@ -823,10 +855,22 @@ class Node extends TreeNode {
     yield this.pad_py
     yield this.pad_nx
     yield this.pad_px
-    yield this.size_x
-    yield this.size_y
-    yield this.inner_size_x
-    yield this.inner_size_y
+
+    if (this.sizeXFitContent) {
+      yield this.inner_size_x
+      yield this.size_x
+    } else {
+      yield this.size_x
+      yield this.inner_size_x
+    }
+
+    if (this.sizeYFitContent) {
+      yield this.inner_size_y
+      yield this.size_y
+    } else {
+      yield this.size_y
+      yield this.inner_size_y
+    }
   }
 
   *dependencies(): Generator<[RelativeProperty, RelativeProperty]> {
@@ -860,10 +904,10 @@ class Node extends TreeNode {
     const lines = [] as string[]
     let dependenciesCount = 0
     for (const prop of this.relativeProperties()) {
-      lines.push(`- [${PropertyType[prop.type]} "${prop.solver.name}"] (${prop.dependencies.length}):`)
+      lines.push(`- ${prop}`)
       dependenciesCount += prop.dependencies.length
-      for (const relation of prop.dependencies) {
-        lines.push(`  - [#${relation.node.id} ${PropertyType[relation.type]} ${relation.resolved ? '✅' : '🔶'}]`)
+      for (const dep of prop.dependencies) {
+        lines.push(`  - ${dep}`)
       }
     }
     if (dependenciesCount === 0) {

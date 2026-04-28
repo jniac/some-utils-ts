@@ -1353,6 +1353,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     return SvgUtils.setScope(this).toViewBox()
   }
 
+  toString(): string {
+    return `Rectangle(${this.x}, ${this.y}, ${this.width}, ${this.height})`
+  }
+
   toCSS() {
     return {
       left: `${this.x}px`,

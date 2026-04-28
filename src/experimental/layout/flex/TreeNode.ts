@@ -243,20 +243,24 @@ export class TreeNode {
       case 'uid':
         return `N.${this.uid}`
       case 'path':
-        return `N(${this.path().join('.')})`
+        return `N(${this.path().join('.') || 'root'})`
     }
   }
 
   toTreeString({
-    nodeToString = (node: this) => node.toString(),
+    log = false,
+    path = false,
+    nodeToString = (node: this) => node.toString(path ? 'path' : 'uid'),
     afterNode = <null | ((node: this) => string)>null,
+    indentCount = 3,
   } = {}): string {
     const lines = <string[]>[]
     let total = 0
+    const indentUnit = ' '.repeat(Math.max(0, indentCount - 1))
     for (const n of this.allDescendants({ includeSelf: true })) {
       const indent = [...n.allAncestors()]
         .map(parentItem => {
-          return parentItem.parent === null || parentItem.isLastChild() ? '   ' : '│  '
+          return (indentUnit + (parentItem.parent === null || parentItem.isLastChild() ? ' ' : '│'))
         })
         .reverse()
         .join('')
@@ -288,6 +292,10 @@ export class TreeNode {
       total++
     }
     lines.unshift(`Tree: (${total})`)
-    return lines.join('\n')
+    const str = lines.join('\n')
+    if (log) {
+      console.log(str)
+    }
+    return str
   }
 }

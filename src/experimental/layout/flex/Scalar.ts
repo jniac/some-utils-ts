@@ -120,9 +120,19 @@ export class Scalar {
     return this
   }
 
-  toString(): string {
-    return this.type === ScalarType.Auto
-      ? 'auto'
-      : `${this.value}${scalarExtensionsReverse[this.type]}`
+  toDetailedString(): string {
+    const t = ScalarType[this.type]
+    return `${t}(${this.value})`
+  }
+
+  toString(mode = <'short' | 'detailed'>'short'): string {
+    switch (mode) {
+      case 'short':
+        return this.type === ScalarType.Auto
+          ? 'auto'
+          : `${this.value}${scalarExtensionsReverse[this.type]}`
+      case 'detailed':
+        return this.toDetailedString()
+    }
   }
 }
