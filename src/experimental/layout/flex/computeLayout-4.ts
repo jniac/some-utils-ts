@@ -735,6 +735,7 @@ class Node extends TreeNode {
 
       child.initialize()
     }
+    this.flowHasBeenResolved = !this.hasFlow
 
     return this
   }
@@ -755,12 +756,12 @@ class Node extends TreeNode {
    * 
    * This method is responsible for resolving fractional sizes once all non-fractional sizes have been resolved.
    */
-  tryResolveFlow() {
-    if (!this.hasFlow || this.flowHasBeenResolved)
-      return
+  tryResolveFlow(): boolean {
+    if (this.flowHasBeenResolved)
+      return true
 
     if (this.gap.resolved === false)
-      return
+      return false
 
     const is_h = this.isHorizontal
     const selfSize = is_h ? this.size_x : this.size_y
@@ -768,7 +769,7 @@ class Node extends TreeNode {
     const paddingAfter = is_h ? this.pad_px : this.pad_py
 
     if (selfSize.resolved === false)
-      return
+      return false
 
     const totalSpace = selfSize.value
 
@@ -785,8 +786,8 @@ class Node extends TreeNode {
         totalFraction += childSize.scalar.value
       } else {
         if (!childSize.resolved)
-          return
-        totalSize += childSize.scalar.value
+          return false
+        totalSize += childSize.value
       }
 
       childCount++
@@ -813,6 +814,7 @@ class Node extends TreeNode {
     this.remainingTangentSignedSpace = remainingSignedSpace
     this.remainingTangentSpace = remainingSpace
     this.flowHasBeenResolved = true
+    return true
   }
 
   *relativeProperties(): Generator<RelativeProperty> {
@@ -852,10 +854,6 @@ class Node extends TreeNode {
       count += child.treeWarningsCount()
     }
     return count
-  }
-
-  toString(): string {
-    return `#${this.id}`
   }
 
   toDependenciesString(): string {
@@ -1019,11 +1017,11 @@ function sizePass(stack: Node[]) {
     }
     const node = stack.pop()!
 
-    const allResolved = node.tryResolveProperties()
+    const propertiesResolved = node.tryResolveProperties()
 
-    node.tryResolveFlow()
+    const flowResolved = node.tryResolveFlow()
 
-    if (allResolved === false)
+    if (propertiesResolved === false || flowResolved === false)
       nextStack.push(node)
 
     if (stack.length === 0) {

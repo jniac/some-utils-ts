@@ -3,6 +3,7 @@ import { Rectangle } from '../../../math/geom/rectangle'
 import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
+import { TreeNode } from './TreeNode'
 import { computeLayout3 } from './computeLayout-3'
 import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
@@ -211,13 +212,10 @@ function parseSpacePredicate(arg: SpacePredicate): (space: Space) => boolean {
  * }
  * ```
  */
-export class Space {
+export class Space extends TreeNode {
   enabled: boolean = true
 
   name: string = ''
-
-  parent: Space | null = null
-  children: Space[] = []
 
   direction: Direction = Direction.Horizontal
   positioning: Positioning = Positioning.Flow
@@ -317,6 +315,7 @@ export class Space {
   constructor(props?: SpaceProps)
   constructor(name: string, props?: SpaceProps)
   constructor(...args: any[]) {
+    super()
     if (args.length === 1) {
       const arg0 = args[0]
       if (!!arg0) {
@@ -639,92 +638,6 @@ export class Space {
     return this.parent.children[this.parent.children.length - 1] === this
   }
 
-  depth(): number {
-    let depth = 0
-    let current: Space | null = this
-    while (current?.parent) {
-      current = current.parent
-      depth++
-    }
-    return depth
-  }
-
-  /**
-   * Iterate over all descendants of the space in a depth-first manner.
-   */
-  *allDescendants({ includeSelf = false } = {}): Generator<Space> {
-    if (includeSelf) {
-      yield this
-    }
-    for (const child of this.children) {
-      yield* child.allDescendants({ includeSelf: true })
-    }
-  }
-
-  descendantsCount({ includeSelf = false } = {}): number {
-    let count = 0
-    for (const _ of this.allDescendants({ includeSelf })) {
-      count++
-    }
-    return count
-  }
-
-  *allAncestors({ includeSelf = false } = {}): Generator<Space> {
-    let current: Space | null = includeSelf ? this : this.parent
-    while (current) {
-      yield current
-      current = current.parent
-    }
-  }
-
-  *allLeaves({ includeSelf = true } = {}): Generator<Space> {
-    for (const space of this.allDescendants({ includeSelf })) {
-      if (space.children.length === 0) {
-        yield space
-      }
-    }
-  }
-
-  leavesCount({ includeSelf = true } = {}): number {
-    let count = 0
-    for (const _ of this.allLeaves({ includeSelf })) {
-      count++
-    }
-    return count
-  }
-
-  path(): number[] {
-    const path: number[] = []
-    let current: Space = this
-    while (current.parent) {
-      path.push(current.parent.children.indexOf(current))
-      current = current.parent
-    }
-    return path.reverse()
-  }
-
-  /**
-   * Return the space at the given path.
-   * 
-   * Negative indexes are allowed.
-   */
-  childAt(...path: number[]): Space | null
-  childAt(path: Iterable<number>): Space | null
-  childAt(...args: any[]): Space | null {
-    const path = (args[0] && typeof args[0] === 'object' && Symbol.iterator in args[0]) ? args[0] : args
-    let current: Space = this
-    for (let index of path) {
-      if (index < 0) {
-        index = current.children.length + index
-      }
-      current = current.children[index]
-      if (!current) {
-        return null
-      }
-    }
-    return current
-  }
-
   /**
    * @deprecated Use `child(...path)` instead.
    */
@@ -733,7 +646,7 @@ export class Space {
     return this.childAt(...args)
   }
 
-  find(predicate: SpacePredicate, { includeSelf = true } = {}): Space | null {
+  findSpace(predicate: SpacePredicate, { includeSelf = true } = {}): Space | null {
     predicate = parseSpacePredicate(predicate)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
@@ -743,7 +656,7 @@ export class Space {
     return null
   }
 
-  *findAll(predicate: SpacePredicate, { includeSelf = true } = {}): Generator<Space> {
+  *findSpaceAll(predicate: SpacePredicate, { includeSelf = true } = {}): Generator<Space> {
     predicate = parseSpacePredicate(predicate)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
@@ -777,7 +690,7 @@ export class Space {
       const space = spaceArg instanceof Space ? spaceArg : new Space(spaceArg)
       space.removeFromParent()
       space.parent = this
-      this.children.push(space)
+      this.children.push(space as this)
     }
     return this
   }
@@ -808,42 +721,6 @@ export class Space {
     const [count, props] = args as [number, SpaceProps]
     for (let i = 0; i < count; i++) {
       this.add(new Space(props))
-    }
-    return this
-  }
-
-  addTo(space: Space): this {
-    space.add(this)
-    return this
-  }
-
-  prepend(...space: Space[]): this {
-    for (const s of space) {
-      s.removeFromParent()
-      this.children.unshift(s)
-      s.parent = this
-    }
-    return this
-  }
-
-  prependTo(space: Space): this {
-    space.prepend(this)
-    return this
-  }
-
-  removeFromParent(): this {
-    if (this.parent) {
-      this.parent.children.splice(this.parent.children.indexOf(this), 1)
-      this.parent = null
-    }
-    return this
-  }
-
-  remove(...spaces: Space[]): this {
-    for (const space of spaces) {
-      if (space.parent === this) {
-        space.removeFromParent()
-      }
     }
     return this
   }
@@ -969,7 +846,7 @@ export class Space {
     const lines = <string[]>[]
     let total = 0
     for (const space of this.allDescendants({ includeSelf: true })) {
-      const indent = space.allAncestors({ includeSelf: false })
+      const indent = space.allAncestors()
         .map(parentItem => {
           return parentItem.parent === null || parentItem.isLastChild() ? '   ' : '│  '
         })
@@ -986,12 +863,5 @@ export class Space {
     lines.unshift(`Tree: (${total} spaces)`)
     const str = lines.join('\n')
     return str
-  }
-
-  /**
-   * @deprecated Use `Space.getRoot()` instead.
-   */
-  get root(): Space {
-    throw new Error('Space.root is deprecated. Use Space.getRoot() instead.')
   }
 }

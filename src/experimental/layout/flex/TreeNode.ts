@@ -1,3 +1,10 @@
+class TreeNodeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'TreeNodeError'
+  }
+}
+
 export class TreeNode {
   static nextUid = 0
 
@@ -42,11 +49,24 @@ export class TreeNode {
       const parent = node.parent
       const index = parent.children.indexOf(node)
       if (index === -1)
-        throw new Error('this is not a child of its parent.')
+        throw new TreeNodeError('Invalid state: node is not a child of its parent')
       path.push(index)
       node = parent
     }
     return path.reverse()
+  }
+
+  pathEquals(path: number[]): boolean {
+    const currentPath = this.path()
+    if (currentPath.length !== path.length) {
+      return false
+    }
+    for (let i = 0; i < path.length; i++) {
+      if (currentPath[i] !== path[i]) {
+        return false
+      }
+    }
+    return true
   }
 
   /**
@@ -71,8 +91,50 @@ export class TreeNode {
     return current
   }
 
-  *flat(): Generator<this> {
-    return yield* this.allDescendants({ includeSelf: true })
+  removeChild(child: this): this {
+    const index = this.children.indexOf(child)
+    if (index === -1) {
+      throw new TreeNodeError('Invalid state: node is not a child of this')
+    }
+    this.children.splice(index, 1)
+    child.parent = null
+    return this
+  }
+
+  removeFromParent(): this {
+    this.parent?.removeChild(this)
+    return this
+  }
+
+  addChild(child: this): this {
+    child.removeFromParent()
+    this.children.push(child)
+    child.parent = this
+    return this
+  }
+
+  addChildren(...children: this[]): this {
+    for (const child of children) {
+      this.addChild(child)
+    }
+    return this
+  }
+
+  prependChild(child: this): this {
+    child.removeFromParent()
+    this.children.unshift(child)
+    child.parent = this
+    return this
+  }
+
+  addTo(parent: this): this {
+    parent.addChild(this)
+    return this
+  }
+
+  prependTo(parent: this): this {
+    parent.prependChild(this)
+    return this
   }
 
   *allLeaves(): Generator<this> {
@@ -93,12 +155,32 @@ export class TreeNode {
     }
   }
 
-  *allAncestors(): Generator<this> {
-    let node: this | null = this.parent
+  *flat(): Generator<this> {
+    return yield* this.allDescendants({ includeSelf: true })
+  }
+
+  *allAncestors({ includeSelf = false } = {}): Generator<this> {
+    let node: this | null = includeSelf ? this : this.parent
     while (node) {
       yield node
       node = node.parent
     }
+  }
+
+  nodeCount(): number {
+    let count = 0
+    for (const _ of this.allDescendants({ includeSelf: true })) {
+      count++
+    }
+    return count
+  }
+
+  leavesCount(): number {
+    let count = 0
+    for (const _ of this.allLeaves()) {
+      count++
+    }
+    return count
   }
 
   firstLeaf(): this {
@@ -144,11 +226,24 @@ export class TreeNode {
     return null
   }
 
+  findByUid(uid: number): this | null {
+    return this.find(node => node.uid === uid, { includeSelf: true })
+  }
+
   *findAll(predicate: (node: this) => boolean, { includeSelf = true } = {}): Generator<this> {
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
         yield space
       }
+    }
+  }
+
+  toString(mode = <'uid' | 'path'>'uid'): string {
+    switch (mode) {
+      case 'uid':
+        return `N.${this.uid}`
+      case 'path':
+        return `N(${this.path().join('.')})`
     }
   }
 
