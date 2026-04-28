@@ -260,7 +260,7 @@ export class TreeNode {
     for (const n of this.allDescendants({ includeSelf: true })) {
       const indent = [...n.allAncestors()]
         .map(parentItem => {
-          return (indentUnit + (parentItem.parent === null || parentItem.isLastChild() ? ' ' : '│'))
+          return (parentItem.parent === null || parentItem.isLastChild() ? ' ' : '│') + indentUnit
         })
         .reverse()
         .join('')

@@ -12,16 +12,17 @@ const P_PY = 2 // bottom padding
 const P_NX = 3 // left padding
 
 let warningCode = 0
-const Warnings: Record<string, [code: number, message: string]> = {
-  RelativeToParentButNoParent: [
+type WarningEntry = [code: number, message: string]
+const Warnings = {
+  RelativeToParentButNoParent: <WarningEntry>[
     warningCode++,
     'Property is relative to parent but node has no parent.',
   ],
-  RelativeToFitContent: [
+  RelativeToFitContent: <WarningEntry>[
     warningCode++,
     'Value cannot be relative to self to a size that is fit-content.',
   ],
-  CircularDependency: [
+  CircularDependency: <WarningEntry>[
     warningCode++,
     'Circular dependency detected. The involved properties have been resolved to 0.',
   ],
@@ -274,7 +275,7 @@ const solvers = {
       const { size_x, pad_nx, pad_px } = prop.node
       if (size_x.resolved === false || pad_nx.resolved === false || pad_px.resolved === false)
         return false
-      prop.resolve(size_x.value - pad_nx.value - pad_px.value)
+      prop.resolve(Math.max(0, size_x.value - pad_nx.value - pad_px.value))
       return true
     },
   },
@@ -290,7 +291,7 @@ const solvers = {
       const { size_y, pad_ny, pad_py } = prop.node
       if (size_y.resolved === false || pad_ny.resolved === false || pad_py.resolved === false)
         return false
-      prop.resolve(size_y.value - pad_ny.value - pad_py.value)
+      prop.resolve(Math.max(0, size_y.value - pad_ny.value - pad_py.value))
       return true
     },
   },
@@ -343,13 +344,13 @@ const solvers = {
       if (prop.node.isHorizontal) {
         for (const child of prop.node.children) {
           if (child.isFlow) {
-            yield child.size_x
+            yield child.size_y
           }
         }
       } else {
         for (const child of prop.node.children) {
           if (child.isFlow) {
-            yield child.size_y
+            yield child.size_x
           }
         }
       }
@@ -408,7 +409,7 @@ class RelativeProperty {
     return this
   }
 
-  addWarning([code]: [number, string]): this {
+  addWarning([code]: WarningEntry): this {
     this.warningMask |= 1 << code
     return this
   }
@@ -419,7 +420,7 @@ class RelativeProperty {
     return this
   }
 
-  invalid([code]: [number, string]): this {
+  invalid([code]: WarningEntry): this {
     this.warningMask |= 1 << code
     this.setSolver(solvers.zero)
     this.resolve(0)
@@ -441,7 +442,7 @@ class RelativeProperty {
   warnings(): [code: number, message: string][] {
     const result: [code: number, message: string][] = []
     for (const key in Warnings) {
-      const [code, message] = Warnings[key]
+      const [code, message] = Warnings[key as keyof typeof Warnings]
       if (this.warningMask & (1 << code)) {
         result.push([code, message])
       }
@@ -497,7 +498,7 @@ function initGap(node: Node) {
     case ScalarType.OppositeRelative:
       if (node.normalSizeFitContent) {
         // If the node is horizontal and its height is fit-content, the gap is treated as 0.
-        node.gap.invalid(Warnings.RelativeToSelfNormalSizeBut)
+        node.gap.invalid(Warnings.RelativeToFitContent)
       } else {
         node.gap.setSolver(node.isHorizontal ? solvers.relativeToSizeY : solvers.relativeToSizeX)
       }
@@ -506,7 +507,7 @@ function initGap(node: Node) {
     case ScalarType.LargerRelative:
     case ScalarType.SmallerRelative:
       if (node.tangentSizeFitContent && node.normalSizeFitContent) {
-        node.gap.invalid(Warnings.RelativeToSmallerOrLargerButTangentAndNormalSizeFitContent)
+        node.gap.invalid(Warnings.RelativeToFitContent)
       } else {
         if (node.tangentSizeFitContent) {
           node.gap.invalid(Warnings.RelativeToFitContent)
@@ -517,7 +518,7 @@ function initGap(node: Node) {
               : solvers.relativeToSizeMinXY)
         }
         if (node.normalSizeFitContent) {
-          node.gap.invalid(Warnings.RelativeToSelfNormalSizeBut)
+          node.gap.invalid(Warnings.RelativeToFitContent)
         } else {
           node.gap
             .setSolver(node.space.gap.type === ScalarType.LargerRelative
@@ -646,11 +647,12 @@ class Node extends TreeNode {
   /**
    * LayoutNode ID, unique per layout computation.
    */
-  id = Node.nextId++
+  treeId = Node.nextId++
 
   space: Space
   isHorizontal: boolean
 
+  // TODO: remove flowChildren and detachedChildren, and instead precompute flow count (for gap calculation) to avoid allocating arrays.
   flowChildren = <Node[]>[]
   detachedChildren = <Node[]>[]
 
@@ -696,7 +698,6 @@ class Node extends TreeNode {
     for (const childSpace of space.children) {
       const childNode = new Node(this, childSpace)
       this.children.push(childNode as this)
-      if (this.isHorizontal) { }
       if (childSpace.positioning === Positioning.Flow) {
         this.flowChildren.push(childNode)
       } else {
@@ -891,10 +892,10 @@ class Node extends TreeNode {
       }
     }
     if (dependenciesCount === 0) {
-      return `Node #${this.id} has no dependencies. ✅`
+      return `Node #${this.treeId} has no dependencies. ✅`
     }
     return [
-      `Node #${this.id} dependencies (${dependenciesCount}):`,
+      `Node #${this.treeId} dependencies (${dependenciesCount}):`,
       ...lines,
     ].join('\n')
   }
@@ -908,14 +909,14 @@ class Node extends TreeNode {
       lines.push(`- [${PropertyType[prop.type]} "${prop.solver.name}"] (${prop.dependencies.length}):`)
       dependenciesCount += prop.dependencies.length
       for (const relation of prop.dependencies) {
-        lines.push(`  - [#${relation.node.id} ${PropertyType[relation.type]} ${relation.resolved ? '✅' : '🔶'}]`)
+        lines.push(`  - [#${relation.node.treeId} ${PropertyType[relation.type]} ${relation.resolved ? '✅' : '🔶'}]`)
       }
     }
     if (dependenciesCount === 0) {
-      return `Node #${this.id} has no unresolved dependencies. ✅`
+      return `Node #${this.treeId} has no unresolved dependencies. ✅`
     }
     return [
-      `Node #${this.id} unresolved dependencies (${dependenciesCount}):`,
+      `Node #${this.treeId} unresolved dependencies (${dependenciesCount}):`,
       ...lines,
     ].join('\n')
   }
@@ -948,7 +949,7 @@ class Node extends TreeNode {
             continue
           lines.push(`${prop.resolved ? '✅' : '🔶'} ${prop.typeName} "${prop.solver.name}" (${prop.dependencies.length})`)
           for (const dep of prop.dependencies)
-            lines.push(`• ${dep.resolved ? '✅' : '🔶'} [#${dep.node.id} ${PropertyType[dep.type]}]`)
+            lines.push(`• ${dep.resolved ? '✅' : '🔶'} [#${dep.node.treeId} ${PropertyType[dep.type]}]`)
         }
         return lines.join('\n')
       },
@@ -1034,12 +1035,14 @@ function sizePass(stack: Node[]) {
   const nextStack = [] as Node[]
 
   let pass = 0
-  let passMax = stack.length ** 2
+  let passMax = stack.length * 3 // Arbitrary heuristic (Up/Down/Up again). The actual number of passes is usually much lower, but this prevents infinite loops in case of unexpected circular dependencies.
   while (stack.length > 0 && pass++ < passMax) {
     if (pass === passMax) {
       console.log(K.red('Max pass count reached. Possible circular dependency.'))
     }
     const node = stack.pop()!
+
+    console.log(`${pass} N${node.treeId}`)
 
     const propertiesResolved = node.tryResolveProperties()
 
@@ -1047,6 +1050,7 @@ function sizePass(stack: Node[]) {
 
     if (propertiesResolved === false || flowResolved === false)
       nextStack.push(node)
+
 
     if (stack.length === 0) {
       if (pass % 2) {
@@ -1072,8 +1076,8 @@ function positionPass(node: Node) {
     // Flow:
     let x = node.x + node.pad_nx.value
     let y = node.y + node.pad_ny.value
-    const inner_sx = node.size_x.value - node.pad_nx.value - node.pad_px.value
-    const inner_sy = node.size_y.value - node.pad_ny.value - node.pad_py.value
+    const inner_sx = node.inner_size_x.value
+    const inner_sy = node.inner_size_y.value
     // Horizontal:
     if (node.isHorizontal) {
       x += node.remainingTangentSignedSpace * node.space.alignChildrenX
