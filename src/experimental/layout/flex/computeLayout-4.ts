@@ -370,7 +370,38 @@ const solvers = {
       prop.resolve(max)
       return true
     },
-  }
+  },
+
+  // TODO: Decide how to handle aspect ratio.
+  // applyAspectToSizeX: <Solver>{
+  //   name: 'applyAspectToSizeX',
+  //   *dependencies(prop) {
+  //     yield prop.node.size_y
+  //   },
+  //   tryResolve(prop) {
+  //     const { size_y } = prop.node
+  //     if (size_y.resolved === false)
+  //       return false
+  //     const aspect = prop.node.space.aspect!
+  //     prop.resolve(size_y.value * aspect)
+  //     return true
+  //   },
+  // },
+
+  // applyAspectToSizeY: <Solver>{
+  //   name: 'applyAspectToSizeY',
+  //   *dependencies(prop) {
+  //     yield prop.node.size_x
+  //   },
+  //   tryResolve(prop) {
+  //     const { size_x, size_y } = prop.node
+  //     if (size_x.resolved === false)
+  //       return false
+  //     const aspect = prop.node.space.aspect!
+  //     prop.resolve(Math.min(size_x.value, size_y.value) / aspect)
+  //     return true
+  //   },
+  // },
 }
 
 class RelativeProperty {
@@ -452,11 +483,12 @@ class RelativeProperty {
 
   toString(): string {
     const r = this.resolved ? '✅' : '🔶'
+    const n = this.node.treeId
     const t = PropertyType[this.type]
     const s = `${ScalarType[this.scalarType]}(${this.scalarValue})`
     const v = this.resolved ? ` > ${this.value}` : ''
     const w = this.warningMask === 0 ? '' : ` ⚠️(${this.warnings().length})`
-    return `${r} ${t} (${s}${v}) "${this.solver.name}" (${this.dependencies.length} 🔗)${w}`
+    return `${r} N${n}.${t} (${s}${v}) "${this.solver.name}" (${this.dependencies.length} 🔗)${w}`
   }
 
   toSummaryString(): string {
@@ -635,6 +667,29 @@ function initSize(node: Node, prop: RelativeProperty, innerProp: RelativePropert
   }
 }
 
+// TODO: Decide how to handle aspect ratio.
+// function initAspect(node: Node) {
+//   if (node.space.aspect === null)
+//     return
+
+//   const xFree = node.sizeXFitContent === false && node.size_x.scalarType === ScalarType.Auto
+//   const yFree = node.sizeYFitContent === false && node.size_y.scalarType === ScalarType.Auto
+
+//   if (xFree === false && yFree === false)
+//     return
+
+
+//   if (xFree && yFree) {
+//     if (node.parent?.isHorizontal !== false) {
+//       node.size_x.setSolver(solvers.applyAspectToSizeX)
+//       node.size_x.isFractional = false
+//     } else {
+//       node.size_y.setSolver(solvers.applyAspectToSizeY)
+//       node.size_y.isFractional = false
+//     }
+//   }
+// }
+
 class Node extends TreeNode {
   static nextId = 0
   static nextUid = 0
@@ -678,8 +733,7 @@ class Node extends TreeNode {
   inner_size_x: RelativeProperty
   inner_size_y: RelativeProperty
 
-  remainingTangentSignedSpace = 0
-  remainingTangentSpace = 0
+  remainingSignedSpace = 0
 
   x = 0
   y = 0
@@ -736,6 +790,8 @@ class Node extends TreeNode {
     initPadding(this, this.pad_py, false)
     initSize(this, this.size_x, this.inner_size_x, true)
     initSize(this, this.size_y, this.inner_size_y, false)
+    // TODO: Decide how to handle aspect ratio.
+    // initAspect(this)
 
     for (const child of this.children) {
       if (child.isFlow)
@@ -805,7 +861,7 @@ class Node extends TreeNode {
 
     const gap = this.gap.value * Math.max(0, childCount - 1)
     let remainingSignedSpace = totalSpace - totalSize - paddingBefore.value - paddingAfter.value - gap
-    let remainingSpace = Math.max(0, remainingSignedSpace)
+    let remainingClampedSpace = Math.max(0, remainingSignedSpace)
 
     if (hasFractionalSize && totalFraction === 0)
       throw new InternalError('Total fraction cannot be 0 when resolving fractional sizes.')
@@ -816,16 +872,20 @@ class Node extends TreeNode {
 
       const childSize = is_h ? child.size_x : child.size_y
       if (childSize.isFractional) {
-        const resolvedSize = remainingSpace * childSize.scalarValue / totalFraction
+        const resolvedSize = remainingClampedSpace * childSize.scalarValue / totalFraction
         childSize.resolve(resolvedSize)
 
-        // Remaining space is consumed.
-        remainingSignedSpace = 0
+        if (child.space.aspect !== null) {
+          const aspect = child.space.aspect
+          const otherSize = is_h ? child.size_y : child.size_x
+          otherSize.resolve(resolvedSize / aspect)
+        }
+
+        remainingSignedSpace -= resolvedSize
       }
     }
 
-    this.remainingTangentSignedSpace = remainingSignedSpace
-    this.remainingTangentSpace = remainingSpace
+    this.remainingSignedSpace = remainingSignedSpace
     this.flowHasBeenResolved = true
     return true
   }
@@ -947,9 +1007,9 @@ class Node extends TreeNode {
         for (const prop of node.relativeProperties()) {
           if (onlyUnresolved && prop.resolved)
             continue
-          lines.push(`${prop.resolved ? '✅' : '🔶'} ${prop.typeName} "${prop.solver.name}" (${prop.dependencies.length})`)
+          lines.push(`${prop}`)
           for (const dep of prop.dependencies)
-            lines.push(`• ${dep.resolved ? '✅' : '🔶'} [#${dep.node.treeId} ${PropertyType[dep.type]}]`)
+            lines.push(`• ${dep}`)
         }
         return lines.join('\n')
       },
@@ -1035,14 +1095,14 @@ function sizePass(stack: Node[]) {
   const nextStack = [] as Node[]
 
   let pass = 0
-  let passMax = stack.length * 3 // Arbitrary heuristic (Up/Down/Up again). The actual number of passes is usually much lower, but this prevents infinite loops in case of unexpected circular dependencies.
-  while (stack.length > 0 && pass++ < passMax) {
-    if (pass === passMax) {
+  let passMax = stack.length * 4 // Arbitrary heuristic (Up/Down/Up again). The actual number of passes is usually much lower, but this prevents infinite loops in case of unexpected circular dependencies.
+  while (stack.length > 0) {
+    if (pass++ > passMax) {
       console.log(K.red('Max pass count reached. Possible circular dependency.'))
+      break
     }
-    const node = stack.pop()!
 
-    console.log(`${pass} N${node.treeId}`)
+    const node = stack.pop()!
 
     const propertiesResolved = node.tryResolveProperties()
 
@@ -1050,7 +1110,6 @@ function sizePass(stack: Node[]) {
 
     if (propertiesResolved === false || flowResolved === false)
       nextStack.push(node)
-
 
     if (stack.length === 0) {
       if (pass % 2) {
@@ -1080,7 +1139,7 @@ function positionPass(node: Node) {
     const inner_sy = node.inner_size_y.value
     // Horizontal:
     if (node.isHorizontal) {
-      x += node.remainingTangentSignedSpace * node.space.alignChildrenX
+      x += node.remainingSignedSpace * node.space.alignChildrenX
       for (const child of node.children) {
         if (child.isFlow) {
           child.x = x
@@ -1091,7 +1150,7 @@ function positionPass(node: Node) {
     }
     // Vertical:
     else {
-      y += node.remainingTangentSignedSpace * node.space.alignChildrenY
+      y += node.remainingSignedSpace * node.space.alignChildrenY
       for (const child of node.children) {
         if (child.isFlow) {
           child.x = x + (inner_sx - child.size_x.value) * (child.space.alignX ?? node.space.alignChildrenX)
@@ -1123,6 +1182,12 @@ function applyLayout(node: Node) {
   }
 }
 
+/**
+ * Computes the layout for a given space and its children, returning the root layout node with computed positions and sizes.
+ * 
+ * Notes:
+ * - The optional `rootRect` parameter can be used to compute partial layouts for subtrees.
+ */
 export function computeLayout4(rootSpace: Space, rootRect?: RectangleDeclaration) {
   Node.nextId = 0
 

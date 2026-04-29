@@ -9,12 +9,52 @@ export class TreeNode {
   static nextUid = 0
 
   /**
-   * LayoutNode UID, unique across multiple layout computations.
+   * TreeNode UID, unique across multiple layout computations.
    */
   uid = TreeNode.nextUid++
 
+  /**
+   * TreeNode "Tree ID", unique within tree, assigned by computeTid() method. Used for debugging and visualization purposes.
+   */
+  tid = -1
+
   parent: this | null = null
   children: this[] = []
+
+  /**
+   * Shallow clone the node, without copying its children or parent.
+   * 
+   * Notes:
+   * - This method allows the deepClone() method to create a new tree with the same structure and properties, but with different node instances.
+   * - ⚠️ Must be overridden by subclasses to copy the properties of the subclass. The default implementation only creates a new instance of the same class, without copying any properties.
+   */
+  clone(): this {
+    const ctor = this.constructor as new () => this
+    const clone = new ctor()
+    return clone
+  }
+
+  /**
+   * Create a deep clone of the node and its entire subtree.
+   * 
+   * Notes:
+   * - ⚠️ This method relies on the clone() method, so it must be properly implemented in subclasses to ensure that all properties are copied correctly.
+   */
+  deepClone(): this {
+    const clone = this.clone()
+    for (const child of this.children) {
+      const childClone = child.deepClone()
+      clone.addChild(childClone)
+    }
+    return clone
+  }
+
+  computeTid() {
+    let tid = 0
+    for (const node of this.allDescendants({ includeSelf: true })) {
+      node.tid = tid++
+    }
+  }
 
   isRoot(): boolean {
     return this.parent === null

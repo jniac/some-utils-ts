@@ -333,6 +333,42 @@ export class Space extends TreeNode {
     }
   }
 
+  copy(other: Space): this {
+    this.enabled = other.enabled
+    this.name = other.name
+    this.direction = other.direction
+    this.positioning = other.positioning
+    this.aspect = other.aspect
+    this.childrenAspectSizeMode = other.childrenAspectSizeMode
+    this.aspectSizeMode = other.aspectSizeMode
+    this.offsetX.copy(other.offsetX)
+    this.offsetY.copy(other.offsetY)
+    this.sizeX.copy(other.sizeX)
+    this.sizeY.copy(other.sizeY)
+    this.sizeXFitContent = other.sizeXFitContent
+    this.sizeYFitContent = other.sizeYFitContent
+    this.extraSizeX.copy(other.extraSizeX)
+    this.extraSizeY.copy(other.extraSizeY)
+    for (let i = 0; i < 4; i++) {
+      this.padding[i].copy(other.padding[i])
+      this.margin[i].copy(other.margin[i])
+    }
+    this.gap.copy(other.gap)
+    this.alignChildrenX = other.alignChildrenX
+    this.alignChildrenY = other.alignChildrenY
+    this.alignX = other.alignX
+    this.alignY = other.alignY
+    this.detachedChildrenSpacingMode = other.detachedChildrenSpacingMode
+    this.detachedSpacingMode = other.detachedSpacingMode
+    this.rect.copy(other.rect)
+    this.userData = { ...other.userData }
+    return this
+  }
+
+  override clone(): this {
+    return super.clone().copy(this)
+  }
+
   set(props: SpaceProps): this {
     // Deprecated properties:
     if (props.alignSelf !== undefined

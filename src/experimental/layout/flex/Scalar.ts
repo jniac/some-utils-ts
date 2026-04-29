@@ -92,6 +92,12 @@ export class Scalar {
     this.type = mode
   }
 
+  copy(other: Scalar): this {
+    this.value = other.value
+    this.type = other.type
+    return this
+  }
+
   set(value: number, mode: ScalarType = this.type) {
     this.value = value
     this.type = mode
