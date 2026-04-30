@@ -92,6 +92,10 @@ export class Scalar {
     this.type = mode
   }
 
+  equals(other: Scalar): boolean {
+    return this.value === other.value && this.type === other.type
+  }
+
   copy(other: Scalar): this {
     this.value = other.value
     this.type = other.type

@@ -14,7 +14,10 @@ export class TreeNode {
   uid = TreeNode.nextUid++
 
   /**
-   * TreeNode "Tree ID", unique within tree, assigned by computeTid() method. Used for debugging and visualization purposes.
+   * TreeNode "Tree ID", unique within tree, assigned by computeTid() method. Used for serialization, visualization or debugging and purposes.
+   * 
+   * Notes:
+   * - The tid is very volatile and may change between different runs. It should be used in single run.
    */
   tid = -1
 
@@ -47,6 +50,26 @@ export class TreeNode {
       clone.addChild(childClone)
     }
     return clone
+  }
+
+  equals(other: this): boolean {
+    return true
+  }
+
+  deepEquals(other: this, compare?: (A: this, B: this) => boolean): boolean {
+    const equals = compare?.(this, other) ?? this.equals(other)
+    if (equals === false) {
+      return false
+    }
+    if (this.children.length !== other.children.length) {
+      return false
+    }
+    for (let i = 0; i < this.children.length; i++) {
+      if (this.children[i].deepEquals(other.children[i], compare) === false) {
+        return false
+      }
+    }
+    return true
   }
 
   computeTid() {
@@ -138,6 +161,14 @@ export class TreeNode {
     }
     this.children.splice(index, 1)
     child.parent = null
+    return this
+  }
+
+  removeAllChildren(): this {
+    for (const child of this.children) {
+      child.parent = null
+    }
+    this.children = []
     return this
   }
 
@@ -276,6 +307,88 @@ export class TreeNode {
         yield space
       }
     }
+  }
+
+  static readonly SERIALIZATION_NODE_HEADER_BYTE_LENGTH = 4 // parent tid (uint32)
+
+  /**
+   * A method to serialize the tree into a binary format, for efficient storage or transmission.
+   * 
+   * The serialization format is as follows:
+   * - Each node is serialized in a breadth-first order, starting from the root.
+   * - For each node, we write a fixed-size header containing the parent node's tid (4 bytes, uint32), followed by the node's extra data (if any).
+   * 
+   * Notes:
+   * - Works well in conjunction with the deserializeFromBuffer() method.
+   */
+  serializeToBuffer({
+    nodeExtraDataByteLength = 0,
+    writeNodeExtraData = <(node: any, view: DataView, offset: number) => void>(() => { }),
+  }): ArrayBuffer {
+    const { SERIALIZATION_NODE_HEADER_BYTE_LENGTH: head } = TreeNode
+    const nodes = [...this.allDescendants({ includeSelf: true })]
+    const stride = head + nodeExtraDataByteLength
+    const buffer = new ArrayBuffer(nodes.length * stride)
+    const view = new DataView(buffer)
+
+    const root = nodes[0]
+    root.tid = 0
+    view.setUint32(0, 0, true) // root has no parent, so we can set its parent tid to 0 or any value
+    writeNodeExtraData(root, view, head)
+
+    for (let i = 1; i < nodes.length; i++) {
+      const node = nodes[i]
+      node.tid = i
+      const offset = i * stride
+      view.setUint32(offset, node.parent!.tid, true)
+      writeNodeExtraData(node, view, offset + head)
+    }
+
+    return buffer
+  }
+
+  /**
+   * A method to deserialize the tree from a binary format, previously serialized using serializeToBuffer().
+   * 
+   * Notes:
+   * - ⚠️ The methode mutates deeply the current tree: it removes any existing child and creates brand new nodes (from clone()) then parent them according to the serialized structure.
+   */
+  deserializeFromBuffer(buffer: ArrayBuffer, {
+    nodeExtraDataByteLength = 0,
+    readNodeExtraData = <(node: any, view: DataView, offset: number) => void>(() => { }),
+  }): this {
+    const { SERIALIZATION_NODE_HEADER_BYTE_LENGTH: head } = TreeNode
+    const stride = head + nodeExtraDataByteLength
+    const dataView = new DataView(buffer)
+    const nodeCount = buffer.byteLength / stride
+    const nodeMap = new Map<number, this>()
+
+    this.removeAllChildren()
+
+    const rootId = dataView.getUint32(0, true)
+    nodeMap.set(rootId, this)
+
+    readNodeExtraData(this, dataView, head)
+
+    for (let i = 1; i < nodeCount; i++) {
+      const offset = i * stride
+
+      const parentId = dataView.getUint32(offset, true)
+
+      const node = this.clone()
+      nodeMap.set(i, node)
+
+      const parent = nodeMap.get(parentId)
+      if (!parent)
+        throw new Error(`Space with parentId ${parentId} not found during deserialization`)
+      parent.addChild(node)
+
+      readNodeExtraData(node, dataView, offset + head)
+    }
+
+    nodeMap.clear()
+
+    return this
   }
 
   toString(mode = <'uid' | 'path'>'uid'): string {

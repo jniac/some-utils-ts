@@ -333,6 +333,40 @@ export class Space extends TreeNode {
     }
   }
 
+  override equals(other: this): boolean {
+    return this.enabled === other.enabled
+      // && this.name === other.name // Name is not taken into account for equality check, as it's just an identifier and doesn't affect layout
+      && this.direction === other.direction
+      && this.positioning === other.positioning
+      && this.aspect === other.aspect
+      && this.childrenAspectSizeMode === other.childrenAspectSizeMode
+      && this.aspectSizeMode === other.aspectSizeMode
+      && this.offsetX.equals(other.offsetX)
+      && this.offsetY.equals(other.offsetY)
+      && this.sizeX.equals(other.sizeX)
+      && this.sizeY.equals(other.sizeY)
+      && this.sizeXFitContent === other.sizeXFitContent
+      && this.sizeYFitContent === other.sizeYFitContent
+      && this.extraSizeX.equals(other.extraSizeX)
+      && this.extraSizeY.equals(other.extraSizeY)
+      && this.padding[0].equals(other.padding[0])
+      && this.padding[1].equals(other.padding[1])
+      && this.padding[2].equals(other.padding[2])
+      && this.padding[3].equals(other.padding[3])
+      && this.margin[0].equals(other.margin[0])
+      && this.margin[1].equals(other.margin[1])
+      && this.margin[2].equals(other.margin[2])
+      && this.margin[3].equals(other.margin[3])
+      && this.gap.equals(other.gap)
+      && this.alignChildrenX === other.alignChildrenX
+      && this.alignChildrenY === other.alignChildrenY
+      && this.alignX === other.alignX
+      && this.alignY === other.alignY
+      && this.detachedChildrenSpacingMode === other.detachedChildrenSpacingMode
+      && this.detachedSpacingMode === other.detachedSpacingMode
+      && this.rect.equals(other.rect)
+  }
+
   copy(other: Space): this {
     this.enabled = other.enabled
     this.name = other.name
@@ -349,10 +383,14 @@ export class Space extends TreeNode {
     this.sizeYFitContent = other.sizeYFitContent
     this.extraSizeX.copy(other.extraSizeX)
     this.extraSizeY.copy(other.extraSizeY)
-    for (let i = 0; i < 4; i++) {
-      this.padding[i].copy(other.padding[i])
-      this.margin[i].copy(other.margin[i])
-    }
+    this.padding[0].copy(other.padding[0])
+    this.padding[1].copy(other.padding[1])
+    this.padding[2].copy(other.padding[2])
+    this.padding[3].copy(other.padding[3])
+    this.margin[0].copy(other.margin[0])
+    this.margin[1].copy(other.margin[1])
+    this.margin[2].copy(other.margin[2])
+    this.margin[3].copy(other.margin[3])
     this.gap.copy(other.gap)
     this.alignChildrenX = other.alignChildrenX
     this.alignChildrenY = other.alignChildrenY
@@ -701,6 +739,13 @@ export class Space extends TreeNode {
     }
   }
 
+  setAll(predicate: SpacePredicate, props: SpaceProps): this {
+    for (const space of this.findSpaceAll(predicate)) {
+      space.set(props)
+    }
+    return this
+  }
+
   pointCast(point: Vector2Like): Space | null
   pointCast(x: number, y: number): Space | null
   pointCast(...args: any[]): Space | null {
@@ -899,5 +944,34 @@ export class Space extends TreeNode {
     lines.unshift(`Tree: (${total} spaces)`)
     const str = lines.join('\n')
     return str
+  }
+
+  serializeRects(): ArrayBuffer {
+    return this.serializeToBuffer({
+      nodeExtraDataByteLength: 4 * 4, // 4 floats for rect (x, y, width, height)
+      writeNodeExtraData: (space, dataView, offset) => {
+        dataView.setFloat32(offset, space.rect.x, true)
+        dataView.setFloat32(offset + 4, space.rect.y, true)
+        dataView.setFloat32(offset + 8, space.rect.width, true)
+        dataView.setFloat32(offset + 12, space.rect.height, true)
+      },
+    })
+  }
+
+  deserializeRects(buffer: ArrayBuffer): this {
+    return this.deserializeFromBuffer(buffer, {
+      nodeExtraDataByteLength: 4 * 4, // 4 floats for rect (x, y, width, height)
+      readNodeExtraData: (space, dataView, offset) => {
+        const x = dataView.getFloat32(offset, true)
+        const y = dataView.getFloat32(offset + 4, true)
+        const width = dataView.getFloat32(offset + 8, true)
+        const height = dataView.getFloat32(offset + 12, true)
+        space.rect.set(x, y, width, height)
+      },
+    })
+  }
+
+  static deserializeRectsToNew(buffer: ArrayBuffer): Space {
+    return new Space().deserializeRects(buffer)
   }
 }
