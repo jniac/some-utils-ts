@@ -41,7 +41,7 @@ class Node {
   /**
    * Whether this node is detached (not participating in the flow layout of its parent).
    */
-  is_detached: boolean
+  is_abs: boolean
 
   /**
    * Position x
@@ -134,7 +134,7 @@ class Node {
     this.space = space
     this.parent = parent
     this.is_h = space.direction === Direction.Horizontal
-    this.is_detached = space.positioning === Positioning.Detached
+    this.is_abs = space.positioning === Positioning.Absolute
     const p_is_h = parent?.is_h ?? true
 
     this.fractionalInTangentSpace = p_is_h
@@ -329,7 +329,7 @@ function nonFitSizePass(root: Node) {
     if (n.is_h) {
       // 1. Regular children
       for (const c of regularChildren(n)) {
-        if (c.is_detached === false) {
+        if (c.is_abs === false) {
           if (c.sizeComputed === false) {
             const c_sx = c.space.sizeX.compute(isx, isy)
             const c_sy = c.space.sizeY.compute(isy, isx)
@@ -371,7 +371,7 @@ function nonFitSizePass(root: Node) {
     else {
       // 1. Regular children
       for (const c of regularChildren(n)) {
-        if (c.is_detached === false) {
+        if (c.is_abs === false) {
           if (c.sizeComputed === false) {
             const c_sx = c.space.sizeX.compute(isx, isy)
             const c_sy = c.space.sizeY.compute(isy, isx)

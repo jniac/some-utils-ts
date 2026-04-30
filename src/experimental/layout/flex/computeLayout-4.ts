@@ -1240,6 +1240,19 @@ function positionPass(node: Node) {
   }
   {
     // Detached:
+    for (const child of node.children) {
+      if (child.isFlow)
+        continue
+
+      const off_x = child.space.offsetX.compute(node.size_x.value, node.size_y.value)
+      const off_y = child.space.offsetY.compute(node.size_y.value, node.size_x.value)
+
+      const a_x = (child.space.alignX ?? node.space.alignChildrenX) * (node.size_x.value - child.size_x.value)
+      const a_y = (child.space.alignY ?? node.space.alignChildrenY) * (node.size_y.value - child.size_y.value)
+
+      child.x = node.x + off_x + a_x
+      child.y = node.y + off_y + a_y
+    }
   }
 
   for (const child of node.children) {

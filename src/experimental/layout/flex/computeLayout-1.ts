@@ -156,7 +156,7 @@ export function computeChildrenRect(space: Space) {
 
   // flowChildren = regularChildren + shareChildren
   const [detachedChildren, flowChildren, regularChildren, fractionChildren, totalFraction] = enabledChildren.reduce((acc, child) => {
-    if (child.positioning === Positioning.Detached) {
+    if (child.positioning === Positioning.Absolute) {
       acc[0].push(child)
     } else {
       acc[1].push(child) // Flow

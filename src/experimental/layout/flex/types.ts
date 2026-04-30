@@ -3,7 +3,7 @@ import { ScalarDeclaration } from './Scalar'
 enum SpaceConstants {
   // Positioning:
   Flow,
-  Detached,
+  Absolute,
 
   // Direction:
   Horizontal,
@@ -24,10 +24,10 @@ export enum Positioning {
    */
   Flow = SC.Flow,
   /**
-   * Detached children are not included in the layout computation. They are 
+   * Absolute children are not included in the layout computation. They are 
    * positioned relative to the parent space only (not to other children).
    */
-  Detached = SC.Detached,
+  Absolute = SC.Absolute,
 }
 
 export enum AspectSizeMode {
@@ -61,7 +61,8 @@ export function parseAspectSizeMode(value: any): AspectSizeMode {
 export type PositioningDeclaration =
   | Positioning
   | 'flow'
-  | 'detached'
+  | 'absolute'
+  | 'detached' // backward compatibility
 
 export function parsePositioning(value: any): Positioning {
   if (value in Positioning) {
@@ -70,7 +71,7 @@ export function parsePositioning(value: any): Positioning {
   if (typeof value === 'string') {
     return value === 'flow'
       ? Positioning.Flow
-      : Positioning.Detached
+      : Positioning.Absolute
   }
   throw new Error(`Invalid positioning value: ${value}`)
 }
