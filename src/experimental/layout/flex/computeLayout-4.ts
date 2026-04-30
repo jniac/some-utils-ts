@@ -372,36 +372,35 @@ const solvers = {
     },
   },
 
-  // TODO: Decide how to handle aspect ratio.
-  // applyAspectToSizeX: <Solver>{
-  //   name: 'applyAspectToSizeX',
-  //   *dependencies(prop) {
-  //     yield prop.node.size_y
-  //   },
-  //   tryResolve(prop) {
-  //     const { size_y } = prop.node
-  //     if (size_y.resolved === false)
-  //       return false
-  //     const aspect = prop.node.space.aspect!
-  //     prop.resolve(size_y.value * aspect)
-  //     return true
-  //   },
-  // },
+  applyAspectToSizeXFromSizeY: <Solver>{
+    name: 'applyAspectToSizeXFromSizeY',
+    *dependencies(prop) {
+      yield prop.node.size_y
+    },
+    tryResolve(prop) {
+      const { size_y } = prop.node
+      if (size_y.resolved === false)
+        return false
+      const aspect = prop.node.space.aspect!
+      prop.resolve(size_y.value * aspect)
+      return true
+    },
+  },
 
-  // applyAspectToSizeY: <Solver>{
-  //   name: 'applyAspectToSizeY',
-  //   *dependencies(prop) {
-  //     yield prop.node.size_x
-  //   },
-  //   tryResolve(prop) {
-  //     const { size_x, size_y } = prop.node
-  //     if (size_x.resolved === false)
-  //       return false
-  //     const aspect = prop.node.space.aspect!
-  //     prop.resolve(Math.min(size_x.value, size_y.value) / aspect)
-  //     return true
-  //   },
-  // },
+  applyAspectToSizeYFromSizeX: <Solver>{
+    name: 'applyAspectToSizeYFromSizeX',
+    *dependencies(prop) {
+      yield prop.node.size_x
+    },
+    tryResolve(prop) {
+      const { size_x } = prop.node
+      if (size_x.resolved === false)
+        return false
+      const aspect = prop.node.space.aspect!
+      prop.resolve(size_x.value / aspect)
+      return true
+    },
+  },
 }
 
 class RelativeProperty {
@@ -667,28 +666,26 @@ function initSize(node: Node, prop: RelativeProperty, innerProp: RelativePropert
   }
 }
 
-// TODO: Decide how to handle aspect ratio.
-// function initAspect(node: Node) {
-//   if (node.space.aspect === null)
-//     return
+function initConstrainedAspect(node: Node) {
+  if (node.space.aspect === null)
+    return
 
-//   const xFree = node.sizeXFitContent === false && node.size_x.scalarType === ScalarType.Auto
-//   const yFree = node.sizeYFitContent === false && node.size_y.scalarType === ScalarType.Auto
+  const xAuto = node.sizeXFitContent === false && node.size_x.scalarType === ScalarType.Auto
+  const yAuto = node.sizeYFitContent === false && node.size_y.scalarType === ScalarType.Auto
 
-//   if (xFree === false && yFree === false)
-//     return
+  if (xAuto === false && yAuto === false)
+    return
 
+  if (xAuto && yAuto === false) {
+    node.size_x.setSolver(solvers.applyAspectToSizeXFromSizeY)
+    node.size_x.isFractional = false
+  }
 
-//   if (xFree && yFree) {
-//     if (node.parent?.isHorizontal !== false) {
-//       node.size_x.setSolver(solvers.applyAspectToSizeX)
-//       node.size_x.isFractional = false
-//     } else {
-//       node.size_y.setSolver(solvers.applyAspectToSizeY)
-//       node.size_y.isFractional = false
-//     }
-//   }
-// }
+  if (xAuto === false && yAuto) {
+    node.size_y.setSolver(solvers.applyAspectToSizeYFromSizeX)
+    node.size_y.isFractional = false
+  }
+}
 
 class Node extends TreeNode {
   static nextId = 0
@@ -707,7 +704,7 @@ class Node extends TreeNode {
   space: Space
   isHorizontal: boolean
 
-  // TODO: remove flowChildren and detachedChildren, and instead precompute flow count (for gap calculation) to avoid allocating arrays.
+  // TODO: remove flowChildren and detachedChildren, and instead precompute flow count (for gap calculation) to avoid allocating arrays here (reduce GC pressure & state management complexity).
   flowChildren = <Node[]>[]
   detachedChildren = <Node[]>[]
 
@@ -717,7 +714,7 @@ class Node extends TreeNode {
   tangentSizeFitContent: boolean
   normalSizeFitContent: boolean
 
-  hasFlow = false
+  hasFlowChildren = false
   flowHasBeenResolved = false
 
   pad_px: RelativeProperty
@@ -732,6 +729,17 @@ class Node extends TreeNode {
 
   inner_size_x: RelativeProperty
   inner_size_y: RelativeProperty
+
+  aspect: number
+  sqrtAspect: number
+  isAspect: boolean
+  /**
+   * "aspect-auto" nodes are the nodes that have an aspect ratio and both their width and height are free (auto).
+   */
+  isAspectAuto: boolean
+  isAspectWithConstraintX: boolean
+  isAspectWithConstraintY: boolean
+  hasAspectAutoChildren = false
 
   remainingSignedSpace = 0
 
@@ -780,9 +788,20 @@ class Node extends TreeNode {
 
     this.inner_size_x = new RelativeProperty(this, PropertyType.InnerSizeX, space.sizeX)
     this.inner_size_y = new RelativeProperty(this, PropertyType.InnerSizeY, space.sizeY)
+
+    const freeSizeX = this.sizeXFitContent === false && this.size_x.scalarType === ScalarType.Auto
+    const freeSizeY = this.sizeYFitContent === false && this.size_y.scalarType === ScalarType.Auto
+    this.isAspect = space.aspect !== null
+    this.isAspectAuto = this.isAspect && freeSizeX && freeSizeY
+    this.isAspectWithConstraintX = this.isAspect && freeSizeX && !freeSizeY
+    this.isAspectWithConstraintY = this.isAspect && !freeSizeX && freeSizeY
+    this.aspect = space.aspect ?? -1
+    this.sqrtAspect = this.isAspect ? Math.sqrt(this.aspect) : -1
   }
 
   initialize(): this {
+    this.hasAspectAutoChildren = this.children.some(child => child.isAspectAuto)
+
     initGap(this)
     initPadding(this, this.pad_nx, true)
     initPadding(this, this.pad_px, true)
@@ -790,16 +809,15 @@ class Node extends TreeNode {
     initPadding(this, this.pad_py, false)
     initSize(this, this.size_x, this.inner_size_x, true)
     initSize(this, this.size_y, this.inner_size_y, false)
-    // TODO: Decide how to handle aspect ratio.
-    // initAspect(this)
+    initConstrainedAspect(this)
 
     for (const child of this.children) {
       if (child.isFlow)
-        this.hasFlow = true
+        this.hasFlowChildren = true
 
       child.initialize()
     }
-    this.flowHasBeenResolved = !this.hasFlow
+    this.flowHasBeenResolved = !this.hasFlowChildren
 
     return this
   }
@@ -827,19 +845,22 @@ class Node extends TreeNode {
     if (this.gap.resolved === false)
       return false
 
-    const is_h = this.isHorizontal
-    const selfSize = is_h ? this.size_x : this.size_y
-    const paddingBefore = is_h ? this.pad_nx : this.pad_ny
-    const paddingAfter = is_h ? this.pad_px : this.pad_py
-
-    if (selfSize.resolved === false)
+    // "aspect-auto children" are children that have an aspect ratio but both their width and height are free (auto).
+    if (this.hasAspectAutoChildren && this.inner_size_x.resolved === false && this.inner_size_y.resolved === false)
       return false
 
-    const totalSpace = selfSize.value
+    const is_h = this.isHorizontal
+    const inner_size = is_h ? this.inner_size_x : this.inner_size_y
+
+    if (inner_size.resolved === false)
+      return false
+
+    const totalSpace = inner_size.value
 
     let hasFractionalSize = false
     let totalFraction = 0
     let totalSize = 0
+    let totalAspectAutoCount = 0
     let childCount = 0
 
     for (const child of this.children) {
@@ -847,10 +868,16 @@ class Node extends TreeNode {
         continue
 
       const childSize = is_h ? child.size_x : child.size_y
-      if (childSize.isFractional) {
+      if (child.isAspectAuto) {
+        totalAspectAutoCount++
+      }
+
+      else if (childSize.isFractional) {
         hasFractionalSize = true
         totalFraction += childSize.scalarValue
-      } else {
+      }
+
+      else {
         if (!childSize.resolved)
           return false
         totalSize += childSize.value
@@ -860,14 +887,65 @@ class Node extends TreeNode {
     }
 
     const gap = this.gap.value * Math.max(0, childCount - 1)
-    let remainingSignedSpace = totalSpace - totalSize - paddingBefore.value - paddingAfter.value - gap
+    let remainingSignedSpace = totalSpace - totalSize - gap
     let remainingClampedSpace = Math.max(0, remainingSignedSpace)
+
+    // "Aspect Auto" handling:
+    if (totalAspectAutoCount > 0) {
+      let w_sum = 0
+      let w_max = 0
+      let h_sum = 0
+      let h_max = 0
+      for (const child of this.children) {
+        if (child.isFlow === false || child.isAspectAuto === false)
+          continue
+
+        const w = child.sqrtAspect
+        const h = 1 / child.sqrtAspect
+        w_sum += w
+        w_max = w > w_max ? w : w_max
+        h_sum += h
+        h_max = h > h_max ? h : h_max
+      }
+
+      const aspect_space = remainingClampedSpace * totalAspectAutoCount / (totalFraction + totalAspectAutoCount)
+      const w_avail = is_h ? aspect_space : this.inner_size_x.value
+      const h_avail = is_h ? this.inner_size_y.value : aspect_space
+
+      const scale_w = is_h ? w_avail / w_sum : w_avail / w_max
+      const scale_h = is_h ? h_avail / h_max : h_avail / h_sum
+      const scale = Math.min(scale_w, scale_h)
+
+      let child_w_sum = 0
+      let child_h_sum = 0
+
+      for (const child of this.children) {
+        if (child.isFlow === false || child.isAspectAuto === false)
+          continue
+
+        const child_w = scale * child.sqrtAspect
+        const child_h = scale / child.sqrtAspect
+        child.size_x.resolve(child_w)
+        child.size_y.resolve(child_h)
+        child_w_sum += child_w
+        child_h_sum += child_h
+        remainingSignedSpace -= is_h ? child_w : child_h
+      }
+
+      // Consume the space taken by aspect-only children from the remaining space for fractional children.
+      remainingClampedSpace -= is_h ? child_w_sum : child_h_sum
+    }
+
+
 
     if (hasFractionalSize && totalFraction === 0)
       throw new InternalError('Total fraction cannot be 0 when resolving fractional sizes.')
 
     for (const child of this.children) {
       if (child.isFlow === false)
+        continue
+
+      if (child.isAspectAuto)
         continue
 
       const childSize = is_h ? child.size_x : child.size_y
@@ -890,7 +968,7 @@ class Node extends TreeNode {
     return true
   }
 
-  *relativeProperties(): Generator<RelativeProperty> {
+  * relativeProperties(): Generator<RelativeProperty> {
     yield this.gap
     yield this.pad_ny
     yield this.pad_py
@@ -1112,7 +1190,7 @@ function sizePass(stack: Node[]) {
       nextStack.push(node)
 
     if (stack.length === 0) {
-      if (pass % 2) {
+      if (pass % 2 === 1) {
         // Normal order on odd passes.
         for (const n of nextStack) {
           stack.push(n)
