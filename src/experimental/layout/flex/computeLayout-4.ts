@@ -1294,5 +1294,3 @@ export function computeLayout4(rootSpace: Space, rootRect?: RectangleDeclaration
 
   return root
 }
-
-computeLayout4.name = 'computeLayout4'
