@@ -333,8 +333,8 @@ function positioningAllChildren(root: LayoutNodeSpace) {
     const is_h = space.direction === Direction.Horizontal
     let offsetX = x + s.pl!
     let offsetY = y + s.pt!
-    const ax = space.alignChildrenX
-    const ay = space.alignChildrenY
+    const ax = space.flowAlignX
+    const ay = space.flowAlignY
     for (const sc of s.children) {
       sc.x = offsetX
       sc.y = offsetY

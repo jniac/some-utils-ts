@@ -146,6 +146,64 @@ const solvers = {
     }
   },
 
+  relativeToInnerSizeMinXY: <Solver>{
+    name: 'relativeToInnerSizeMinXY',
+    *dependencies(prop) {
+      yield prop.node.inner_size_x
+      yield prop.node.inner_size_y
+    },
+    tryResolve(prop): boolean {
+      const { inner_size_x, inner_size_y } = prop.node
+      if (inner_size_x.resolved === false || inner_size_y.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * Math.min(inner_size_x.value, inner_size_y.value))
+      return true
+    }
+  },
+
+  relativeToInnerSizeMaxXY: <Solver>{
+    name: 'relativeToInnerSizeMaxXY',
+    *dependencies(prop) {
+      yield prop.node.inner_size_x
+      yield prop.node.inner_size_y
+    },
+    tryResolve(prop): boolean {
+      const { inner_size_x, inner_size_y } = prop.node
+      if (inner_size_x.resolved === false || inner_size_y.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * Math.max(inner_size_x.value, inner_size_y.value))
+      return true
+    }
+  },
+
+  copyParentSizeX: <Solver>{
+    name: 'copyParentSizeX',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_x
+    },
+    tryResolve(prop) {
+      const { size_x } = prop.node.parent!
+      if (size_x.resolved === false)
+        return false
+      prop.resolve(size_x.value)
+      return true
+    },
+  },
+
+  copyParentSizeY: <Solver>{
+    name: 'copyParentSizeY',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_y
+    },
+    tryResolve(prop) {
+      const { size_y } = prop.node.parent!
+      if (size_y.resolved === false)
+        return false
+      prop.resolve(size_y.value)
+      return true
+    },
+  },
+
   copyParentInnerSizeX: <Solver>{
     name: 'copyParentInnerSizeX',
     *dependencies(prop) {
@@ -172,6 +230,64 @@ const solvers = {
       prop.resolve(inner_size_y.value)
       return true
     },
+  },
+
+  relativeToParentSizeX: <Solver>{
+    name: 'relativeToParentSizeX',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_x
+    },
+    tryResolve(prop) {
+      const { size_x } = prop.node.parent!
+      if (size_x.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * size_x.value)
+      return true
+    },
+  },
+
+  relativeToParentSizeY: <Solver>{
+    name: 'relativeToParentSizeY',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_y
+    },
+    tryResolve(prop) {
+      const { size_y } = prop.node.parent!
+      if (size_y.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * size_y.value)
+      return true
+    },
+  },
+
+  relativeToParentSizeMinXY: <Solver>{
+    name: 'relativeToParentSizeMinXY',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_x
+      yield prop.node.parent!.size_y
+    },
+    tryResolve(prop): boolean {
+      const { size_x, size_y } = prop.node.parent!
+      if (size_x.resolved === false || size_y.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * Math.min(size_x.value, size_y.value))
+      return true
+    }
+  },
+
+  relativeToParentSizeMaxXY: <Solver>{
+    name: 'relativeToParentSizeMaxXY',
+    *dependencies(prop) {
+      yield prop.node.parent!.size_x
+      yield prop.node.parent!.size_y
+    },
+    tryResolve(prop): boolean {
+      const { size_x, size_y } = prop.node.parent!
+      if (size_x.resolved === false || size_y.resolved === false)
+        return false
+      prop.resolve(prop.scalarValue * Math.max(size_x.value, size_y.value))
+      return true
+    }
   },
 
   relativeToParentInnerSizeX: <Solver>{
@@ -202,14 +318,14 @@ const solvers = {
     },
   },
 
-  relativeToInnerSizeMinXY: <Solver>{
-    name: 'relativeToInnerSizeMinXY',
+  relativeToParentInnerSizeMinXY: <Solver>{
+    name: 'relativeToParentInnerSizeMinXY',
     *dependencies(prop) {
-      yield prop.node.inner_size_x
-      yield prop.node.inner_size_y
+      yield prop.node.parent!.inner_size_x
+      yield prop.node.parent!.inner_size_y
     },
     tryResolve(prop): boolean {
-      const { inner_size_x, inner_size_y } = prop.node
+      const { inner_size_x, inner_size_y } = prop.node.parent!
       if (inner_size_x.resolved === false || inner_size_y.resolved === false)
         return false
       prop.resolve(prop.scalarValue * Math.min(inner_size_x.value, inner_size_y.value))
@@ -217,14 +333,14 @@ const solvers = {
     }
   },
 
-  relativeToInnerSizeMaxXY: <Solver>{
-    name: 'relativeToInnerSizeMaxXY',
+  relativeToParentInnerSizeMaxXY: <Solver>{
+    name: 'relativeToParentInnerSizeMaxXY',
     *dependencies(prop) {
-      yield prop.node.inner_size_x
-      yield prop.node.inner_size_y
+      yield prop.node.parent!.inner_size_x
+      yield prop.node.parent!.inner_size_y
     },
     tryResolve(prop): boolean {
-      const { inner_size_x, inner_size_y } = prop.node
+      const { inner_size_x, inner_size_y } = prop.node.parent!
       if (inner_size_x.resolved === false || inner_size_y.resolved === false)
         return false
       prop.resolve(prop.scalarValue * Math.max(inner_size_x.value, inner_size_y.value))
@@ -636,32 +752,63 @@ function initSize(node: Node, prop: RelativeProperty, innerProp: RelativePropert
     return
   }
 
+  /**
+   * Should we use the parent inner size as reference for relative values instead of the parent size?
+   */
+  const relativeToParentInnerSize =
+    node.isFlow || (node.isFlow === false && node.absoluteSpacingMode === 1)
+
   if (sizeIsTangent === false) {
     switch (prop.scalarType) {
       case ScalarType.Auto:
       case ScalarType.Fraction:
+        let solverSizeX: Solver, solverSizeY: Solver
+        if (relativeToParentInnerSize) {
+          solverSizeX = solvers.copyParentInnerSizeX
+          solverSizeY = solvers.copyParentInnerSizeY
+        } else {
+          solverSizeX = solvers.copyParentSizeX
+          solverSizeY = solvers.copyParentSizeY
+        }
+
         // Auto and Fraction values for the normal size are treated as relative to the parent inner size, since they have no sense otherwise.
-        prop.setSolver(sizeIsHorizontal ? solvers.copyParentInnerSizeX : solvers.copyParentInnerSizeY)
+        prop.setSolver(sizeIsHorizontal ? solverSizeX : solverSizeY)
         return
     }
+  }
+
+  let solverSizeX: Solver
+  let solverSizeY: Solver
+  let solverSizeMinXY: Solver
+  let solverSizeMaxXY: Solver
+  if (relativeToParentInnerSize) {
+    solverSizeX = solvers.relativeToParentInnerSizeX
+    solverSizeY = solvers.relativeToParentInnerSizeY
+    solverSizeMinXY = solvers.relativeToParentInnerSizeMinXY
+    solverSizeMaxXY = solvers.relativeToParentInnerSizeMaxXY
+  } else {
+    solverSizeX = solvers.relativeToParentSizeX
+    solverSizeY = solvers.relativeToParentSizeY
+    solverSizeMinXY = solvers.relativeToParentSizeMinXY
+    solverSizeMaxXY = solvers.relativeToParentSizeMaxXY
   }
 
   switch (prop.scalarType) {
     case ScalarType.Auto:
     case ScalarType.Fraction:
     case ScalarType.Relative:
-      prop.setSolver(sizeIsHorizontal ? solvers.relativeToParentInnerSizeX : solvers.relativeToParentInnerSizeY)
+      prop.setSolver(sizeIsHorizontal ? solverSizeX : solverSizeY)
       break
 
     case ScalarType.OppositeRelative:
-      prop.setSolver(sizeIsHorizontal ? solvers.relativeToParentInnerSizeY : solvers.relativeToParentInnerSizeX)
+      prop.setSolver(sizeIsHorizontal ? solverSizeY : solverSizeX)
       break
 
     case ScalarType.LargerRelative:
     case ScalarType.SmallerRelative:
       prop.setSolver(prop.scalarType === ScalarType.LargerRelative
-        ? solvers.relativeToInnerSizeMaxXY
-        : solvers.relativeToInnerSizeMinXY)
+        ? solverSizeMaxXY
+        : solverSizeMinXY)
       break
   }
 }
@@ -741,6 +888,8 @@ class Node extends TreeNode {
   isAspectWithConstraintY: boolean
   hasAspectAutoChildren = false
 
+  absoluteSpacingMode: number
+
   remainingSignedSpace = 0
 
   x = 0
@@ -797,6 +946,8 @@ class Node extends TreeNode {
     this.isAspectWithConstraintY = this.isAspect && !freeSizeX && freeSizeY
     this.aspect = space.aspect ?? -1
     this.sqrtAspect = this.isAspect ? Math.sqrt(this.aspect) : -1
+
+    this.absoluteSpacingMode = space.selfAbsoluteSpacingMode ?? space.parent?.childrenAbsoluteSpacingMode ?? 0
   }
 
   initialize(): this {
@@ -1217,21 +1368,21 @@ function positionPass(node: Node) {
     const inner_sy = node.inner_size_y.value
     // Horizontal:
     if (node.isHorizontal) {
-      x += node.remainingSignedSpace * node.space.alignChildrenX
+      x += node.remainingSignedSpace * node.space.flowAlignX
       for (const child of node.children) {
         if (child.isFlow) {
           child.x = x
-          child.y = y + (inner_sy - child.size_y.value) * (child.space.alignY ?? node.space.alignChildrenY)
+          child.y = y + (inner_sy - child.size_y.value) * (child.space.alignY ?? node.space.flowAlignY)
           x += child.size_x.value + node.gap.value
         }
       }
     }
     // Vertical:
     else {
-      y += node.remainingSignedSpace * node.space.alignChildrenY
+      y += node.remainingSignedSpace * node.space.flowAlignY
       for (const child of node.children) {
         if (child.isFlow) {
-          child.x = x + (inner_sx - child.size_x.value) * (child.space.alignX ?? node.space.alignChildrenX)
+          child.x = x + (inner_sx - child.size_x.value) * (child.space.alignX ?? node.space.flowAlignX)
           child.y = y
           y += child.size_y.value + node.gap.value
         }
@@ -1239,19 +1390,42 @@ function positionPass(node: Node) {
     }
   }
   {
-    // Detached:
+    // Absolute:
     for (const child of node.children) {
       if (child.isFlow)
         continue
 
-      const off_x = child.space.offsetX.compute(node.size_x.value, node.size_y.value)
-      const off_y = child.space.offsetY.compute(node.size_y.value, node.size_x.value)
+      // Absolute spacing mode:
 
-      const a_x = (child.space.alignX ?? node.space.alignChildrenX) * (node.size_x.value - child.size_x.value)
-      const a_y = (child.space.alignY ?? node.space.alignChildrenY) * (node.size_y.value - child.size_y.value)
+      // 0 :
+      // No parent spacing is applied, the child is positioned solely based on its own offset and alignment.
+      const sm = child.absoluteSpacingMode
+      if (sm === 0) {
+        const off_x = child.space.offsetX.compute(node.size_x.value, node.size_y.value)
+        const off_y = child.space.offsetY.compute(node.size_y.value, node.size_x.value)
 
-      child.x = node.x + off_x + a_x
-      child.y = node.y + off_y + a_y
+        const a_x = (child.space.alignX ?? .5) * (node.size_x.value - child.size_x.value)
+        const a_y = (child.space.alignY ?? .5) * (node.size_y.value - child.size_y.value)
+
+        child.x = node.x + off_x + a_x
+        child.y = node.y + off_y + a_y
+      }
+
+      // 1 :
+      // Parent spacing is applied as an offset to the child, in addition to the child's own offset and alignment.
+      else {
+        const parent_pad_x = node.pad_nx.value
+        const parent_pad_y = node.pad_ny.value
+
+        const off_x = child.space.offsetX.compute(node.inner_size_x.value, node.inner_size_y.value)
+        const off_y = child.space.offsetY.compute(node.inner_size_y.value, node.inner_size_x.value)
+
+        const a_x = (child.space.alignX ?? node.space.flowAlignX) * (node.inner_size_x.value - child.size_x.value)
+        const a_y = (child.space.alignY ?? node.space.flowAlignY) * (node.inner_size_y.value - child.size_y.value)
+
+        child.x = node.x + off_x + a_x + parent_pad_x
+        child.y = node.y + off_y + a_y + parent_pad_y
+      }
     }
   }
 

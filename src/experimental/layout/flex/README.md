@@ -32,8 +32,10 @@ complex layouts with relative and absolute sizes, paddings and gaps.
 
 - Alignment:
 
-  - alignChildren: commands how the children should be aligned
+  - flowAlign: commands how the children should be aligned
   - alignSelf: commands how the current space
+  
+- Aspect
 
 - Layout computation (from root to children)
 

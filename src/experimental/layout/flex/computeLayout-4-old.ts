@@ -858,11 +858,11 @@ function positionPass(node: Node) {
     const inner_sx = node.size_x.value - node.pad_nx.value - node.pad_px.value
     const inner_sy = node.size_y.value - node.pad_ny.value - node.pad_py.value
     if (node.isHorizontal) {
-      x += node.remainingTangentSignedSpace * node.space.alignChildrenX
+      x += node.remainingTangentSignedSpace * node.space.flowAlignX
       for (const child of node.children) {
         if (child.isFlow) {
           child.x = x
-          child.y = y + (inner_sy - child.size_y.value) * (child.space.alignY ?? node.space.alignChildrenY)
+          child.y = y + (inner_sy - child.size_y.value) * (child.space.alignY ?? node.space.flowAlignY)
           x += child.size_x.value + node.gap.value
         }
       }

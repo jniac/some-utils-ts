@@ -5,7 +5,7 @@ import { Vector2Like } from '../../../types'
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { TreeNode } from './TreeNode'
 import { computeLayout3 } from './computeLayout-3'
-import { AspectSizeMode, AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseAspectSizeMode, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
+import { AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
   return typeof arg === 'object' && 'x' in arg && 'y' in arg && Object.keys(arg).length === 2
@@ -92,17 +92,17 @@ export type SpaceProps = Partial<{
   size: Declaration2D<ScalarDeclaration | 'fit-content'>
   sizeX: ScalarDeclaration | 'fit-content'
   sizeY: ScalarDeclaration | 'fit-content'
-  alignChildren: Vector2Declaration
-  alignChildrenX: number
-  alignChildrenY: number
+  flowAlign: Vector2Declaration
+  flowAlignX: number
+  flowAlignY: number
   align: Vector2Declaration<number | null>
   alignX: number | null
   alignY: number | null
   aspect: null | number
-  childrenAspectSizeMode: AspectSizeModeDeclaration
-  selfAspectSizeMode: AspectSizeModeDeclaration
-  detachedChildrenSpacingMode: number
-  detachedSelfSpacingMode: number | null
+  flowAspectSizeMode: AspectSizeModeDeclaration
+  aspectSizeMode: AspectSizeModeDeclaration
+  childrenAbsoluteSpacingMode: number
+  selfAbsoluteSpacingMode: number | null
   padding: BoxSpacingDeclaration
   paddingTop: ScalarDeclaration
   paddingRight: ScalarDeclaration
@@ -223,22 +223,6 @@ export class Space extends TreeNode {
    * Aspect ratio (width / height) of the space (constraint).
    */
   aspect: number | null = null
-  /**
-   * Determines how the children will be sized if they only have `aspect` constraint.
-   * 
-   * Note:
-   * - If other constraints are defined (size), expect undetermined behavior (for now).
-   */
-  childrenAspectSizeMode: AspectSizeMode | null = null
-  /**
-   * Determines how the space will be sized if it only have `aspect` constraint.
-   * 
-   * Overrides `childrenAspectSizeMode` for the space itself.
-   * 
-   * Note:
-   * - If other constraints are defined (size), expect undetermined behavior (for now).
-   */
-  aspectSizeMode: AspectSizeMode = AspectSizeMode.Contain
 
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
@@ -273,7 +257,7 @@ export class Space extends TreeNode {
    * 
    * Default is `0.5` (center).
    */
-  alignChildrenX: number = .5
+  flowAlignX: number = .5
 
   /**
    * The vertical alignment of the children spaces:
@@ -282,24 +266,27 @@ export class Space extends TreeNode {
    * 
    * Default is `0.5` (center).
    */
-  alignChildrenY: number = .5
+  flowAlignY: number = .5
 
   alignX: number | null = null
   alignY: number | null = null
 
   /**
-   * The spacing mode for detached children. A number between 0 and 1 that 
-   * determines how the spacing (padding) is applied to detached children.
-   * - `0`: no spacing (children are positioned at the edge of the parent space)
-   * - `1`: full spacing (children are positioned as if they were in flow, but still detached)
-   */
-  detachedChildrenSpacingMode: number = 0
-  /**
-   * The spacing mode for detached self. 
+   * The spacing mode for absolute children. 
    * 
-   * cf. `detachedChildrenSpacingMode`, but for the space itself when it's detached.
+   * A number between 0 and 1 that determines how the current spacing (padding) is applied to children.
+   * - `0`: no spacing (children are positioned at the edge of the parent space)
+   * - `1`: full spacing (children are positioned as if they were in flow (parent padding), but still detached)
+   * 
+   * Notes:
+   * - ⚠️ No interpolation here, what would be the point?
    */
-  detachedSpacingMode: number | null = null
+  childrenAbsoluteSpacingMode: number = 0
+
+  /**
+   * cf. `absoluteChildrenSpacingMode`, but for the space itself. It determines how the space is affected by its own spacing (padding).
+   */
+  selfAbsoluteSpacingMode: number | null = null
 
   rect = new Rectangle()
 
@@ -339,8 +326,6 @@ export class Space extends TreeNode {
       && this.direction === other.direction
       && this.positioning === other.positioning
       && this.aspect === other.aspect
-      && this.childrenAspectSizeMode === other.childrenAspectSizeMode
-      && this.aspectSizeMode === other.aspectSizeMode
       && this.offsetX.equals(other.offsetX)
       && this.offsetY.equals(other.offsetY)
       && this.sizeX.equals(other.sizeX)
@@ -358,12 +343,12 @@ export class Space extends TreeNode {
       && this.margin[2].equals(other.margin[2])
       && this.margin[3].equals(other.margin[3])
       && this.gap.equals(other.gap)
-      && this.alignChildrenX === other.alignChildrenX
-      && this.alignChildrenY === other.alignChildrenY
+      && this.flowAlignX === other.flowAlignX
+      && this.flowAlignY === other.flowAlignY
       && this.alignX === other.alignX
       && this.alignY === other.alignY
-      && this.detachedChildrenSpacingMode === other.detachedChildrenSpacingMode
-      && this.detachedSpacingMode === other.detachedSpacingMode
+      && this.childrenAbsoluteSpacingMode === other.childrenAbsoluteSpacingMode
+      && this.selfAbsoluteSpacingMode === other.selfAbsoluteSpacingMode
       && this.rect.equals(other.rect)
   }
 
@@ -373,8 +358,6 @@ export class Space extends TreeNode {
     this.direction = other.direction
     this.positioning = other.positioning
     this.aspect = other.aspect
-    this.childrenAspectSizeMode = other.childrenAspectSizeMode
-    this.aspectSizeMode = other.aspectSizeMode
     this.offsetX.copy(other.offsetX)
     this.offsetY.copy(other.offsetY)
     this.sizeX.copy(other.sizeX)
@@ -392,12 +375,12 @@ export class Space extends TreeNode {
     this.margin[2].copy(other.margin[2])
     this.margin[3].copy(other.margin[3])
     this.gap.copy(other.gap)
-    this.alignChildrenX = other.alignChildrenX
-    this.alignChildrenY = other.alignChildrenY
+    this.flowAlignX = other.flowAlignX
+    this.flowAlignY = other.flowAlignY
     this.alignX = other.alignX
     this.alignY = other.alignY
-    this.detachedChildrenSpacingMode = other.detachedChildrenSpacingMode
-    this.detachedSpacingMode = other.detachedSpacingMode
+    this.childrenAbsoluteSpacingMode = other.childrenAbsoluteSpacingMode
+    this.selfAbsoluteSpacingMode = other.selfAbsoluteSpacingMode
     this.rect.copy(other.rect)
     this.userData = { ...other.userData }
     return this
@@ -485,22 +468,16 @@ export class Space extends TreeNode {
     if (props.aspect !== undefined) {
       this.aspect = props.aspect
     }
-    if (props.childrenAspectSizeMode !== undefined) {
-      this.childrenAspectSizeMode = parseAspectSizeMode(props.childrenAspectSizeMode)
+    if (props.flowAlign !== undefined) {
+      const { x, y } = fromVector2Declaration(props.flowAlign)
+      this.flowAlignX = x
+      this.flowAlignY = y
     }
-    if (props.selfAspectSizeMode !== undefined) {
-      this.aspectSizeMode = parseAspectSizeMode(props.selfAspectSizeMode)
+    if (props.flowAlignX !== undefined) {
+      this.flowAlignX = props.flowAlignX
     }
-    if (props.alignChildren !== undefined) {
-      const { x, y } = fromVector2Declaration(props.alignChildren)
-      this.alignChildrenX = x
-      this.alignChildrenY = y
-    }
-    if (props.alignChildrenX !== undefined) {
-      this.alignChildrenX = props.alignChildrenX
-    }
-    if (props.alignChildrenY !== undefined) {
-      this.alignChildrenY = props.alignChildrenY
+    if (props.flowAlignY !== undefined) {
+      this.flowAlignY = props.flowAlignY
     }
     if (props.align !== undefined) {
       const { x, y } = fromVector2Declaration(props.align)
@@ -513,11 +490,11 @@ export class Space extends TreeNode {
     if (props.alignY !== undefined) {
       this.alignY = props.alignY
     }
-    if (props.detachedChildrenSpacingMode !== undefined) {
-      this.detachedChildrenSpacingMode = props.detachedChildrenSpacingMode
+    if (props.childrenAbsoluteSpacingMode !== undefined) {
+      this.childrenAbsoluteSpacingMode = props.childrenAbsoluteSpacingMode
     }
-    if (props.detachedSelfSpacingMode !== undefined) {
-      this.detachedSpacingMode = props.detachedSelfSpacingMode
+    if (props.selfAbsoluteSpacingMode !== undefined) {
+      this.selfAbsoluteSpacingMode = props.selfAbsoluteSpacingMode
     }
     if (props.padding !== undefined) {
       const [top, right, bottom, left] = fromBoxSpacingDeclaration(props.padding as any)
@@ -651,8 +628,8 @@ export class Space extends TreeNode {
   }
 
   setAlign(x: number, y: number = x): this {
-    this.alignChildrenX = x
-    this.alignChildrenY = y
+    this.flowAlignX = x
+    this.flowAlignY = y
     return this
   }
 

@@ -3,7 +3,7 @@ import { Padding } from '../../../math/geom/padding'
 import { Rectangle } from '../../../math/geom/rectangle'
 import { ScalarType } from './Scalar'
 import { Space } from './Space'
-import { AspectSizeMode, Direction, Positioning } from './types'
+import { Direction, Positioning } from './types'
 
 export function computeRootRect(space: Space) {
   const { offsetX, offsetY, sizeX, sizeY } = space
@@ -81,18 +81,20 @@ function computeSize(space: Space, width: number, height: number, direction: Dir
       if (space.sizeY.type === ScalarType.Auto) {
         // Both are auto: decide based on the direction
         // Note: the previous line was used before, but it does not make sense to me.
-        const aspectSizeMode = space.aspectSizeMode ?? space.parent?.childrenAspectSizeMode ?? null
-        switch (aspectSizeMode) {
-          case AspectSizeMode.FillTangentSpace:
-            useWidth = true
-            break
-          case AspectSizeMode.FillNormalSpace:
-            useWidth = false
-            break
-          default:
-            useWidth = direction === Direction.Vertical
-            break
-        }
+
+        // CANCELED computeLayout4() is now the de-facto implementation
+        // const aspectSizeMode = space.aspectSizeMode ?? space.parent?.childrenAspectSizeMode ?? null
+        // switch (aspectSizeMode) {
+        //   case AspectSizeMode.FillTangentSpace:
+        //     useWidth = true
+        //     break
+        //   case AspectSizeMode.FillNormalSpace:
+        //     useWidth = false
+        //     break
+        //   default:
+        //     useWidth = direction === Direction.Vertical
+        //     break
+        // }
       } else {
         useWidth = true
       }
@@ -126,7 +128,7 @@ const _innerRect = new Rectangle()
  * It assumes that the rect of the space itself has already been computed.
  */
 export function computeChildrenRect(space: Space) {
-  const { direction, alignChildrenX, alignChildrenY } = space
+  const { direction, flowAlignX: flowAlignX, flowAlignY: flowAlignY } = space
   const [enabledChildren, disabledChildren] = distribute(space.children, child => child.enabled ? 0 : 1)
 
   if (disabledChildren) {
@@ -221,10 +223,10 @@ export function computeChildrenRect(space: Space) {
     const freeWidth = innerWidth - child.rect.width
     const freeHeight = innerHeight - child.rect.height
     child.rect.x = innerX
-      + freeWidth * (child.alignX ?? alignChildrenX)
+      + freeWidth * (child.alignX ?? flowAlignX)
       + child.offsetX.compute(innerWidth, innerHeight)
     child.rect.y = innerY
-      + freeHeight * (child.alignY ?? alignChildrenY)
+      + freeHeight * (child.alignY ?? flowAlignY)
       + child.offsetY.compute(innerHeight, innerWidth)
   }
 
@@ -280,7 +282,7 @@ export function computeChildrenRect(space: Space) {
 
   // Compute the position of all children
   if (direction === Direction.Horizontal) {
-    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * alignChildrenX
+    let cumulative = space.rect.x + tangentSpacings[0] + finalRemaining * flowAlignX
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
@@ -289,16 +291,16 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeY.type === ScalarType.Fraction || child.sizeY.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].top - _padding.top)
         const endMargin = Math.max(0, _childrenMargins[index].bottom - _padding.bottom)
-        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignY ?? alignChildrenY)
+        child.rect.y = offy + _innerRect.y + startMargin + (_innerRect.height - child.rect.height - startMargin - endMargin) * (child.alignY ?? flowAlignY)
       } else {
-        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignY ?? alignChildrenY)
+        child.rect.y = offy + _innerRect.y + (_innerRect.height - child.rect.height) * (child.alignY ?? flowAlignY)
       }
       cumulative += child.rect.width + tangentSpacings[index + 1]
     }
   }
 
   else {
-    let cumulative = space.rect.y + tangentSpacings[0] + finalRemaining * alignChildrenY
+    let cumulative = space.rect.y + tangentSpacings[0] + finalRemaining * flowAlignY
     for (let index = 0, max = flowChildren.length; index < max; index++) {
       const child = flowChildren[index]
       const offx = child.offsetX.compute(child.rect.width, child.rect.height)
@@ -306,9 +308,9 @@ export function computeChildrenRect(space: Space) {
       if (child.sizeX.type === ScalarType.Fraction || child.sizeX.type === ScalarType.Auto) {
         const startMargin = Math.max(0, _childrenMargins[index].left - _padding.left)
         const endMargin = Math.max(0, _childrenMargins[index].right - _padding.right)
-        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignX ?? alignChildrenX)
+        child.rect.x = offx + _innerRect.x + startMargin + (_innerRect.width - child.rect.width - startMargin - endMargin) * (child.alignX ?? flowAlignX)
       } else {
-        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignX ?? alignChildrenX)
+        child.rect.x = offx + _innerRect.x + (_innerRect.width - child.rect.width) * (child.alignX ?? flowAlignX)
       }
       child.rect.y = offy + cumulative
       cumulative += child.rect.height + tangentSpacings[index + 1]

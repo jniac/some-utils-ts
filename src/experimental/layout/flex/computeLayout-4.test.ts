@@ -126,8 +126,8 @@ function simpleLayoutTest() {
   computeLayout4(root)
 
   test('detached node with no size nor offset should have the same rect as the parent', () => {
-    const detachedChild = root.find(node => node.positioning === Positioning.Detached)!
-    expect(detachedChild.positioning).toBe(Positioning.Detached)
+    const detachedChild = root.find(node => node.positioning === Positioning.Absolute)!
+    expect(detachedChild.positioning).toBe(Positioning.Absolute)
     const areEqual = detachedChild.rect.equals(root.rect)
     expect(areEqual).toBe(true)
 
