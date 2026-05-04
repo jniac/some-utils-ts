@@ -4,7 +4,7 @@ import { Vector2Like } from '../../../types'
 
 import { Scalar, ScalarDeclaration, ScalarType } from './Scalar'
 import { TreeNode } from './TreeNode'
-import { computeLayout3 } from './computeLayout-3'
+import { computeLayout4 } from './computeLayout-4'
 import { AspectSizeModeDeclaration, Direction, DirectionDeclaration, parseDirection, parsePositioning, Positioning, PositioningDeclaration } from './types'
 
 function isPureXYObject<T>(arg: any): arg is { x: T, y: T } {
@@ -892,7 +892,8 @@ export class Space extends TreeNode {
   computeLayout(): this {
     // computeLayout1(this)
     // computeLayout2(this)
-    computeLayout3(this)
+    // computeLayout3(this)
+    computeLayout4(this)
     return this
   }
 
