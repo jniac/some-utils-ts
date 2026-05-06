@@ -6,6 +6,7 @@ export enum ScalarType {
   SmallerRelative = 1 << 4,
   LargerRelative = 1 << 5,
   Fraction = 1 << 6,
+  FitContent = 1 << 7,
 }
 
 const scalarExtensions = {
@@ -122,6 +123,8 @@ export class Scalar {
       case ScalarType.Auto:
       case ScalarType.Fraction:
         return parentValue // "Part" space is always parent's size on normal axis (on colinear axis it is not computed here)
+      case ScalarType.FitContent:
+        throw new Error('FitContent scalar cannot be computed directly')
     }
   }
 

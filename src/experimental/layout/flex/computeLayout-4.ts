@@ -457,17 +457,13 @@ const solvers = {
   fitContentNormal: <Solver>{
     name: 'fitContentNormal',
     *dependencies(prop) {
-      if (prop.node.isHorizontal) {
-        for (const child of prop.node.children) {
-          if (child.isFlow) {
-            yield child.size_y
-          }
-        }
-      } else {
-        for (const child of prop.node.children) {
-          if (child.isFlow) {
-            yield child.size_x
-          }
+      const is_h = prop.node.isHorizontal
+      for (const child of prop.node.children) {
+        const childSize = is_h ? child.size_y : child.size_x
+        if (child.isFlow) {
+          if (childSize.isAutoOrRelative())
+            continue
+          yield childSize
         }
       }
     },
@@ -477,6 +473,8 @@ const solvers = {
       for (const child of prop.node.children) {
         if (child.isFlow) {
           const childSize = is_h ? child.size_y : child.size_x
+          if (childSize.isAutoOrRelative())
+            continue
           if (childSize.resolved === false)
             return false
           if (childSize.value > max)
@@ -537,7 +535,7 @@ class RelativeProperty {
     return [...this.solver.dependencies(this)]
   }
 
-  constructor(node: Node, type: PropertyType, scalar: Scalar, isFractional = false) {
+  constructor(node: Node, type: PropertyType, scalar: Scalar, isFractional = false, isFitContent = false) {
     this.node = node
     this.type = type
     this.scalarType = scalar.type
@@ -548,6 +546,10 @@ class RelativeProperty {
       // Auto values must be 1 for the resolution to work
       this.scalarValue = 1
     }
+  }
+
+  isAutoOrRelative(): boolean {
+    return (this.scalarType & (ScalarType.Auto | ScalarType.Relative)) !== 0
   }
 
   setSolver(solver: Solver): this {
@@ -901,10 +903,10 @@ class Node extends TreeNode {
     this.space = space
     this.isHorizontal = space.direction === Direction.Horizontal
     this.isFlow = space.positioning === Positioning.Flow
-    this.sizeXFitContent = space.sizeXFitContent
-    this.sizeYFitContent = space.sizeYFitContent
-    this.tangentSizeFitContent = this.isHorizontal ? space.sizeXFitContent : space.sizeYFitContent
-    this.normalSizeFitContent = this.isHorizontal ? space.sizeYFitContent : space.sizeXFitContent
+    this.sizeXFitContent = space.sizeX.type === ScalarType.FitContent
+    this.sizeYFitContent = space.sizeY.type === ScalarType.FitContent
+    this.tangentSizeFitContent = this.isHorizontal ? this.sizeXFitContent : this.sizeYFitContent
+    this.normalSizeFitContent = this.isHorizontal ? this.sizeYFitContent : this.sizeXFitContent
 
     for (const childSpace of space.children) {
       const childNode = new Node(this, childSpace)
@@ -924,13 +926,13 @@ class Node extends TreeNode {
     this.gap = new RelativeProperty(this, PropertyType.Gap, space.gap)
 
     const isFractionalSizeX = space.positioning === Positioning.Flow
-      && space.sizeXFitContent === false
+      && space.sizeX.type !== ScalarType.FitContent
       && (space.sizeX.type === ScalarType.Fraction || space.sizeX.type === ScalarType.Auto)
       && space.parent?.direction === Direction.Horizontal
     this.size_x = new RelativeProperty(this, PropertyType.SizeX, space.sizeX, isFractionalSizeX)
 
     const isFractionalSizeY = space.positioning === Positioning.Flow
-      && space.sizeYFitContent === false
+      && space.sizeY.type !== ScalarType.FitContent
       && (space.sizeY.type === ScalarType.Fraction || space.sizeY.type === ScalarType.Auto)
       && space.parent?.direction === Direction.Vertical
     this.size_y = new RelativeProperty(this, PropertyType.SizeY, space.sizeY, isFractionalSizeY)

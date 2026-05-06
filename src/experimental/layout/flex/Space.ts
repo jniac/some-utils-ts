@@ -227,9 +227,10 @@ export class Space extends TreeNode {
   offsetX = new Scalar(0, ScalarType.Absolute)
   offsetY = new Scalar(0, ScalarType.Absolute)
   sizeX = new Scalar(1, ScalarType.Auto)
-  sizeXFitContent = false
   sizeY = new Scalar(1, ScalarType.Auto)
-  sizeYFitContent = false
+
+  get sizeXFitContent() { return this.sizeX.type === ScalarType.FitContent }
+  get sizeYFitContent() { return this.sizeY.type === ScalarType.FitContent }
 
   extraSizeX = new Scalar(1, ScalarType.Relative)
   extraSizeY = new Scalar(1, ScalarType.Relative)
@@ -362,8 +363,6 @@ export class Space extends TreeNode {
     this.offsetY.copy(other.offsetY)
     this.sizeX.copy(other.sizeX)
     this.sizeY.copy(other.sizeY)
-    this.sizeXFitContent = other.sizeXFitContent
-    this.sizeYFitContent = other.sizeYFitContent
     this.extraSizeX.copy(other.extraSizeX)
     this.extraSizeY.copy(other.extraSizeY)
     this.padding[0].copy(other.padding[0])
@@ -444,10 +443,8 @@ export class Space extends TreeNode {
         // @ts-expect-error backward compatibility
         || sizeX === 'fit-children' // backward compatibility
       ) {
-        this.sizeXFitContent = true
-        this.sizeX.set(0, ScalarType.Auto)
+        this.sizeX.set(1, ScalarType.FitContent)
       } else {
-        this.sizeXFitContent = false
         this.sizeX.parse(sizeX)
       }
     }
@@ -457,10 +454,8 @@ export class Space extends TreeNode {
         // @ts-expect-error backward compatibility
         || sizeY === 'fit-children' // backward compatibility
       ) {
-        this.sizeYFitContent = true
-        this.sizeY.set(0, ScalarType.Auto)
+        this.sizeY.set(1, ScalarType.FitContent)
       } else {
-        this.sizeYFitContent = false
         this.sizeY.parse(sizeY)
       }
     }
