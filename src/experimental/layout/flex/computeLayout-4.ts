@@ -1224,6 +1224,10 @@ class Node extends TreeNode {
     return warnings.join('\n')
   }
 
+  override toString(): string {
+    return `N${this.treeId}`
+  }
+
   toTreeWithDependenciesString({
     onlyUnresolved = false
   } = {}): string {

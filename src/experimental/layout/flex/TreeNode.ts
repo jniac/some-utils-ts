@@ -311,7 +311,27 @@ export class TreeNode {
     return siblings[siblings.length - 1] === this
   }
 
-  find(predicate: (node: this) => boolean, { includeSelf = true } = {}): this | null {
+  static solvePredicateArg<T>(predicateArg: ((node: T) => boolean) | Record<string, any>): (node: T) => boolean {
+    if (typeof predicateArg === 'object') {
+      const entries = Object.entries(predicateArg)
+      return (node: T) => {
+        for (const [key, value] of entries) {
+          if ((node as any)[key] !== value) {
+            return false
+          }
+        }
+        return true
+      }
+    } else {
+      return predicateArg
+    }
+  }
+
+  find(
+    predicateArg: ((node: this) => boolean) | Record<string, any>,
+    { includeSelf = true } = {},
+  ): this | null {
+    const predicate = TreeNode.solvePredicateArg(predicateArg)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
         return space
@@ -324,7 +344,11 @@ export class TreeNode {
     return this.find(node => node.uid === uid, { includeSelf: true })
   }
 
-  *findAll(predicate: (node: this) => boolean, { includeSelf = true } = {}): Generator<this> {
+  *findAll(
+    predicateArg: ((node: this) => boolean) | Record<string, any>,
+    { includeSelf = true } = {},
+  ): Generator<this> {
+    const predicate = TreeNode.solvePredicateArg(predicateArg)
     for (const space of this.allDescendants({ includeSelf })) {
       if (predicate(space)) {
         yield space
