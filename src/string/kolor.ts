@@ -11,7 +11,30 @@
  * - https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit
  */
 
+function supportsAnsiConsole() {
+  // Node / Bun / Deno terminal
+  if (
+    // @ts-ignore
+    typeof process !== 'undefined' &&
+    // @ts-ignore
+    process.stdout?.isTTY
+  ) {
+    return true
+  }
+  // Browser
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent
+    // Chrome / Edge / Opera / Brave = Chromium
+    return /\bChrome\/|\bChromium\/|\bEdg\/|\bOPR\//.test(ua)
+  }
+  return false
+}
+
+const ANSI_SUPPORTED = supportsAnsiConsole()
+
 function withColor(text: string, colorCode: number, resetCode: number = 39): string {
+  if (!ANSI_SUPPORTED)
+    return text
   return `\x1B[${colorCode}m${text}\x1B[${resetCode}m`
 }
 
