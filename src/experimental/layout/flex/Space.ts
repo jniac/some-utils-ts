@@ -92,7 +92,7 @@ export type SpaceProps = Partial<{
   size: Declaration2D<ScalarDeclaration | 'fit-content'>
   sizeX: ScalarDeclaration | 'fit-content'
   sizeY: ScalarDeclaration | 'fit-content'
-  flowAlign: Vector2Declaration
+  flowAlign: Vector2Declaration | number[]
   flowAlignX: number
   flowAlignY: number
   align: Vector2Declaration<number | null>
@@ -779,6 +779,52 @@ export class Space extends TreeNode {
     const [count, props] = args as [number, SpaceProps]
     for (let i = 0; i < count; i++) {
       this.add(new Space(props))
+    }
+    return this
+  }
+
+  populateGrid(gridX: number, gridY: number, props?: SpaceProps, rowProps?: SpaceProps): this {
+    this.direction = Direction.Vertical
+    for (let i = 0; i < gridY; i++) {
+      const row = new Space({
+        direction: Direction.Horizontal,
+        ...rowProps,
+      }).addTo(this)
+      for (let j = 0; j < gridX; j++) {
+        row.add(new Space(props))
+      }
+    }
+    return this
+  }
+
+  populateSeparators(
+    intermediateSeparator?: SpaceProps | ((previous: Space, next: Space) => SpaceProps),
+    {
+      firstSeparator,
+      lastSeparator,
+    }: {
+      firstSeparator?: SpaceProps | ((next: Space) => SpaceProps)
+      lastSeparator?: SpaceProps | ((previous: Space) => SpaceProps)
+    } = {}
+  ): this {
+    if (this.children.length < 2)
+      return this
+
+    const [first, ...rest] = this.children
+    let before = first
+    if (firstSeparator) {
+      const separatorProps = typeof firstSeparator === 'function' ? firstSeparator(first) : firstSeparator
+      this.prependChild(new Space(separatorProps))
+    }
+    for (let i = 0, max = rest.length; i < max; i++) {
+      const after = rest[i]
+      const separatorProps = typeof intermediateSeparator === 'function' ? intermediateSeparator(before, after) : intermediateSeparator
+      this.insertChildAfter(before, new Space(separatorProps))
+      before = after
+    }
+    if (lastSeparator) {
+      const separatorProps = typeof lastSeparator === 'function' ? lastSeparator(before) : lastSeparator
+      this.add(new Space(separatorProps))
     }
     return this
   }

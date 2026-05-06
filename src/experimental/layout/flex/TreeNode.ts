@@ -177,34 +177,57 @@ export class TreeNode {
     return this
   }
 
-  addChild(child: this): this {
+  addChild(child: TreeNode): this {
     child.removeFromParent()
-    this.children.push(child)
+    this.children.push(child as this)
     child.parent = this
     return this
   }
 
-  addChildren(...children: this[]): this {
+  addChildren(...children: TreeNode[]): this {
     for (const child of children) {
-      this.addChild(child)
+      this.addChild(child as this)
     }
     return this
   }
 
-  prependChild(child: this): this {
+  prependChild(child: TreeNode): this {
     child.removeFromParent()
-    this.children.unshift(child)
+    this.children.unshift(child as this)
     child.parent = this
     return this
   }
 
-  addTo(parent: this): this {
+  insertChildAt(index: number, child: TreeNode): this {
+    child.removeFromParent()
+    if (index < 0) {
+      index = this.children.length + index + 1
+    }
+    this.children.splice(index, 0, child as this)
+    child.parent = this
+    return this
+  }
+
+  insertChildAfter(reference: TreeNode, child: TreeNode): this {
+    const index = this.children.indexOf(reference as this)
+    if (index === -1) {
+      throw new TreeNodeError('Invalid state: reference node is not a child of this')
+    }
+    return this.insertChildAt(index + 1, child as this)
+  }
+
+  addTo(parent: TreeNode): this {
     parent.addChild(this)
     return this
   }
 
-  prependTo(parent: this): this {
+  prependTo(parent: TreeNode): this {
     parent.prependChild(this)
+    return this
+  }
+
+  insertTo(parent: TreeNode, index: number): this {
+    parent.insertChildAt(index, this)
     return this
   }
 
@@ -307,6 +330,13 @@ export class TreeNode {
         yield space
       }
     }
+  }
+
+  forEachDescendant(callback: (node: this) => void, { includeSelf = true } = {}): this {
+    for (const space of this.allDescendants({ includeSelf })) {
+      callback(space)
+    }
+    return this
   }
 
   static readonly SERIALIZATION_NODE_HEADER_BYTE_LENGTH = 4 // parent tid (uint32)
