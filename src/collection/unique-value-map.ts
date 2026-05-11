@@ -122,6 +122,10 @@ export class UniqueValueMap<K, V> {
     }
   }
 
+  valuesArray(key: K): V[] {
+    return this.#keyToValues.get(key) ?? []
+  }
+
   *allValues(): Generator<V> {
     for (const values of this.#keyToValues.values()) {
       for (const value of values) {

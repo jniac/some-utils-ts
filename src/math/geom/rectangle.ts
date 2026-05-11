@@ -317,7 +317,6 @@ function getNormalizedPerimeterPoint<T extends Vector2Like>(
     out.y = y + height - d
   }
   return out
-
 }
 
 class RectangleCastResult {
