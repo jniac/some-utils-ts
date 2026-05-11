@@ -291,6 +291,35 @@ function toContainedInt<T extends RectangleLike>(rect: RectangleLike, out: T): T
   return out
 }
 
+function getNormalizedPerimeterPoint<T extends Vector2Like>(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  t: number,
+  out: T,
+): T {
+  t = ((t % 1) + 1) % 1
+  const perimeter = width * 2 + height * 2
+  let d = t * perimeter
+  if (d <= width) {
+    out.x = x + d
+    out.y = y
+  } else if ((d -= width) <= height) {
+    out.x = x + width
+    out.y = y + d
+  } else if ((d -= height) <= width) {
+    out.x = x + width - d
+    out.y = y + height
+  } else {
+    d -= width
+    out.x = x
+    out.y = y + height - d
+  }
+  return out
+
+}
+
 class RectangleCastResult {
   constructor(
     public ray: Ray2Like,
@@ -1146,6 +1175,10 @@ export class Rectangle implements RectangleLike, Iterable<number> {
     out.x = (x - this.x) / this.width
     out.y = (y - this.y) / this.height
     return out
+  }
+
+  getNormalizedPerimeterPoint(t: number, out?: Vector2Like): Vector2Like {
+    return getNormalizedPerimeterPoint(this.x, this.y, this.width, this.height, t, out ?? { x: 0, y: 0 })
   }
 
   linecast(...ray2Args: Ray2Args): RectangleCastResult {
