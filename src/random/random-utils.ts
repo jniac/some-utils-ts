@@ -177,7 +177,28 @@ type RandomUtilsType = {
    */
   shuffleIndexes: (length: number) => Generator<number>
 
+  /**
+   * Permutes the elements of an array using the Fisher-Yates algorithm.
+   * 
+   * Notes:
+   * - The algorithm runs in O(n) time and is unbiased, meaning that all permutations 
+   *   are equally likely.
+   * - By default, the function returns a new shuffled array, leaving the original 
+   *   array unchanged. However, if the `inPlace` option is set to true, the original 
+   *   array will be shuffled and returned.
+   */
   shuffleArray: <T>(array: T[], options?: { inPlace?: boolean }) => T[]
+
+  /**
+   * Inverse of shuffleArray. It uses the same algorithm but in reverse order to 
+   * restore the original array.
+   * 
+   * Notes: 
+   * - ⚠️ This function assumes that the same random sequence is used as when 
+   *   shuffling, so it will only work correctly if the random function and seed 
+   *   are the same as when shuffleArray was called.
+   */
+  unshuffleArray: <T>(array: T[], options?: { inPlace?: boolean }) => T[]
 }
 
 function createRandomUtils(): RandomUtilsType {
@@ -419,7 +440,22 @@ function createRandomUtils(): RandomUtilsType {
     const n = result.length
     for (let i = n - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1))
-        ;[result[i], result[j]] = [result[j], result[i]]
+      const temp = result[i]
+      result[i] = result[j]
+      result[j] = temp
+    }
+    return result
+  }
+
+  function unshuffleArray<T>(array: T[], { inPlace = false } = {}): T[] {
+    const result = inPlace ? array : array.slice()
+    const n = result.length
+    const indexes = Array.from({ length: n }, (_, i) => Math.floor(random() * (n - i)))
+    for (let i = 0; i < n; i++) {
+      const j = indexes[n - 1 - i]
+      const temp = result[i]
+      result[i] = result[j]
+      result[j] = temp
     }
     return result
   }
@@ -450,6 +486,7 @@ function createRandomUtils(): RandomUtilsType {
     coprimePermutation,
     shuffleIndexes: coprimePermutation,
     shuffleArray,
+    unshuffleArray,
   }
 
   return instance
