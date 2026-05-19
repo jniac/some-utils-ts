@@ -38,7 +38,9 @@ git submodule add https://github.com/jniac/some-utils-ts
 git submodule add https://github.com/jniac/some-utils-three
 git submodule add https://github.com/jniac/some-utils-dom
 git submodule add https://github.com/jniac/some-utils-react
-# OR, if already added:
+```
+or, if already added:
+```
 git submodule update --init --remote --recursive
 ```
 
