@@ -6,9 +6,9 @@ import { Destroyable, DestroyableObject } from '../types'
  * Will execute the `destroy` method on all passed arguments, whether they are 
  * objects or functions.
  */
-export function destroy(...destroyables: Destroyable[]): void
-export function destroy(destroyables: Destroyable[]): void
-export function destroy(...destroyables: Destroyable[] | Destroyable[][]): void {
+export function dumpDestroyables(...destroyables: Destroyable[]): void
+export function dumpDestroyables(destroyables: Destroyable[]): void
+export function dumpDestroyables(...destroyables: Destroyable[] | Destroyable[][]): void {
   for (const destroyable of destroyables.flat(2)) {
     if ('destroy' in destroyable) {
       destroyable.destroy()
@@ -17,6 +17,8 @@ export function destroy(...destroyables: Destroyable[] | Destroyable[][]): void 
     }
   }
 }
+
+export { dumpDestroyables as destroy } // Backwards compatibility
 
 export function flatDestroyables(
   ...values: (Destroyable | null | undefined | Iterable<Destroyable | null | undefined>)[]

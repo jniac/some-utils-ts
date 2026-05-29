@@ -13,6 +13,16 @@ export type OnTickStopSignal =
   | typeof ON_TICK_STOP_SIGNAL_0
   | typeof ON_TICK_STOP_SIGNAL_1
 
+export enum TickPhase {
+  BeforeUpdate = -1000,
+  Update = 0,
+  AfterUpdate = 1000,
+
+  BeforeRender = 2000,
+  Render = 3000,
+  AfterRender = 4000
+}
+
 export function isOnTickStopSignal(value: any): value is OnTickStopSignal {
   if (typeof value === 'string') {
     return value === ON_TICK_STOP_SIGNAL_0 || value === ON_TICK_STOP_SIGNAL_1
