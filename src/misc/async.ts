@@ -1,5 +1,23 @@
-export async function wait(seconds: number) {
-  return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+
+export async function wait(delay: number | 'nextFrame' | `${number}s` | `${number}ms` = 0): Promise<void> {
+  if (delay === 'nextFrame') {
+    return waitNextFrame()
+  }
+  if (typeof delay === 'string') {
+    const match = delay.match(/^(\d+)(ms|s)$/)
+    if (match) {
+      const value = parseInt(match[1], 10)
+      const unit = match[2]
+      if (unit === 's') {
+        delay = value * 1000
+      } else {
+        delay = value
+      }
+    } else {
+      throw new Error(`Invalid delay format: ${delay}`)
+    }
+  }
+  return new Promise(resolve => window.setTimeout(resolve, delay))
 }
 
 export async function waitNextFrame(): Promise<void> {
