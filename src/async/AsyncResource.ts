@@ -87,14 +87,11 @@ export class AsyncResource<T> {
   }
 
   /**
-   * Returns a promise that resolves when the resource is ready.
+   * Returns a promise that resolves when the resource is ready without triggering loading if it hasn't been triggered yet.
    * 
    * Notes:
-   * - This methode will NOT trigger loading if it hasn't been triggered yet. 
+   * - ⚠️ This methode will NOT trigger loading if it hasn't been triggered yet. 
    *   You must call `load()` first to start loading the resource.
-   * - If the resource is already loaded, it will return a resolved promise with the value.
-   * - If the resource is currently loading, it will return the existing promise.
-   * - If the resource is not loaded and not loading, it will subscribe to the next load and resolve when it happens.
    */
   async ready(): Promise<T> {
     if (this.#value !== null) {
