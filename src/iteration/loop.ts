@@ -75,6 +75,10 @@ export function loopArray<T = LoopResult>(size: number, map?: (it: LoopResult) =
 
 export type Loop2Result = {
   /**
+   * The size of the loop (total number of iterations).
+   */
+  size: number
+  /**
    * The current iteration index.
    */
   i: number
@@ -150,6 +154,7 @@ export function* loop2(...args: any[]) {
   let x = 0
   let y = 0
   const out: Loop2Result = {
+    size: sx * sy,
     get i() { return i },
     get x() { return x },
     get y() { return y },
@@ -206,6 +211,10 @@ export function loop2Array(...args: any[]) {
 }
 
 export type Loop3Result = {
+  /**
+   * The size of the loop (total number of iterations).
+   */
+  size: number
   /**
    * The current iteration index.
    */
@@ -319,6 +328,7 @@ export function* loop3(...args: any[]) {
   let z = minZ
 
   const out: Loop3Result = {
+    size: (maxX - minX) * (maxY - minY) * (maxZ - minZ),
     get i() { return i },
     get x() { return x },
     get y() { return y },
