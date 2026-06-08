@@ -1,8 +1,8 @@
 import { DestroyableObject, OneOrMany, StringMatcher } from '../types'
 import { HashRegister } from './hash-register'
 
-type Callback<P = any> = {
-  (message: Message<P>): void
+type Callback<Payload = any> = {
+  (message: Message<Payload>): void
 }
 
 class Listener {
@@ -115,8 +115,8 @@ function removeListener(id: number, listener: Listener): boolean {
  * })
  * ```
  */
-class Message<P = any> {
-  static solveOnArgs<P = any>(args: any[]): [target: any, filter: StringMatcher[], callback: Callback<P>] {
+class Message<Payload = any, Response = any> {
+  static solveOnArgs<Payload = any>(args: any[]): [target: any, filter: StringMatcher[], callback: Callback<Payload>] {
     if (args.length === 2) {
       const [target, callback] = args
       return [target, ['*'], callback]
@@ -139,10 +139,10 @@ class Message<P = any> {
    * })
    * ```
    */
-  static on<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
-  static on<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
-  static on<P = any>(...args: any): DestroyableObject {
-    const [target, filters, callback] = Message.solveOnArgs<P>(args)
+  static on<Payload = any>(target: any, callback: (message: Message<Payload>) => void): DestroyableObject
+  static on<Payload = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<Payload>) => void): DestroyableObject
+  static on<Payload = any>(...args: any): DestroyableObject {
+    const [target, filters, callback] = Message.solveOnArgs<Payload>(args)
     const targetId = hashRegister.requireHash(target)
     const listeners = filters.map(filter => new Listener(target, filter, callback))
     requireListeners(targetId).push(...listeners)
@@ -163,11 +163,11 @@ class Message<P = any> {
    * Message.send('USER:REQUEST', { payload: { ... } })
    * ```
    */
-  static once<P = any>(target: any, callback: (message: Message<P>) => void): DestroyableObject
-  static once<P = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<P>) => void): DestroyableObject
-  static once<P = any>(...args: any): DestroyableObject {
-    const [target, filters, callback] = Message.solveOnArgs<P>(args)
-    const wrapperCallback: Callback<P> = (message) => {
+  static once<Payload = any>(target: any, callback: (message: Message<Payload>) => void): DestroyableObject
+  static once<Payload = any>(target: any, filter: OneOrMany<StringMatcher>, callback: (message: Message<Payload>) => void): DestroyableObject
+  static once<Payload = any>(...args: any): DestroyableObject {
+    const [target, filters, callback] = Message.solveOnArgs<Payload>(args)
+    const wrapperCallback: Callback<Payload> = (message) => {
       destroy()
       callback(message)
     }
@@ -178,19 +178,19 @@ class Message<P = any> {
   /**
    * Wait for a message to be sent, returns a promise that resolves when the message is sent.
    */
-  static wait<P = any>(target: any): Promise<Message<P>>
-  static wait<P = any>(target: any, filter: StringMatcher): Promise<Message<P>>
-  static wait<P = any>(...args: any): Promise<Message<P>> {
+  static wait<Payload = any>(target: any): Promise<Message<Payload>>
+  static wait<Payload = any>(target: any, filter: StringMatcher): Promise<Message<Payload>>
+  static wait<Payload = any>(...args: any): Promise<Message<Payload>> {
     return new Promise(resolve => {
-      const callback = (message: Message<P>) => {
+      const callback = (message: Message<Payload>) => {
         resolve(message)
       }
-      const [target, filters] = Message.solveOnArgs<P>([...args, callback])
+      const [target, filters] = Message.solveOnArgs<Payload>([...args, callback])
       Message.on(target, filters, callback)
     })
   }
 
-  static solveSendArgs<P = any>(args: any[]): [target: any, type?: string, payload?: P] {
+  static solveSendArgs<Payload = any>(args: any[]): [target: any, type?: string, payload?: Payload] {
     const [target, ...rest] = args
     if (rest.length === 2) {
       const [type, { payload }] = rest
@@ -206,12 +206,12 @@ class Message<P = any> {
   /**
    * Send a message.
    */
-  static send<P = any>(target: any): Message<P>
-  static send<P = any>(target: any, type: string): Message<P>
-  static send<P = any>(target: any, options: { payload: P }): Message<P>
-  static send<P = any>(target: any, type: string, options: { payload: P }): Message<P>
-  static send<P = any>(...args: any[]): Message<P> {
-    const [target, type, payload] = Message.solveSendArgs<P>(args)
+  static send<Payload = any>(target: any): Message<Payload>
+  static send<Payload = any>(target: any, type: string): Message<Payload>
+  static send<Payload = any>(target: any, options: { payload: Payload }): Message<Payload>
+  static send<Payload = any>(target: any, type: string, options: { payload: Payload }): Message<Payload>
+  static send<Payload = any>(...args: any[]): Message<Payload> {
+    const [target, type, payload] = Message.solveSendArgs<Payload>(args)
     return new Message(target, type, payload)
   }
 
@@ -387,11 +387,12 @@ class Message<P = any> {
 
   target: any
   type: string
-  payload?: P
+  payload?: Payload
+  response?: Response
 
   debug = { currentListenerIndex: -1, listenerCount: 0 }
 
-  constructor(target: any, type?: string, payload?: P) {
+  constructor(target: any, type?: string, payload?: Payload) {
     this.targetHash = hashRegister.requireHash(target)
     this.target = target
     this.type = type ?? 'message'
@@ -409,7 +410,7 @@ class Message<P = any> {
     }
   }
 
-  setPayload(payload: P): this {
+  setPayload(payload: Payload): this {
     this.payload = payload
     return this
   }
@@ -418,10 +419,10 @@ class Message<P = any> {
    * Assign new payload props to the message. An optional "overwrite" parameter
    * can be used to specify if the new props should overwrite the existing ones.
    */
-  assignPayload(payload: Partial<P>, { overwrite = true } = {}): this {
+  assignPayload(payload: Partial<Payload>, { overwrite = true } = {}): this {
     this.payload = (overwrite
       ? { ...this.payload, ...payload }
-      : { ...payload, ...this.payload }) as P
+      : { ...payload, ...this.payload }) as Payload
     return this
   }
 
@@ -436,7 +437,7 @@ class Message<P = any> {
    * Assert that the message has a payload and return it. This method is. If the 
    * payload is falsy, an error will be thrown.
    */
-  assertPayload(errorMessage?: string): P {
+  assertPayload(errorMessage?: string): Payload {
     if (this.payload !== undefined) {
       return this.payload
     }
