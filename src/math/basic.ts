@@ -68,24 +68,24 @@ export function remapUnclamped(x: number, inMin: number, inMax: number, outMin: 
   return lerpUnclamped(outMin, outMax, inverseLerpUnclamped(inMin, inMax, x))
 }
 
-export function round(x: number, base = 1) {
-  return Math.round(x / base) * base
+export function round(x: number, base = 1, offset = 0) {
+  return Math.round((x - offset) / base) * base + offset
 }
 
 export function roundPowerOfTwo(x: number) {
   return Math.pow(2, Math.round(Math.log2(x)))
 }
 
-export function floor(x: number, base = 1) {
-  return Math.floor(x / base) * base
+export function floor(x: number, base = 1, offset = 0) {
+  return Math.floor((x - offset) / base) * base + offset
 }
 
 export function floorPowerOfTwo(x: number) {
   return Math.pow(2, Math.floor(Math.log2(x)))
 }
 
-export function ceil(x: number, base = 1) {
-  return Math.ceil(x / base) * base
+export function ceil(x: number, base = 1, offset = 0) {
+  return Math.ceil((x - offset) / base) * base + offset
 }
 
 export function ceilPowerOfTwo(x: number) {
