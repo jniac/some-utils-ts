@@ -18,6 +18,7 @@ type Vector2DeclarationBase<T> =
   | { width: T; height: T }
 
 export type Vector2Declaration<T = number> = ReadonlyOrNot<Vector2DeclarationBase<T>>
+export type Vector2DeclarationLoose<T = number> = Vector2Declaration<T> | T[]
 
 const vector3DeclarationStrings = ['x', 'y', 'z'] as const
 type Vector3DeclarationString = typeof vector3DeclarationStrings[number]
@@ -32,6 +33,7 @@ type Vector3DeclarationBase<T> =
   | `sph(${number}, ${AngleDeclaration}, ${AngleDeclaration})`
 
 export type Vector3Declaration<T = number> = ReadonlyOrNot<Vector3DeclarationBase<T>>
+export type Vector3DeclarationLoose<T = number> = Vector3Declaration<T> | T[]
 
 const vector4DeclarationStrings = ['x', 'y', 'z', 'w'] as const
 type Vector4DeclarationString = typeof vector4DeclarationStrings[number]
@@ -46,6 +48,7 @@ type Vector4DeclarationBase<T> =
   | { top: T; right: T; bottom: T; left: T }
 
 export type Vector4Declaration<T = number> = ReadonlyOrNot<Vector4DeclarationBase<T>>
+export type Vector4DeclarationLoose<T = number> = Vector4Declaration<T> | T[]
 
 export const angleUnits = ['rad', 'deg', 'turn'] as const
 export type AngleUnit = typeof angleUnits[number]
