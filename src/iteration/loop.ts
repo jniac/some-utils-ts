@@ -98,6 +98,10 @@ export type Loop2Result = {
    */
   y: number
   /**
+   * The normalized "time" coordinate (0 to (size - 1) / size).
+   */
+  t: number
+  /**
    * The normalized "time" x coordinate (0 to (size - 1) / size).
    */
   tx: number
@@ -105,6 +109,10 @@ export type Loop2Result = {
    * The normalized "time" y coordinate (0 to (size - 1) / size).
    */
   ty: number
+  /**
+   * The normalized "progress" coordinate (0 to 1).
+   */
+  p: number
   /**
    * The normalized "progress" x coordinate (0 to 1).
    */
@@ -177,8 +185,10 @@ export function* loop2(...args: any[]) {
     get i() { return i },
     get x() { return x },
     get y() { return y },
+    get t() { return i / (sx * sy) },
     get tx() { return x / sx },
     get ty() { return y / sy },
+    get p() { return i / (sx * sy - 1) },
     get px() { return x / (sx - 1) },
     get py() { return y / (sy - 1) },
     get sizeX() { return sx },
@@ -254,6 +264,10 @@ export type Loop3Result = {
    */
   z: number
   /**
+   * The normalized "time" coordinate (0 to (size - 1) / size).
+   */
+  t: number
+  /**
    * The normalized "time" x coordinate (0 to (size - 1) / size).
    */
   tx: number
@@ -265,6 +279,10 @@ export type Loop3Result = {
    * The normalized "time" z coordinate (0 to (size - 1) / size).
    */
   tz: number
+  /**
+   * The normalized "progress" coordinate (0 to 1).
+   */
+  p: number
   /**
    * The normalized "progress" x coordinate (0 to 1).
    */
@@ -365,15 +383,19 @@ export function* loop3(...args: any[]) {
   let y = minY
   let z = minZ
 
+  const size = (maxX - minX) * (maxY - minY) * (maxZ - minZ)
+
   const out: Loop3Result = {
-    size: (maxX - minX) * (maxY - minY) * (maxZ - minZ),
+    size,
     get i() { return i },
     get x() { return x },
     get y() { return y },
     get z() { return z },
+    get t() { return i / size },
     get tx() { return (x - minX) / (maxX - minX) },
     get ty() { return (y - minY) / (maxY - minY) },
     get tz() { return (z - minZ) / (maxZ - minZ) },
+    get p() { return i / (size - 1) },
     get px() { return (x - minX) / (maxX - minX) },
     get py() { return (y - minY) / (maxY - minY) },
     get pz() { return (z - minZ) / (maxZ - minZ) },
