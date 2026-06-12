@@ -22,6 +22,10 @@ export type LoopResult = {
    */
   size: number
   /**
+   * Lerp between two values based on the current progress (p).
+   */
+  lerp(a: number, b: number): number
+  /**
    * Clone the current yield object (save the reference).
    */
   clone(): LoopResult
@@ -48,7 +52,10 @@ export function* loop(size: number): Generator<LoopResult> {
     get t() { return i / size },
     get p() { return i / (size - 1) },
     get size() { return size },
-    clone() { return { ...this } }
+    clone() { return { ...this } },
+    lerp(a: number, b: number) {
+      return a + (b - a) * this.p
+    }
   }
   for (i = 0; i < size; i++) {
     yield out
@@ -115,6 +122,18 @@ export type Loop2Result = {
    */
   sizeY: number
   /**
+   * Lerp between two values based on the current progress (p).
+   */
+  lerp(a: number, b: number): number
+  /**
+   * Lerp between two values based on the current progress for the x coordinate (px).
+   */
+  lerpX(a: number, b: number): number
+  /**
+   * Lerp between two values based on the current progress for the y coordinate (py).
+   */
+  lerpY(a: number, b: number): number
+  /**
    * Clone the current yield object (save the reference).
    */
   clone(): Loop2Result
@@ -164,6 +183,9 @@ export function* loop2(...args: any[]) {
     get py() { return y / (sy - 1) },
     get sizeX() { return sx },
     get sizeY() { return sy },
+    lerp(a: number, b: number) { return a + (b - a) * this.p },
+    lerpX(a: number, b: number) { return a + (b - a) * this.px },
+    lerpY(a: number, b: number) { return a + (b - a) * this.py },
     clone() { return { ...this } }
   }
   for (y = 0; y < sy; y++) {
@@ -256,6 +278,22 @@ export type Loop3Result = {
    */
   pz: number
   /**
+   * Lerp between two values based on the current progress (p).
+   */
+  lerp(a: number, b: number): number
+  /**
+   * Lerp between two values based on the current progress for the x coordinate (px).
+   */
+  lerpX(a: number, b: number): number
+  /**
+   * Lerp between two values based on the current progress for the y coordinate (py).
+   */
+  lerpY(a: number, b: number): number
+  /**
+   * Lerp between two values based on the current progress for the z coordinate (pz).
+   */
+  lerpZ(a: number, b: number): number
+  /**
    * Clone the current yield object (save the reference).
    */
   clone(): Loop3Result
@@ -339,6 +377,10 @@ export function* loop3(...args: any[]) {
     get px() { return (x - minX) / (maxX - minX) },
     get py() { return (y - minY) / (maxY - minY) },
     get pz() { return (z - minZ) / (maxZ - minZ) },
+    lerp(a: number, b: number) { return a + (b - a) * this.p },
+    lerpX(a: number, b: number) { return a + (b - a) * this.px },
+    lerpY(a: number, b: number) { return a + (b - a) * this.py },
+    lerpZ(a: number, b: number) { return a + (b - a) * this.pz },
     clone() { return { ...this } }
   }
 
