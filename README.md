@@ -38,6 +38,7 @@ git submodule add https://github.com/jniac/some-utils-ts
 git submodule add https://github.com/jniac/some-utils-three
 git submodule add https://github.com/jniac/some-utils-dom
 git submodule add https://github.com/jniac/some-utils-react
+git submodule add https://github.com/jniac/some-utils-misc
 ```
 or, if already added:
 ```
