@@ -105,6 +105,8 @@ class Line2 implements Line2Like {
     return new Line2().copy(this)
   }
 
+  from(value: Line2Declaration): this
+  from(value: PointDeclarationArray): this
   from(...args: [Line2Declaration] | PointDeclarationArray): Line2 {
     return args.length === 1
       ? from(this, args[0])
@@ -236,19 +238,26 @@ class Line2 implements Line2Like {
     return this
   }
 
-  intersection<T extends Vector2Like>(line: Line2, {
-    out = null as T | null,
-  } = {}): T | null {
-    out ??= { x: 0, y: 0 } as T
+  computeIntersectionT(line: Line2): number | null {
     const { ox: ox1, oy: oy1, vx: vx1, vy: vy1 } = this
     const { ox: ox2, oy: oy2, vx: vx2, vy: vy2 } = line
     const det = vx1 * vy2 - vy1 * vx2
     if (Math.abs(det) < 1e-6) {
       return null
     }
-    const t = ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det
-    out.x = ox1 + t * vx1
-    out.y = oy1 + t * vy1
+    return ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det
+  }
+
+  intersection<T extends Vector2Like>(line: Line2, {
+    out = null as T | null,
+  } = {}): T | null {
+    out ??= { x: 0, y: 0 } as T
+    const t = this.computeIntersectionT(line)
+    if (t === null) {
+      return null
+    }
+    out.x = this.ox + t * this.vx
+    out.y = this.oy + t * this.vy
     return out
   }
 
