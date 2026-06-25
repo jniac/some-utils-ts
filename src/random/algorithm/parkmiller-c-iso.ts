@@ -40,7 +40,7 @@ const map = (n: number) => (n - 1) / (MAX - 1)
  * const random = getRandom(123)
  * console.log(random()) // 0.123456789
  */
-const getRandom = (seed: number = DEFAULT_SEED): () => number => {
+const createRandom = (seed: number = DEFAULT_SEED): () => number => {
   let state = init(seed)
   return () => {
     state = next(state)
@@ -60,7 +60,11 @@ export {
 }
 
 export {
-  getRandom
+  createRandom,
+  /**
+   * @deprecated Use `createRandom` instead. This function is kept for backward compatibility.
+   */
+  createRandom as getRandom
 }
 
 
