@@ -244,25 +244,121 @@ class Message<Payload = any, Response = any> {
   }
 
   /**
-   * Message allows to require, wait for, and dispatch instances of classes via 
+   * Message allows to require, wait for, and dispatch any value via 
    * the message system. This can be useful for decoupling and avoiding global 
    * references to singleton instances.
    * 
    * This is the symbol associated with the instance to allow a unique channel.
    */
-  static #instanceSymbol = Symbol('Message.instance')
+  static #exposeSymbol = Symbol('Message.exposeSymbol')
+
+  static #exposeDestroyWeakMap = new WeakMap<any, () => void>()
+
+  static #exposeDestroyMap = new Map<string | number | symbol | null | undefined, () => void>()
+
+  static #getExistingDestroy(key: any): (() => void) | undefined {
+    if (typeof key === 'object' && key !== null) {
+      return this.#exposeDestroyWeakMap.get(key)
+    } else {
+      return this.#exposeDestroyMap.get(key)
+    }
+  }
+
+  static #setExistingDestroy(key: any, destroy: () => void): void {
+    if (typeof key === 'object' && key !== null) {
+      this.#exposeDestroyWeakMap.set(key, destroy)
+    } else {
+      this.#exposeDestroyMap.set(key, destroy)
+    }
+  }
+
+  /**
+   * Works with `Message.require` and `Message.waitFor` to provide a value for a given key.
+   * 
+   * ### Usage
+   * ```ts
+   * Message.expose('MY_KEY', { foo: 'bar' })
+   * // Somewhere else:
+   * const { foo } = Message.require('MY_KEY')
+   * // or:
+   * const { foo } = await Message.waitFor('MY_KEY')
+   * ```
+   */
+  static expose<T>(key: any, value: T): DestroyableObject {
+    // #1 Send a message with the instance as payload, so that any current listeners waiting for it can receive it.
+    Message.send<T>([Message.#exposeSymbol, key], { payload: value })
+
+    // #2 Set up a listener for future `requireInstance` calls, so that they can receive the instance as well. If there was a previous instance registered, its listener is destroyed to avoid memory leaks and unintended behavior.
+    this.#getExistingDestroy(key)?.()
+    const { destroy } = Message.on<T>([Message.#exposeSymbol, key], message => {
+      message.setPayload(value)
+    })
+    Message.#setExistingDestroy(key, destroy)
+    return { destroy }
+  }
+
+  /**
+   * Request a value for a given key. If the value is not found, null is returned.
+   * 
+   * ### Usage
+   * ```ts
+   * const value = Message.request('MY_KEY')
+   * if (value) {
+   *   // use value
+   * }
+   * // or with a callback:
+   * Message.request('MY_KEY', value => {
+   *   // use value
+   * })
+   * ```
+   */
+  static request<T>(key: any, callback?: (value: T) => void): T | null {
+    const message = Message.send<T>([Message.#exposeSymbol, key])
+    const { payload } = message
+    const value = payload ?? null
+    if (value === null)
+      return null
+    callback?.(value)
+    return value
+  }
+
+  /**
+   * Same as `Message.request`, but throws an error if the value is not found. 
+   */
+  static require<T>(key: any, errorMessage?: string): T {
+    const value = Message.request<T>(key)
+    if (value === null) {
+      throw new Error(`Message.require: could not find value for key "${key}"${errorMessage ? `: ${errorMessage}` : ''}`)
+    }
+    return value
+  }
+
+  static waitFor<T>(key: any): Promise<T> {
+    return new Promise(resolve => {
+      const value = Message.request<T>(key)
+      if (value !== null) {
+        resolve(value)
+        return
+      }
+      const callback = (message: Message<T>) => {
+        resolve(message.payload!)
+      }
+      Message.once<T>([Message.#exposeSymbol, key], callback)
+    })
+  }
+
   /**
    * Require an instance of a class via the message system. If no instance is found, 
    * null is returned.
    * 
    * ## Example
    * ```
-   * const myInstance = Message.requireInstance(MyClass)
-   * if (myInstance) {
-   *   // use myInstance
+   * const myValue = Message.require(MyClass)
+   * if (myValue) {
+   *   // use myValue
    * }
    * // or with a callback:
-   * Message.requireInstance(MyClass, instance => {
+   * Message.require(MyClass, instance => {
    *   // use instance
    * })
    * ```
@@ -274,21 +370,21 @@ class Message<Payload = any, Response = any> {
    *   the message system.
    * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
    *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice invariant syntax: `const myInstance = Message.requireInstance(MyClass)` 
+   * - ✅ Nice invariant syntax: `const myValue = Message.require(someKey)` 
    *   is concise, clear, and type-safe.
    * 
    * ## Multiple instances
    * If multiples instances should be provided for the same class, a "key" can be 
    * specified to differentiate them:
    * ```
-   * const foo = Message.requireInstance([MyClass, 'foo'])
-   * const bar = Message.requireInstance([MyClass, 'bar'])
+   * const foo = Message.require([MyClass, 'foo'])
+   * const bar = Message.require([MyClass, 'bar'])
    * ```
    */
-  static requireInstance<T>(arg: [classArg: (new (...args: any) => T), key: string], callback?: (instance: T) => void): T | null
-  static requireInstance<T>(classArg: (new (...args: any) => T), callback?: (instance: T) => void): T | null
-  static requireInstance<T>(arg: any, callback?: (instance: T | null) => void): T | null {
-    const message = Message.send<T>([Message.#instanceSymbol, arg])
+  static requestInstance<T>(arg: [classArg: (new (...args: any) => T), key: string], callback?: (instance: T) => void): T | null
+  static requestInstance<T>(classArg: (new (...args: any) => T), callback?: (instance: T) => void): T | null
+  static requestInstance<T>(arg: any, callback?: (instance: T | null) => void): T | null {
+    const message = Message.send<T>([Message.#exposeSymbol, arg])
     const { payload } = message
     const instance = payload ?? null
     if (instance === null)
@@ -306,13 +402,13 @@ class Message<Payload = any, Response = any> {
    *   the message system.
    * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
    *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice invariant syntax: `const myInstance = Message.requireInstanceOrThrow(MyClass)` 
+   * - ✅ Nice invariant syntax: `const myValue = Message.requireInstanceOrThrow(MyClass)` 
    *   is concise and clear.
    */
-  static requireInstanceOrThrow<T>(classArg: (new (...args: any) => T), errorMessage?: string): T {
-    const instance = Message.requireInstance<T>(classArg)
+  static requireInstance<T>(classArg: (new (...args: any) => T), errorMessage?: string): T {
+    const instance = Message.requestInstance<T>(classArg)
     if (instance === null) {
-      throw new Error(`Message.requireOrThrow: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
+      throw new Error(`Message.requireInstance: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
     }
     return instance
   }
@@ -324,13 +420,13 @@ class Message<Payload = any, Response = any> {
    * Notes:
    * - This method will overwrite any previously set instance for the same class.
    */
-  static dispatchInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
+  static exposeInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
     // #1 Send a message with the instance as payload, so that any current listeners waiting for it can receive it.
-    Message.send<T>([Message.#instanceSymbol, classArg], { payload: instance })
+    Message.send<T>([Message.#exposeSymbol, classArg], { payload: instance })
 
     // #2 Set up a listener for future `requireInstance` calls, so that they can receive the instance as well. If there was a previous instance registered, its listener is destroyed to avoid memory leaks and unintended behavior.
     this.#dispatchInstanceDestroy.get(classArg)?.()
-    const { destroy } = Message.on<T>([Message.#instanceSymbol, classArg], message => {
+    const { destroy } = Message.on<T>([Message.#exposeSymbol, classArg], message => {
       message.setPayload(instance)
     })
     Message.#dispatchInstanceDestroy.set(classArg, destroy)
@@ -338,9 +434,19 @@ class Message<Payload = any, Response = any> {
   }
 
   /**
-   * @deprecated Use `dispatchInstance` instead.
+   * @deprecated Use `requireInstance` instead.
    */
-  static onRequireInstance = Message.dispatchInstance
+  static requireInstanceOrThrow = Message.requireInstance
+
+  /**
+   * @deprecated Use `exposeInstance` instead.
+   */
+  static onRequireInstance = Message.exposeInstance
+
+  /**
+   * @deprecated Use `exposeInstance` instead.
+   */
+  static dispatchInstance = Message.exposeInstance
 
   /**
    * Return a promise that resolves with the instance of a class when it is dispatched via `dispatchInstance`. 
@@ -350,7 +456,7 @@ class Message<Payload = any, Response = any> {
    */
   static waitForInstance<T>(classArg: (new (...args: any) => T)): Promise<T> {
     return new Promise(resolve => {
-      const instance = Message.requireInstance<T>(classArg)
+      const instance = Message.requestInstance<T>(classArg)
 
       // Immediate resolution:
       if (instance !== null) {
@@ -363,7 +469,7 @@ class Message<Payload = any, Response = any> {
         const callback = (message: Message<T>) => {
           resolve(message.payload!)
         }
-        Message.once<T>([Message.#instanceSymbol, classArg], callback)
+        Message.once<T>([Message.#exposeSymbol, classArg], callback)
       }
     })
   }
