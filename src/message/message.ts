@@ -325,10 +325,19 @@ class Message<Payload = any, Response = any> {
   /**
    * Same as `Message.request`, but throws an error if the value is not found. 
    */
-  static require<T>(key: any, errorMessage?: string): T {
+  static require<T>(key: any, errorMessage?: string): T
+  /**
+   * @deprecated Use `Message.require(key, errorMessage)` instead. This overload is kept for backward compatibility.
+   */
+  static require<T>(key: any, callback?: (value: T) => void): T
+  static require<T>(key: any, arg?: string | ((value: T) => void)): T {
     const value = Message.request<T>(key)
     if (value === null) {
+      const errorMessage = typeof arg === 'string' ? arg : undefined
       throw new Error(`Message.require: could not find value for key "${key}"${errorMessage ? `: ${errorMessage}` : ''}`)
+    }
+    if (typeof arg === 'function') {
+      arg(value)
     }
     return value
   }
