@@ -251,9 +251,9 @@ class Message<Payload = any, Response = any> {
    * This is the symbol associated with the instance to allow a unique channel.
    */
   static #exposeSymbol = Symbol('Message.exposeSymbol')
+  static #requestSymbol = Symbol('Message.requestSymbol')
 
   static #exposeDestroyWeakMap = new WeakMap<any, () => void>()
-
   static #exposeDestroyMap = new Map<string | number | symbol | null | undefined, () => void>()
 
   static #getExistingDestroy(key: any): (() => void) | undefined {
@@ -283,14 +283,17 @@ class Message<Payload = any, Response = any> {
    * // or:
    * const { foo } = await Message.waitFor('MY_KEY')
    * ```
+   * 
+   * Notes: 
+   * - If a value was previously exposed for the same key, its listener will be destroyed to avoid memory leaks and unintended behavior.
    */
   static expose<T>(key: any, value: T): DestroyableObject {
     // #1 Send a message with the instance as payload, so that any current listeners waiting for it can receive it.
     Message.send<T>([Message.#exposeSymbol, key], { payload: value })
 
     // #2 Set up a listener for future `requireInstance` calls, so that they can receive the instance as well. If there was a previous instance registered, its listener is destroyed to avoid memory leaks and unintended behavior.
-    this.#getExistingDestroy(key)?.()
-    const { destroy } = Message.on<T>([Message.#exposeSymbol, key], message => {
+    Message.#getExistingDestroy(key)?.()
+    const { destroy } = Message.on<T>([Message.#requestSymbol, key], message => {
       message.setPayload(value)
     })
     Message.#setExistingDestroy(key, destroy)
@@ -313,7 +316,7 @@ class Message<Payload = any, Response = any> {
    * ```
    */
   static request<T>(key: any, callback?: (value: T) => void): T | null {
-    const message = Message.send<T>([Message.#exposeSymbol, key])
+    const message = Message.send<T>([Message.#requestSymbol, key])
     const { payload } = message
     const value = payload ?? null
     if (value === null)
@@ -357,89 +360,27 @@ class Message<Payload = any, Response = any> {
   }
 
   /**
-   * Require an instance of a class via the message system. If no instance is found, 
-   * null is returned.
-   * 
-   * ## Example
-   * ```
-   * const myValue = Message.require(MyClass)
-   * if (myValue) {
-   *   // use myValue
-   * }
-   * // or with a callback:
-   * Message.require(MyClass, instance => {
-   *   // use instance
-   * })
-   * ```
-   * 
-   * ## Why?
-   * Why use this?
-   * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
-   *   its singleton instance. Someone else (a global manager) can provide it via 
-   *   the message system.
-   * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
-   *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice invariant syntax: `const myValue = Message.require(someKey)` 
-   *   is concise, clear, and type-safe.
-   * 
-   * ## Multiple instances
-   * If multiples instances should be provided for the same class, a "key" can be 
-   * specified to differentiate them:
-   * ```
-   * const foo = Message.require([MyClass, 'foo'])
-   * const bar = Message.require([MyClass, 'bar'])
-   * ```
+   * Request an instance of a class via the message system. If no instance is found, null is returned.
    */
   static requestInstance<T>(arg: [classArg: (new (...args: any) => T), key: string], callback?: (instance: T) => void): T | null
   static requestInstance<T>(classArg: (new (...args: any) => T), callback?: (instance: T) => void): T | null
   static requestInstance<T>(arg: any, callback?: (instance: T | null) => void): T | null {
-    const message = Message.send<T>([Message.#exposeSymbol, arg])
-    const { payload } = message
-    const instance = payload ?? null
-    if (instance === null)
-      return null
-    callback?.(instance)
-    return instance
+    return Message.request<T>(arg, callback as ((instance: T) => void) | undefined)
   }
 
   /**
-   * Require an instance of a class via the message system. If no instance is found, an error is thrown.
-   * 
-   * Why use this?
-   * - ⛓️‍💥 Decoupling: The required class does not have to store a global reference to 
-   *   its singleton instance. Someone else (a global manager) can provide it via 
-   *   the message system.
-   * - 🧐 Now it's the requiring code's responsibility to ensure the instance exists 
-   *   or handle the null case, making the dependency explicit.
-   * - ✅ Nice invariant syntax: `const myValue = Message.requireInstanceOrThrow(MyClass)` 
-   *   is concise and clear.
+   * Require an instance of a class via the message system. If no instance is found,
+   * an error is thrown.
    */
   static requireInstance<T>(classArg: (new (...args: any) => T), errorMessage?: string): T {
-    const instance = Message.requestInstance<T>(classArg)
-    if (instance === null) {
-      throw new Error(`Message.requireInstance: could not find instance for ${classArg.name}${errorMessage ? `: ${errorMessage}` : ''}`)
-    }
-    return instance
+    return Message.require<T>(classArg, errorMessage)
   }
 
-  static #dispatchInstanceDestroy = new WeakMap<any, () => void>()
   /**
-   * Set the instance to be returned for a class when using `requireInstance` or `requireInstanceOrThrow`.
-   * 
-   * Notes:
-   * - This method will overwrite any previously set instance for the same class.
+   * Expose an instance of a class via the message system. 
    */
   static exposeInstance<T>(classArg: (new (...args: any) => T), instance: T): DestroyableObject {
-    // #1 Send a message with the instance as payload, so that any current listeners waiting for it can receive it.
-    Message.send<T>([Message.#exposeSymbol, classArg], { payload: instance })
-
-    // #2 Set up a listener for future `requireInstance` calls, so that they can receive the instance as well. If there was a previous instance registered, its listener is destroyed to avoid memory leaks and unintended behavior.
-    this.#dispatchInstanceDestroy.get(classArg)?.()
-    const { destroy } = Message.on<T>([Message.#exposeSymbol, classArg], message => {
-      message.setPayload(instance)
-    })
-    Message.#dispatchInstanceDestroy.set(classArg, destroy)
-    return { destroy }
+    return Message.expose(classArg, instance)
   }
 
   /**
@@ -464,23 +405,7 @@ class Message<Payload = any, Response = any> {
    * - If the instance has already been dispatched, the promise will resolve immediately.
    */
   static waitForInstance<T>(classArg: (new (...args: any) => T)): Promise<T> {
-    return new Promise(resolve => {
-      const instance = Message.requestInstance<T>(classArg)
-
-      // Immediate resolution:
-      if (instance !== null) {
-        resolve(instance)
-        return
-      }
-
-      // Wait for future dispatch:
-      else {
-        const callback = (message: Message<T>) => {
-          resolve(message.payload!)
-        }
-        Message.once<T>([Message.#exposeSymbol, classArg], callback)
-      }
-    })
+    return Message.waitFor<T>(classArg)
   }
 
   /**
@@ -567,4 +492,3 @@ export type {
   Callback as MessageCallback,
   Listener as MessageListener
 }
-
