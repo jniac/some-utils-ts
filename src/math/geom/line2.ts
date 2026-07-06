@@ -84,6 +84,13 @@ class Line2 implements Line2Like {
   oy = 0
   vx = 1
   vy = 0
+    ;
+  *[Symbol.iterator]() {
+    yield this.ox
+    yield this.oy
+    yield this.vx
+    yield this.vy
+  }
 
   set(ox: number, oy: number, vx: number, vy: number): this {
     this.ox = ox
