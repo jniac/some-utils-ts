@@ -255,6 +255,18 @@ class Line2 implements Line2Like {
     return ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det
   }
 
+  computeIntersectionTPair(line: Line2): [intersect: boolean, t: number, otherT: number] {
+    const { ox: ox1, oy: oy1, vx: vx1, vy: vy1 } = this
+    const { ox: ox2, oy: oy2, vx: vx2, vy: vy2 } = line
+    const det = vx1 * vy2 - vy1 * vx2
+    if (Math.abs(det) < 1e-6) {
+      return [false, NaN, NaN]
+    }
+    const t1 = ((ox2 - ox1) * vy2 - (oy2 - oy1) * vx2) / det
+    const t2 = ((ox2 - ox1) * vy1 - (oy2 - oy1) * vx1) / det
+    return [true, t1, t2]
+  }
+
   intersection<T extends Vector2Like>(line: Line2, {
     out = null as T | null,
   } = {}): T | null {
@@ -269,8 +281,8 @@ class Line2 implements Line2Like {
   }
 
   // Sugar:
-  start = this.p0
-  end = this.p1
+  get start() { return this.p0 }
+  get end() { return this.p1 }
 }
 
 export {
