@@ -91,6 +91,24 @@ class AnimationInstance implements DestroyableObject {
   }
 
   /**
+   * Sugar for `onUpdate(({ progress, progressOld }) => { ... })`.
+   * 
+   * Usage:
+   * ```
+   * Animation
+   *   .during(1)
+   *   .onProgress(value => {
+   *     // value is the current progress value (0 to 1)
+   *   })
+   * ```
+   */
+  onProgress(callback: (progress: number, progressOld: number, animation: AnimationInstance) => void): this {
+    return this.onUpdate(({ progress, progressOld }) => {
+      callback(progress, progressOld, this)
+    })
+  }
+
+  /**
    * Execute the callback when the animation starts (progress > 0 && progressOld === 0).
    * @deprecated Deprecated for now, not sure to have all the use cases covered (reverse playing etc.). Use `onPass(0, () => ...)` instead.
    */
