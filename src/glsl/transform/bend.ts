@@ -1,3 +1,36 @@
+/**
+ * Apply a bend transformation to a position and normal vector in the vertex shader.
+ * 
+ * applyBend(
+ *   inout vec4 position,
+ *   inout vec3 normal,
+ *   float factor,
+ *   mat4 bendMatrix,
+ *   mat4 bendMatrixInverse
+ * )
+ * 
+ * Usage:
+ * ```glsl
+ * vec4 bendPosition = vec4(position, 1.0);
+ * vec3 bendNormal = normal;
+ * 
+ * #ifdef USE_BATCHING
+ *   bendPosition = batchingMatrix * bendPosition;
+ *   bendNormal = (batchingMatrix * vec4(bendNormal, 0.0)).xyz;
+ * #endif
+ * #ifdef USE_INSTANCING
+ *   bendPosition = instanceMatrix * bendPosition;
+ *   bendNormal = (instanceMatrix * vec4(bendNormal, 0.0)).xyz;
+ * #endif
+ * 
+ * bendPosition = modelMatrix * bendPosition;
+ * bendNormal = (modelMatrix * vec4(bendNormal, 0.0)).xyz;
+ * 
+ * applyBend(bendPosition, bendNormal, uBendFactor, uBendMatrix, uBendMatrixInverse);
+ * 
+ * gl_Position = projectionMatrix * viewMatrix * bendPosition;
+ * ```
+ */
 export const glsl_bend = /* glsl */`
 #ifndef GLSL_BEND
 #define GLSL_BEND
