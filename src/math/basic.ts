@@ -112,6 +112,18 @@ export function sin01(x: number) {
   return .5 + .5 * Math.sin(x * Math.PI)
 }
 
+export function toDeg(x: number) {
+  return x * 180 / Math.PI
+}
+
+export { toDeg as fromRad }
+
+export function toRad(x: number) {
+  return x * Math.PI / 180
+}
+
+export { toRad as fromDeg }
+
 export function euclideanDivision(n: number, d: number): [quotient: number, remainder: number] {
   const q = Math.floor(n / d)
   const r = n - d * q
