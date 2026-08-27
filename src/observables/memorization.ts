@@ -57,6 +57,20 @@ export class Memorization {
     return this
   }
 
+  /**
+   * Semantic alias for setValue(value, false)
+   */
+  setCurrentValue(value: number): this {
+    return this.setValue(value, false)
+  }
+
+  /**
+   * Semantic alias for setValue(value, true)
+   */
+  pushNewValue(value: number): this {
+    return this.setValue(value, true)
+  }
+
   *values(): Generator<number, void, unknown> {
     const array = this.#array
     const index = this.#index
