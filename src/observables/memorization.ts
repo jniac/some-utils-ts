@@ -67,7 +67,7 @@ export class Memorization {
   /**
    * Semantic alias for setValue(value, true)
    */
-  pushNewValue(value: number): this {
+  push(value: number): this {
     return this.setValue(value, true)
   }
 
