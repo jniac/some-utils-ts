@@ -311,6 +311,92 @@ export class TreeNode {
     return siblings[siblings.length - 1] === this
   }
 
+  previousSibling(): this | null {
+    if (this.parent === null)
+      return null
+    const siblings = this.parent.children
+    const index = siblings.indexOf(this)
+    if (index === -1 || index === 0)
+      return null
+    return siblings[index - 1]
+  }
+
+  nextSibling(): this | null {
+    if (this.parent === null)
+      return null
+    const siblings = this.parent.children
+    const index = siblings.indexOf(this)
+    if (index === -1)
+      throw new TreeNodeError('Invalid state: node is not a child of its parent')
+    if (index === siblings.length - 1)
+      return null
+    return siblings[index + 1]
+  }
+
+  previousLeaf(): this | null {
+    let node: this | null = this
+
+    while (node?.parent) {
+      const sibling = node.previousSibling()
+      if (sibling) {
+        return sibling.lastLeaf()
+      }
+      node = node.parent
+    }
+
+    return null
+  }
+
+  nextLeaf(): this | null {
+    let node: this | null = this
+
+    while (node?.parent) {
+      const sibling = node.nextSibling()
+      if (sibling) {
+        return sibling.firstLeaf()
+      }
+      node = node.parent
+    }
+
+    return null
+  }
+
+  previousNode(): this | null {
+    if (this.children.length > 0) {
+      return this.children[this.children.length - 1]
+    }
+
+    let node: this | null = this
+
+    while (node) {
+      const sibling = node.previousSibling()
+      if (sibling) {
+        return sibling
+      }
+      node = node.parent
+    }
+
+    return null
+  }
+
+  nextNode(): this | null {
+    if (this.children.length > 0) {
+      return this.children[0]
+    }
+
+    let node: this | null = this
+
+    while (node) {
+      const sibling = node.nextSibling()
+      if (sibling) {
+        return sibling
+      }
+      node = node.parent
+    }
+
+    return null
+  }
+
   static solvePredicateArg<T>(predicateArg: ((node: T) => boolean) | Record<string, any>): (node: T) => boolean {
     if (typeof predicateArg === 'object') {
       const entries = Object.entries(predicateArg)
