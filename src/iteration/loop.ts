@@ -4,7 +4,7 @@ import { Vector2Like } from '../types'
 const _v0 = { x: 0, y: 0, z: 0 }
 const _v1 = { x: 0, y: 0, z: 0 }
 
-export type LoopResult = {
+export type LoopResult<T = unknown> = {
   /**
    * The current iteration index.
    */
@@ -29,6 +29,10 @@ export type LoopResult = {
    * Clone the current yield object (save the reference).
    */
   clone(): LoopResult
+  /**
+   * The current value of the iteration (if iterating over an array-like object).
+   */
+  value: T
 }
 
 /**
@@ -45,9 +49,14 @@ export type LoopResult = {
  * }
  * ```
  */
-export function* loop(size: number): Generator<LoopResult> {
+export function loop(size: number): Generator<LoopResult<undefined>>
+export function loop<T = undefined>(array: ArrayLike<T>): Generator<LoopResult<T>>
+export function* loop<T = undefined>(arg: number | ArrayLike<T>): Generator<LoopResult<T>> {
+  const size = typeof arg === 'number' ? arg : arg.length
+  const array = typeof arg === 'number' ? undefined : arg
   let i = 0
-  const out: LoopResult = {
+  let value: T | undefined = undefined
+  const out: LoopResult<T> = {
     get i() { return i },
     get t() { return i / size },
     get p() { return i / (size - 1) },
@@ -55,9 +64,11 @@ export function* loop(size: number): Generator<LoopResult> {
     clone() { return { ...this } },
     lerp(a: number, b: number) {
       return a + (b - a) * this.p
-    }
+    },
+    get value() { return value }
   }
   for (i = 0; i < size; i++) {
+    value = array?.[i]
     yield out
   }
 }
