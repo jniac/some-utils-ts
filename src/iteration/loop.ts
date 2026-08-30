@@ -65,7 +65,7 @@ export function* loop<T = undefined>(arg: number | ArrayLike<T>): Generator<Loop
     lerp(a: number, b: number) {
       return a + (b - a) * this.p
     },
-    get value() { return value }
+    get value() { return value as T }
   }
   for (i = 0; i < size; i++) {
     value = array?.[i]
