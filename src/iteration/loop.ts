@@ -50,7 +50,7 @@ export type LoopResult<T = unknown> = {
  * ```
  */
 export function loop(size: number): Generator<LoopResult<undefined>>
-export function loop<T = undefined>(array: ArrayLike<T>): Generator<LoopResult<T>>
+export function loop<T>(array: ArrayLike<T>): Generator<LoopResult<T>>
 export function* loop<T = undefined>(arg: number | ArrayLike<T>): Generator<LoopResult<T>> {
   const size = typeof arg === 'number' ? arg : arg.length
   const array = typeof arg === 'number' ? undefined : arg
