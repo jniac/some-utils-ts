@@ -344,10 +344,10 @@ class Observable<T = any> implements ObservableCore<T> {
   set: (typeof this)['setValue'] = this.setValue.bind(this)
   equals: (value: T) => boolean = (value: T) => this._value === value
 
-  // Debug
-  log(value?: (value: T) => string): DestroyableObject
-  log(options?: { value: (value: T) => string, message: (obs: Observable<T>) => string }): DestroyableObject
-  log(...args: any[]): DestroyableObject {
+  // Debug:
+  logOnChange(value?: (value: T) => string): DestroyableObject
+  logOnChange(options?: { value: (value: T) => string, message: (obs: Observable<T>) => string }): DestroyableObject
+  logOnChange(...args: any[]): DestroyableObject {
     function solveArgs() {
       if (args.length === 1) {
         if (typeof args[0] === 'function') {
@@ -366,6 +366,11 @@ class Observable<T = any> implements ObservableCore<T> {
     return this.onChange(() => {
       console.log(`${message(this)} ${value(this._value)}`)
     })
+  }
+
+  log(toString?: (value: T) => string): this {
+    console.log(toString ? toString(this._value) : this._value)
+    return this
   }
 }
 
