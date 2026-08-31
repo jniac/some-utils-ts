@@ -315,11 +315,53 @@ export class ObservableNumber extends Observable<number> {
    * If no values are given, the min and max of the observable are used.
    */
   inverseLerp(a: number = this.lowerBound, b: number = this.upperBound, options?: Partial<{ clamped: boolean }>): number {
-    let alpha = (this._value - a) / (b - a)
-    if (options?.clamped === true) {
-      alpha = alpha < 0 ? 0 : alpha > 1 ? 1 : alpha
-    }
-    return alpha
+    const alpha = (this._value - a) / (b - a)
+    return options?.clamped !== false ? (alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) : alpha
+  }
+
+  remap(inMin: number, inMax: number, outMin: number, outMax: number, options?: Partial<{ clamped: boolean }>): number {
+    const alpha = this.inverseLerp(inMin, inMax, options)
+    return outMin + (outMax - outMin) * alpha
+  }
+
+  isWithinRange(min: number, max: number): boolean {
+    return this._value >= min && this._value <= max
+  }
+
+  wasWithinRange(min: number, max: number): boolean {
+    return this._valueOld >= min && this._valueOld <= max
+  }
+
+  onEnterRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
+    return this.onChange(() => {
+      if (this.isWithinRange(min, max) && !this.wasWithinRange(min, max)) {
+        callback(this.value, this)
+      }
+    })
+  }
+
+  onExitRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
+    return this.onChange(() => {
+      if (!this.isWithinRange(min, max) && this.wasWithinRange(min, max)) {
+        callback(this.value, this)
+      }
+    })
+  }
+
+  onInsideRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
+    return this.onChange(() => {
+      if (this.isWithinRange(min, max)) {
+        callback(this.value, this)
+      }
+    })
+  }
+
+  onOutsideRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
+    return this.onChange(() => {
+      if (!this.isWithinRange(min, max)) {
+        callback(this.value, this)
+      }
+    })
   }
 
   exponentialDecay(targetValue: number, decay: number, deltaTime: number): boolean {
