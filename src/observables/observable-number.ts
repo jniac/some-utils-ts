@@ -302,11 +302,8 @@ export class ObservableNumber extends Observable<number> {
    * Note: This will not change the inner value. For that, use {@link lerpTo}.
    */
   lerp(a: number, b: number, options?: Partial<{ clamped: boolean }>): number {
-    let alpha = this._value
-    if (options?.clamped === true) {
-      alpha = alpha < 0 ? 0 : alpha > 1 ? 1 : alpha
-    }
-    return a + (b - a) * alpha
+    const alpha = this._value
+    return a + (b - a) * (options?.clamped !== false ? (alpha < 0 ? 0 : alpha > 1 ? 1 : alpha) : alpha)
   }
 
   /**
