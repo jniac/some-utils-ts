@@ -321,30 +321,67 @@ export class ObservableNumber extends Observable<number> {
     return outMin + (outMax - outMin) * alpha
   }
 
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
   isWithinRange(min: number, max: number): boolean {
     return this._value >= min && this._value <= max
   }
 
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
   wasWithinRange(min: number, max: number): boolean {
     return this._valueOld >= min && this._valueOld <= max
   }
 
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
+  enteredRange(min: number, max: number): boolean {
+    return this.isWithinRange(min, max) && !this.wasWithinRange(min, max)
+  }
+
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
+  leftRange(min: number, max: number): boolean {
+    return !this.isWithinRange(min, max) && this.wasWithinRange(min, max)
+  }
+
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
   onEnterRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
     return this.onChange(() => {
-      if (this.isWithinRange(min, max) && !this.wasWithinRange(min, max)) {
+      if (this.enteredRange(min, max)) {
         callback(this.value, this)
       }
     })
   }
 
-  onExitRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
+  /**
+   * Notes:
+   * - The range is inclusive.
+   */
+  onLeaveRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
     return this.onChange(() => {
-      if (!this.isWithinRange(min, max) && this.wasWithinRange(min, max)) {
+      if (this.leftRange(min, max)) {
         callback(this.value, this)
       }
     })
   }
 
+  /**
+   * Notes:
+   * - The range is inclusive.
+   * - The callback will be called on every change while the value is within the range.
+   */
   onInsideRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
     return this.onChange(() => {
       if (this.isWithinRange(min, max)) {
@@ -353,6 +390,11 @@ export class ObservableNumber extends Observable<number> {
     })
   }
 
+  /**
+   * Notes:
+   * - The range is inclusive.
+   * - The callback will be called on every change while the value is outside the range.
+   */
   onOutsideRange(min: number, max: number, callback: Callback<number>): DestroyableObject {
     return this.onChange(() => {
       if (!this.isWithinRange(min, max)) {
