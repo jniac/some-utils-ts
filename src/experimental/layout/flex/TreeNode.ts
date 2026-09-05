@@ -397,7 +397,15 @@ export class TreeNode {
     return null
   }
 
-  static solvePredicateArg<T>(predicateArg: ((node: T) => boolean) | Record<string, any>): (node: T) => boolean {
+  static solvePredicateArg<T extends object>(
+    predicateArg:
+      | ((node: T) => boolean)
+      | Record<string, any>
+      | string
+  ): (node: T) => boolean {
+    if (typeof predicateArg === 'string') {
+      return (node: T) => node && 'name' in node && node.name === predicateArg
+    }
     if (typeof predicateArg === 'object') {
       const entries = Object.entries(predicateArg)
       return (node: T) => {
@@ -408,9 +416,9 @@ export class TreeNode {
         }
         return true
       }
-    } else {
-      return predicateArg
     }
+
+    return predicateArg
   }
 
   find(
